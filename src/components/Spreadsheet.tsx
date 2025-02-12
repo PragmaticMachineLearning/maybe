@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { SpreadsheetContext } from '../SpreadsheetContext'
-import { CellRenderer } from './CellRenderer'
+import React, { useContext, useEffect, useState } from "react";
+import { SpreadsheetContext } from "../SpreadsheetContext";
+import { CellRenderer } from "./CellRenderer";
 
 interface SpreadsheetProps {
   rows: number;
@@ -9,40 +9,40 @@ interface SpreadsheetProps {
   selectedCell?: { row: number; col: number } | null;
 }
 
-export const Spreadsheet: React.FC<SpreadsheetProps> = ({ 
-  rows, 
-  columns, 
+export const Spreadsheet: React.FC<SpreadsheetProps> = ({
+  rows,
+  columns,
   onCellSelect,
-  selectedCell 
+  selectedCell,
 }) => {
-  const { hfInstance } = useContext(SpreadsheetContext)
-  const [cellData, setCellData] = useState<Array<Array<any>>>([])
+  const { hfInstance } = useContext(SpreadsheetContext);
+  const [cellData, setCellData] = useState<Array<Array<any>>>([]);
 
   useEffect(() => {
-    if (!hfInstance) return
+    if (!hfInstance) return;
 
     const updateCellData = () => {
-      const updated: Array<Array<any>> = []
+      const updated: Array<Array<any>> = [];
       for (let r = 0; r < rows; r++) {
-        updated[r] = []
+        updated[r] = [];
         for (let c = 0; c < columns; c++) {
-          const addr = { sheet: 0, row: r, col: c }
-          updated[r][c] = hfInstance.getCellValue(addr)
+          const addr = { sheet: 0, row: r, col: c };
+          updated[r][c] = hfInstance.getCellValue(addr) ?? "";
         }
       }
-      setCellData(updated)
-    }
+      setCellData(updated);
+    };
 
     // Initial update
-    updateCellData()
+    updateCellData();
 
     // Subscribe to changes
-    hfInstance.on('valuesUpdated', updateCellData)
+    hfInstance.on("valuesUpdated", updateCellData);
 
     return () => {
-      hfInstance.off('valuesUpdated', updateCellData)
-    }
-  }, [hfInstance, rows, columns])
+      hfInstance.off("valuesUpdated", updateCellData);
+    };
+  }, [hfInstance, rows, columns]);
 
   const renderHeader = () => (
     <tr>
@@ -53,14 +53,12 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
         </th>
       ))}
     </tr>
-  )
+  );
 
   return (
-    <div style={{ overflowX: 'auto', padding: '20px' }}>
+    <div style={{ overflowX: "auto", padding: "20px" }}>
       <table style={tableStyle}>
-        <thead>
-          {renderHeader()}
-        </thead>
+        <thead>{renderHeader()}</thead>
         <tbody>
           {Array.from({ length: rows }).map((_, r) => (
             <tr key={r}>
@@ -73,11 +71,13 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
                   value={cellData[r]?.[c]}
                   onEdit={(row, col, value) => {
                     if (hfInstance) {
-                      hfInstance.setCellContents({ sheet: 0, row, col }, value)
+                      hfInstance.setCellContents({ sheet: 0, row, col }, value);
                     }
                   }}
                   onClick={() => onCellSelect?.(r, c)}
-                  isSelected={selectedCell?.row === r && selectedCell?.col === c}
+                  isSelected={
+                    selectedCell?.row === r && selectedCell?.col === c
+                  }
                 />
               ))}
             </tr>
@@ -85,24 +85,24 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
         </tbody>
       </table>
     </div>
-  )
-}
+  );
+};
 
 const tableStyle = {
-  borderCollapse: 'collapse' as const,
-  width: '100%',
-  minWidth: '600px',
-  backgroundColor: 'white',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-}
+  borderCollapse: "collapse" as const,
+  width: "100%",
+  minWidth: "600px",
+  backgroundColor: "white",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+};
 
 const headerStyle = {
-  backgroundColor: '#f5f5f5',
-  border: '1px solid #ccc',
-  padding: '4px 8px',
-  textAlign: 'center' as const,
-  fontWeight: 'bold' as const,
-  position: 'sticky' as const,
+  backgroundColor: "#f5f5f5",
+  border: "1px solid #ccc",
+  padding: "4px 8px",
+  textAlign: "center" as const,
+  fontWeight: "bold" as const,
+  position: "sticky" as const,
   top: 0,
-  zIndex: 1
-}
+  zIndex: 1,
+};
