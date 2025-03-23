@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+
 import { GaussianPlot } from './GaussianPlot'
 
 type CellValue = string | number | number[] | null;
@@ -36,18 +37,40 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     setEditing(false)
   }
 
-  const isGaussian = (val: unknown): val is string => {
-    if (typeof val !== 'string') return false
-    return val.startsWith('G(') && val.endsWith(')')
+  const isGaussian = (val: unknown): boolean => {
+    // Check if it's a GaussianNumber object from HyperFormula
+    if (val && typeof val === 'object' && val.hasOwnProperty('mean') && val.hasOwnProperty('variance')) {
+      return true;
+    }
+    
+    // Also check for string representation
+    if (typeof val === 'string') {
+      return val.startsWith('G(') && val.endsWith(')')
+    }
+    
+    return false;
   }
 
-  const parseGaussian = (val: string): { mean: number, variance: number } | null => {
-    const match = val.match(/^G\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/)
-    if (!match) return null
-    return {
-      mean: parseFloat(match[1]),
-      variance: parseFloat(match[2])
+  const parseGaussian = (val: unknown): { mean: number, variance: number } | null => {
+    // If it's already a GaussianNumber object from HyperFormula
+    if (val && typeof val === 'object' && 'mean' in val && 'variance' in val) {
+      return {
+        mean: (val as any).mean,
+        variance: (val as any).variance
+      };
     }
+    
+    // If it's a string representation
+    if (typeof val === 'string') {
+      const match = val.match(/^G\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/)
+      if (!match) return null
+      return {
+        mean: parseFloat(match[1]),
+        variance: parseFloat(match[2])
+      }
+    }
+    
+    return null;
   }
 
   const handleCustomContextMenu = (e: React.MouseEvent) => {
@@ -57,8 +80,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
     
     // Only show plot option for Gaussian values
-    if (isGaussian(value as string)) {
-      const gaussian = parseGaussian(value as string)
+    if (isGaussian(value)) {
+      const gaussian = parseGaussian(value)
       if (gaussian) {
         setShowPlot(true)
       }
@@ -66,8 +89,17 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   }
 
   const formatValue = (val: CellValue): string => {
-    if (!val) return ''
-    return String(val)
+    if (!val) return '';
+    
+    // Format GaussianNumber objects
+    if (isGaussian(val)) {
+      const gaussian = parseGaussian(val);
+      if (gaussian) {
+        return `G(${gaussian.mean}, ${gaussian.variance})`;
+      }
+    }
+    
+    return String(val);
   }
 
   return (
@@ -127,9 +159,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           </span>
         )}
       </td>
-      {showPlot && isGaussian(value as string) && (
+      {showPlot && isGaussian(value) && (
         <GaussianPlot
-          {...parseGaussian(value as string)!}
+          {...parseGaussian(value)!}
           onClose={() => setShowPlot(false)}
         />
       )}

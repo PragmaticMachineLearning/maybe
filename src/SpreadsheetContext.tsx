@@ -1,6 +1,7 @@
-import React, { createContext, useEffect, useState, useCallback } from 'react'
-import HyperFormula from 'hyperformula'
-import { DistributionFunctionsPlugin, DistributionFunctionsTranslations } from './hfExtensions/customFunctions'
+import React, { createContext, useCallback, useEffect, useState } from 'react'
+
+// Use our wrapper instead of importing directly
+import HyperFormula from './hyperformula-wrapper'
 
 type CellContent = string | number | null;
 type SheetData = CellContent[][];
@@ -19,13 +20,12 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [hfInstance, setHfInstance] = useState<HyperFormula | null>(null)
 
   useEffect(() => {
-    // Register our custom functions plugin before creating instance
-    console.log('Registering DistributionFunctionsPlugin...')
-    HyperFormula.registerFunctionPlugin(DistributionFunctionsPlugin, DistributionFunctionsTranslations)
-    
     const config = {
       licenseKey: 'gpl-v3',
-      language: 'enGB'
+      language: 'enGB',
+      useColumnIndex: true,
+      // Enable Gaussian number support
+      useGaussians: true
     }
 
     // Build an empty instance

@@ -1,6 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { SpreadsheetContext } from '../SpreadsheetContext'
+
 import { CellRenderer } from './CellRenderer'
+import { SpreadsheetContext } from '../SpreadsheetContext'
+
+// import { registerCustomFunctions, formatValue, parseGaussianString } from '../utils/spreadsheetFunctions';
+// import { GaussianNumber } from '../utils/gaussianNumbers';
+
 
 interface SpreadsheetProps {
   rows: number;
@@ -15,7 +20,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
   onCellSelect,
   selectedCell 
 }) => {
-  const { hfInstance } = useContext(SpreadsheetContext)
+  const { hfInstance, updateCell } = useContext(SpreadsheetContext)
   const [cellData, setCellData] = useState<Array<Array<any>>>([])
 
   useEffect(() => {
@@ -39,6 +44,9 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     // Subscribe to changes
     hfInstance.on('valuesUpdated', updateCellData)
 
+    // Register custom functions
+    // registerCustomFunctions(hfInstance);
+
     return () => {
       hfInstance.off('valuesUpdated', updateCellData)
     }
@@ -54,6 +62,15 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
       ))}
     </tr>
   )
+
+  const handleCellValueChange = (row: number, col: number, value: string) => {
+    // Pass value directly to HyperFormula
+    updateCell(row, col, value);
+  };
+
+  const renderCellValue = (value: any) => {
+    return value?.toString() || '';
+  }
 
   return (
     <div style={{ overflowX: 'auto', padding: '20px' }}>
@@ -73,7 +90,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
                   value={cellData[r]?.[c]}
                   onEdit={(row, col, value) => {
                     if (hfInstance) {
-                      hfInstance.setCellContents({ sheet: 0, row, col }, value)
+                      handleCellValueChange(row, col, value)
                     }
                   }}
                   onClick={() => onCellSelect?.(r, c)}
