@@ -1,7 +1,6 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react'
 
-// Use our wrapper instead of importing directly
-import HyperFormula from './hyperformula-wrapper'
+import HyperFormula from 'hyperformula';
 
 type CellContent = string | number | null;
 type SheetData = CellContent[][];

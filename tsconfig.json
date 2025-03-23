@@ -13,6 +13,10 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "hyperformula/*": ["./hyperformula/src/*"]
+    },
 
     /* Linting */
     "strict": true,
@@ -20,6 +24,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "hyperformula/src/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

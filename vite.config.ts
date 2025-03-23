@@ -7,8 +7,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      'hyperformula': path.resolve(__dirname, '../hyperformula/src/index.ts')
-    }
+      'hyperformula': path.resolve(__dirname, './hyperformula/src'),
+      // Make node_modules available to hyperformula
+      'chevrotain': path.resolve(__dirname, 'node_modules/chevrotain'),
+      'tiny-emitter': path.resolve(__dirname, 'node_modules/tiny-emitter')
+    },
+    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
   },
   // Define global variables for the browser environment
   define: {
@@ -24,23 +28,38 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    // Properly handle TypeScript's types during build
+    include: [
+      'chevrotain', 
+      'tiny-emitter'
+    ],
+    // Don't exclude hyperformula - let Vite handle its dependencies
+    force: true,
     esbuildOptions: {
-      // This helps preserve TypeScript types during the build
-      tsconfigRaw: {
-        compilerOptions: {
-          // Allow importing types
-          "importsNotUsedAsValues": "preserve",
-          "preserveValueImports": true
-        }
+      // Needed for TypeScript interop
+      target: 'esnext',
+      supported: {
+        'top-level-await': true
+      },
+      // Add .ts extension handling
+      resolveExtensions: ['.ts', '.js'],
+      loader: {
+        '.ts': 'ts'
       }
-    },
-    include: ['hyperformula']
+    }
   },
   build: {
     // Better source maps for debugging
     sourcemap: true,
     // Cleaner output
-    minify: false
+    minify: false,
+    rollupOptions: {
+      external: ['chevrotain', 'tiny-emitter'],
+      output: {
+        globals: {
+          chevrotain: 'chevrotain',
+          'tiny-emitter': 'TinyEmitter'
+        }
+      }
+    }
   }
 })
