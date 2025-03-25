@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      'hyperformula': path.resolve(__dirname, '../hyperformula/src/index.ts')
+      'hyperformula': path.resolve(__dirname, './hyperformula/es')
     }
   },
   // Define global variables for the browser environment
