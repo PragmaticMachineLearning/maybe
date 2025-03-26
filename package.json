@@ -13,7 +13,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "setup": "yarn install && cd hyperformula && yarn compile && yarn bundle:es && cd ..",
-    "build:hyperformula": "cd hyperformula && yarn compile && yarn bundle:es && cd .."
+    "build:hyperformula": "cd hyperformula && yarn compile && yarn bundle:es && yarn bundle:development && cd .."
   },
   "dependencies": {
     "chart.js": "^4.4.7",

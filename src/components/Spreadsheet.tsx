@@ -3,10 +3,6 @@ import React, { useContext, useEffect, useState } from 'react'
 import { CellRenderer } from './CellRenderer'
 import { SpreadsheetContext } from '../SpreadsheetContext'
 
-// import { registerCustomFunctions, formatValue, parseGaussianString } from '../utils/spreadsheetFunctions';
-// import { GaussianNumber } from '../utils/gaussianNumbers';
-
-
 interface SpreadsheetProps {
   rows: number;
   columns: number;
@@ -68,9 +64,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     updateCell(row, col, value);
   };
 
-  const renderCellValue = (value: any) => {
-    return value?.toString() || '';
-  }
+
 
   return (
     <div style={{ overflowX: 'auto', padding: '20px' }}>

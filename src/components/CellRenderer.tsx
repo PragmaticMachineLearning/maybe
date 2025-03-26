@@ -45,7 +45,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     
     // Also check for string representation
     if (typeof val === 'string') {
-      return val.startsWith('G(') && val.endsWith(')')
+      return val.startsWith('N(') && val.endsWith(')')
     }
     
     return false;
@@ -62,7 +62,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     
     // If it's a string representation
     if (typeof val === 'string') {
-      const match = val.match(/^G\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/)
+      const match = val.match(/^N\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/)
       if (!match) return null
       return {
         mean: parseFloat(match[1]),
@@ -95,7 +95,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if (isGaussian(val)) {
       const gaussian = parseGaussian(val);
       if (gaussian) {
-        return `G(${gaussian.mean}, ${gaussian.variance})`;
+        return `N(${gaussian.mean}, ${gaussian.variance})`;
       }
     }
     

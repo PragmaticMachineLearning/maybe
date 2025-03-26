@@ -1,6 +1,7 @@
-import React, { useState, useContext } from 'react'
-import { SpreadsheetProvider, SpreadsheetContext } from './SpreadsheetContext'
+import React, { useState } from 'react'
+
 import { Spreadsheet } from './components/Spreadsheet'
+import { SpreadsheetProvider } from './SpreadsheetContext'
 
 const SpreadsheetWithWizard: React.FC = () => {
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
