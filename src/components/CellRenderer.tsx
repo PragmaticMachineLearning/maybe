@@ -28,7 +28,16 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [showPlot, setShowPlot] = useState(false)
 
   const handleDoubleClick = () => {
-    setTempValue(String(value))
+    if (isGaussian(value)) {
+      const gaussian = parseGaussian(value)
+      if (gaussian) {
+        setTempValue(`N(${gaussian.mean}, ${gaussian.variance})`)
+      } else {
+        setTempValue(String(value))
+      }
+    } else {
+      setTempValue(String(value))
+    }
     setEditing(true)
   }
 
