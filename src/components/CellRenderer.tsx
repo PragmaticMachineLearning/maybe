@@ -33,10 +33,10 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       if (gaussian) {
         setTempValue(`N(${gaussian.mean}, ${gaussian.variance})`)
       } else {
-        setTempValue(String(value))
+        setTempValue('')
       }
     } else {
-      setTempValue(String(value))
+      setTempValue(value ? String(value) : '')
     }
     setEditing(true)
   }
