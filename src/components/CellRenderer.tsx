@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 
-import { GaussianPlot } from './GaussianPlot'
+import { DistributionPlot } from './GaussianPlot'
 
-type CellValue = string | number | number[] | null;
+type CellValue = string | number | number[] | null | { samples: number[] } | { mean: number, variance: number };
 
 interface CellRendererProps {
   row: number;
@@ -26,12 +26,22 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [editing, setEditing] = useState(false)
   const [tempValue, setTempValue] = useState('')
   const [showPlot, setShowPlot] = useState(false)
+  const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 })
+  const cellRef = useRef<HTMLTableCellElement>(null)
 
   const handleDoubleClick = () => {
     if (isGaussian(value)) {
       const gaussian = parseGaussian(value)
       if (gaussian) {
-        setTempValue(`N(${gaussian.mean}, ${gaussian.variance})`)
+        setTempValue(`N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`)
+      } else {
+        setTempValue('')
+      }
+    } else if (isSampledDistribution(value)) {
+      const sampled = parseSampledDistribution(value)
+      if (sampled) {
+        const variance = sampled.std * sampled.std;
+        setTempValue(`S[${sampled.samples.length}](μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
       } else {
         setTempValue('')
       }
@@ -60,6 +70,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return false;
   }
 
+  const isSampledDistribution = (val: unknown): boolean => {
+    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
+      return true;
+    }
+    return false;
+  }
+
   const parseGaussian = (val: unknown): { mean: number, variance: number } | null => {
     // If it's already a GaussianNumber object from HyperFormula
     if (val && typeof val === 'object' && 'mean' in val && 'variance' in val) {
@@ -82,17 +99,32 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return null;
   }
 
+  const parseSampledDistribution = (val: unknown): { samples: number[], mean: number, std: number } | null => {
+    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
+      const samples = (val as any).samples;
+      const mean = samples.reduce((a: number, b: number) => a + b, 0) / samples.length;
+      const variance = samples.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / samples.length;
+      const std = Math.sqrt(variance);
+      return { samples, mean, std };
+    }
+    return null;
+  }
+
   const handleCustomContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     if (onContextMenu) {
       onContextMenu(e)
     }
     
-    // Only show plot option for Gaussian values
-    if (isGaussian(value)) {
-      const gaussian = parseGaussian(value)
-      if (gaussian) {
-        setShowPlot(true)
+    if (cellRef.current) {
+      const rect = cellRef.current.getBoundingClientRect();
+      setPlotPosition({
+        top: rect.top,
+        left: rect.right + 10 // Position 10px to the right of the cell
+      });
+      
+      if (isGaussian(value) || isSampledDistribution(value)) {
+        setShowPlot(true);
       }
     }
   }
@@ -104,7 +136,16 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if (isGaussian(val)) {
       const gaussian = parseGaussian(val);
       if (gaussian) {
-        return `N(${gaussian.mean}, ${gaussian.variance})`;
+        return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
+      }
+    }
+    
+    // Format SampledDistribution objects
+    if (isSampledDistribution(val)) {
+      const sampled = parseSampledDistribution(val);
+      if (sampled) {
+        const variance = sampled.std * sampled.std;
+        return `S[${sampled.samples.length}](μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
       }
     }
     
@@ -114,6 +155,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   return (
     <>
       <td 
+        ref={cellRef}
         onClick={onClick}
         onContextMenu={handleCustomContextMenu}
         onDoubleClick={handleDoubleClick}
@@ -168,9 +210,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           </span>
         )}
       </td>
-      {showPlot && isGaussian(value) && (
-        <GaussianPlot
-          {...parseGaussian(value)!}
+      {showPlot && (isGaussian(value) || isSampledDistribution(value)) && (
+        <DistributionPlot
+          position={plotPosition}
+          mean={isGaussian(value) ? parseGaussian(value)!.mean : parseSampledDistribution(value)!.mean}
+          variance={isGaussian(value) ? parseGaussian(value)!.variance : parseSampledDistribution(value)!.std ** 2}
+          samples={isSampledDistribution(value) ? parseSampledDistribution(value)!.samples : undefined}
+          isGaussian={isGaussian(value)}
           onClose={() => setShowPlot(false)}
         />
       )}
