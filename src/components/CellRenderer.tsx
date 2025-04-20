@@ -41,7 +41,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       const sampled = parseSampledDistribution(value)
       if (sampled) {
         const variance = sampled.std * sampled.std;
-        setTempValue(`S[${sampled.samples.length}](μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
+        setTempValue(`S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
       } else {
         setTempValue('')
       }
@@ -145,7 +145,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       const sampled = parseSampledDistribution(val);
       if (sampled) {
         const variance = sampled.std * sampled.std;
-        return `S[${sampled.samples.length}](μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
+        return `S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
       }
     }
     
