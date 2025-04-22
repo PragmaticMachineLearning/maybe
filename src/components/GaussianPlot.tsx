@@ -67,7 +67,9 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
 
   const option = {
     title: {
-      text: isGaussian ? "Gaussian Plot" : "Sampled Distribution Plot",
+      text: isGaussian 
+        ? `Gaussian Plot (μ=${mean.toFixed(2)}, σ²=${variance.toFixed(2)})` 
+        : `Sampled Distribution Plot (μ=${mean.toFixed(2)}, σ²=${variance.toFixed(2)})`,
       left: "center",
       textStyle: {
         fontSize: 14,
