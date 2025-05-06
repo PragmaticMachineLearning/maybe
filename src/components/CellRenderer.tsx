@@ -37,18 +37,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       } else {
         setTempValue('')
       }
-    } else if (isProductDistribution(value)) {
-      const product = parseProductDistribution(value)
-      if (product) {
-        const variance = product.std * product.std;
-        setTempValue(`P(μ=${product.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
-      } else {
-        setTempValue('')
-      }
-    } else if (isRatioDistribution(value)) {
-      const ratio = parseRatioDistribution(value)
-      if (ratio) {
-        setTempValue(`R(μ=${ratio.mean.toFixed(2)}, σ²=${ratio.variance.toFixed(2)})`)
+    } else if (isSampledDistribution(value)) {
+      const sampled = parseSampledDistribution(value)
+      if (sampled) {
+        const variance = sampled.std * sampled.std;
+        setTempValue(`S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
       } else {
         setTempValue('')
       }
@@ -65,13 +58,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
 
   const isGaussian = (val: unknown): boolean => {
     // Check if it's a GaussianNumber object from HyperFormula
-    if (val && typeof val === 'object' && 
-        val.hasOwnProperty('mean') && 
-        val.hasOwnProperty('variance') &&
-        !val.hasOwnProperty('sourceMeanX') && // RatioDistribution has these properties
-        !val.hasOwnProperty('sourceMeanY') && // RatioDistribution has these properties
-        !val.hasOwnProperty('sourceVarX') &&  // RatioDistribution has these properties
-        !val.hasOwnProperty('sourceVarY')) {  // RatioDistribution has these properties
+    if (val && typeof val === 'object' && val.hasOwnProperty('mean') && val.hasOwnProperty('variance')) {
       return true;
     }
     
@@ -83,21 +70,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return false;
   }
 
-  const isProductDistribution = (val: unknown): boolean => {
+  const isSampledDistribution = (val: unknown): boolean => {
     if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
-      return true;
-    }
-    return false;
-  }
-
-  const isRatioDistribution = (val: unknown): boolean => {
-    if (val && typeof val === 'object' && 
-        val.hasOwnProperty('mean') && 
-        val.hasOwnProperty('variance') &&
-        val.hasOwnProperty('sourceMeanX') && 
-        val.hasOwnProperty('sourceMeanY') && 
-        val.hasOwnProperty('sourceVarX') && 
-        val.hasOwnProperty('sourceVarY')) {
       return true;
     }
     return false;
@@ -125,23 +99,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return null;
   }
 
-  const parseProductDistribution = (val: unknown): { samples: number[], mean: number, std: number } | null => {
+  const parseSampledDistribution = (val: unknown): { samples: number[], mean: number, std: number } | null => {
     if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
       const samples = (val as any).samples;
       const mean = samples.reduce((a: number, b: number) => a + b, 0) / samples.length;
       const variance = samples.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / samples.length;
       const std = Math.sqrt(variance);
       return { samples, mean, std };
-    }
-    return null;
-  }
-
-  const parseRatioDistribution = (val: unknown): { mean: number, variance: number } | null => {
-    if (val && typeof val === 'object' && 'mean' in val && 'variance' in val) {
-      return {
-        mean: (val as any).mean,
-        variance: (val as any).variance
-      };
     }
     return null;
   }
@@ -159,7 +123,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         left: rect.right + 10 // Position 10px to the right of the cell
       });
       
-      if (isGaussian(value) || isProductDistribution(value) || isRatioDistribution(value)) {
+      if (isGaussian(value) || isSampledDistribution(value)) {
         setShowPlot(true);
       }
     }
@@ -176,20 +140,12 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       }
     }
     
-    // Format ProductDistribution objects
-    if (isProductDistribution(val)) {
-      const product = parseProductDistribution(val);
-      if (product) {
-        const variance = product.std * product.std;
-        return `P(μ=${product.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
-      }
-    }
-
-    // Format RatioDistribution objects
-    if (isRatioDistribution(val)) {
-      const ratio = parseRatioDistribution(val);
-      if (ratio) {
-        return `R(μ=${ratio.mean.toFixed(2)}, σ²=${ratio.variance.toFixed(2)})`;
+    // Format SampledDistribution objects
+    if (isSampledDistribution(val)) {
+      const sampled = parseSampledDistribution(val);
+      if (sampled) {
+        const variance = sampled.std * sampled.std;
+        return `S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
       }
     }
     
@@ -254,16 +210,12 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           </span>
         )}
       </td>
-      {showPlot && (isGaussian(value) || isProductDistribution(value) || isRatioDistribution(value)) && (
+      {showPlot && (isGaussian(value) || isSampledDistribution(value)) && (
         <DistributionPlot
           position={plotPosition}
-          mean={isGaussian(value) ? parseGaussian(value)!.mean : 
-                isProductDistribution(value) ? parseProductDistribution(value)!.mean :
-                parseRatioDistribution(value)!.mean}
-          variance={isGaussian(value) ? parseGaussian(value)!.variance : 
-                   isProductDistribution(value) ? parseProductDistribution(value)!.std ** 2 :
-                   parseRatioDistribution(value)!.variance}
-          samples={isProductDistribution(value) ? parseProductDistribution(value)!.samples : undefined}
+          mean={isGaussian(value) ? parseGaussian(value)!.mean : parseSampledDistribution(value)!.mean}
+          variance={isGaussian(value) ? parseGaussian(value)!.variance : parseSampledDistribution(value)!.std ** 2}
+          samples={isSampledDistribution(value) ? parseSampledDistribution(value)!.samples : undefined}
           isGaussian={isGaussian(value)}
           onClose={() => setShowPlot(false)}
         />
