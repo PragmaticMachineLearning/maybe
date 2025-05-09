@@ -24,13 +24,13 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       licenseKey: 'gpl-v3',
       language: 'enGB',
       useColumnIndex: true,
-      // Enable Gaussian number support
-      useGaussians: true
+      sampleSize: 50000,
+      
     }
 
     // Build an empty instance
     const instance = HyperFormula.buildEmpty(config)
-    console.log('Available functions in instance:', instance.getRegisteredFunctionNames())
+    
 
     // Initialize sheet
     instance.addSheet('Sheet1')
