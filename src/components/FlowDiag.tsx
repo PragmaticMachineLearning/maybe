@@ -80,16 +80,38 @@ const getVertexId = (vertex: any, hfInstance: any): string => {
 }
 
 const getVertexValue = (vertex: any): string => {
+  // Handle FormulaCellVertex with cachedCellValue
   if (vertex.cachedCellValue !== undefined) {
-    return vertex.cachedCellValue.toString()
+    if (vertex.cachedCellValue && typeof vertex.cachedCellValue === 'object') {
+      if ('mean' in vertex.cachedCellValue && 'variance' in vertex.cachedCellValue) {
+        // Gaussian distribution
+        return `N(μ=${vertex.cachedCellValue.mean.toFixed(2)}, σ²=${vertex.cachedCellValue.variance.toFixed(2)})`;
+      } else if ('samples' in vertex.cachedCellValue && Array.isArray(vertex.cachedCellValue.samples)) {
+        // Sampled distribution - only calculate mean and variance
+        const samples = vertex.cachedCellValue.samples;
+        const mean = samples.reduce((a: number, b: number) => a + b, 0) / samples.length;
+        const variance = samples.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / samples.length;
+        return `S(μ=${mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
+      }
+    }
+    return vertex.cachedCellValue.toString();
   }
+
+  // Handle ValueCellVertex with parsedValue
   if (vertex.parsedValue !== undefined) {
-    return vertex.parsedValue.toString()
+    if (vertex.parsedValue && typeof vertex.parsedValue === 'object') {
+      if ('mean' in vertex.parsedValue && 'variance' in vertex.parsedValue) {
+        // Gaussian distribution
+        return `N(μ=${vertex.parsedValue.mean.toFixed(2)}, σ²=${vertex.parsedValue.variance.toFixed(2)})`;
+      }
+    }
+    return vertex.parsedValue.toString();
   }
+
   if (vertex.rawValue !== undefined) {
-    return vertex.rawValue
+    return vertex.rawValue;
   }
-  return 'N/A'
+  return 'N/A';
 }
 
 const getVertexType = (vertex: any): string => {

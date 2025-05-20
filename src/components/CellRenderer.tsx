@@ -99,13 +99,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return null;
   }
 
-  const parseSampledDistribution = (val: unknown): { samples: number[], mean: number, std: number } | null => {
+  const parseSampledDistribution = (val: unknown): { mean: number, std: number } | null => {
     if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
       const samples = (val as any).samples;
       const mean = samples.reduce((a: number, b: number) => a + b, 0) / samples.length;
       const variance = samples.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / samples.length;
       const std = Math.sqrt(variance);
-      return { samples, mean, std };
+      return { mean, std };
     }
     return null;
   }
