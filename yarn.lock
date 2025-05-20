@@ -2909,7 +2909,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-drag@npm:*, @types/d3-drag@npm:^3.0.1":
+"@types/d3-drag@npm:*, @types/d3-drag@npm:^3.0.1, @types/d3-drag@npm:^3.0.7":
   version: 3.0.7
   resolution: "@types/d3-drag@npm:3.0.7"
   dependencies:
@@ -3024,7 +3024,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-selection@npm:*, @types/d3-selection@npm:^3.0.3":
+"@types/d3-selection@npm:*, @types/d3-selection@npm:^3.0.10, @types/d3-selection@npm:^3.0.3":
   version: 3.0.11
   resolution: "@types/d3-selection@npm:3.0.11"
   checksum: 10c0/0c512956c7503ff5def4bb32e0c568cc757b9a2cc400a104fc0f4cfe5e56d83ebde2a97821b6f2cb26a7148079d3b86a2f28e11d68324ed311cf35c2ed980d1d
@@ -3061,7 +3061,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-transition@npm:*":
+"@types/d3-transition@npm:*, @types/d3-transition@npm:^3.0.8":
   version: 3.0.9
   resolution: "@types/d3-transition@npm:3.0.9"
   dependencies:
@@ -3070,7 +3070,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-zoom@npm:*, @types/d3-zoom@npm:^3.0.1":
+"@types/d3-zoom@npm:*, @types/d3-zoom@npm:^3.0.1, @types/d3-zoom@npm:^3.0.8":
   version: 3.0.8
   resolution: "@types/d3-zoom@npm:3.0.8"
   dependencies:
@@ -4497,6 +4497,35 @@ __metadata:
   version: 4.2.2
   resolution: "@xtuc/long@npm:4.2.2"
   checksum: 10c0/8582cbc69c79ad2d31568c412129bf23d2b1210a1dfb60c82d5a1df93334da4ee51f3057051658569e2c196d8dc33bc05ae6b974a711d0d16e801e1d0647ccd1
+  languageName: node
+  linkType: hard
+
+"@xyflow/react@npm:^12.6.4":
+  version: 12.6.4
+  resolution: "@xyflow/react@npm:12.6.4"
+  dependencies:
+    "@xyflow/system": "npm:0.0.61"
+    classcat: "npm:^5.0.3"
+    zustand: "npm:^4.4.0"
+  peerDependencies:
+    react: ">=17"
+    react-dom: ">=17"
+  checksum: 10c0/2783a6f8a079cc0e068580ad1b69a6c914f47377f1c5a908af28d98c24a6fec1ff088f8ec42b5f343338167aeff4feecc692cce20bf251fe54f22a20c0d544f4
+  languageName: node
+  linkType: hard
+
+"@xyflow/system@npm:0.0.61":
+  version: 0.0.61
+  resolution: "@xyflow/system@npm:0.0.61"
+  dependencies:
+    "@types/d3-drag": "npm:^3.0.7"
+    "@types/d3-selection": "npm:^3.0.10"
+    "@types/d3-transition": "npm:^3.0.8"
+    "@types/d3-zoom": "npm:^3.0.8"
+    d3-drag: "npm:^3.0.0"
+    d3-selection: "npm:^3.0.0"
+    d3-zoom: "npm:^3.0.0"
+  checksum: 10c0/63c04973462aa98cb7d53118cf3b458b6dc79c2dbc468dbd553b1df4ec11afab91dfef490ac18f804815ab40fa6709d70fc0d0a446d12e420918a7590bbdc88d
   languageName: node
   linkType: hard
 
@@ -10342,11 +10371,11 @@ __metadata:
 
 "hyperformula@file:hyperformula::locator=probability-spreadsheet-root%40workspace%3A.":
   version: 3.0.0
-  resolution: "hyperformula@file:hyperformula#hyperformula::hash=ad6f9a&locator=probability-spreadsheet-root%40workspace%3A."
+  resolution: "hyperformula@file:hyperformula#hyperformula::hash=72cc45&locator=probability-spreadsheet-root%40workspace%3A."
   dependencies:
     chevrotain: "npm:^6.5.0"
     tiny-emitter: "npm:^2.1.0"
-  checksum: 10c0/be736629868f503dc9b3852982115ed57aedac4fcc0e7915be9a72c4d177309d25e2348c04f26f3f5005cd338658d50e04c313ae59758487f132fa15e4c5f9e8
+  checksum: 10c0/b73d166bde9b20cf45cba384874ac9c75c06680914d897f0678a998b530991cb359ea1fdb10f53a25b6cfc382b2fa9b8f8cd81c1a5f88f7584ffe20e117a8fe4
   languageName: node
   linkType: hard
 
@@ -14966,6 +14995,7 @@ __metadata:
     "@typescript-eslint/eslint-plugin": "npm:^6.14.0"
     "@typescript-eslint/parser": "npm:^6.14.0"
     "@vitejs/plugin-react": "npm:^4.2.1"
+    "@xyflow/react": "npm:^12.6.4"
     chart.js: "npm:^4.4.9"
     echarts: "npm:^5.6.0"
     echarts-for-react: "npm:^3.0.2"
@@ -19584,7 +19614,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zustand@npm:^4.4.1":
+"zustand@npm:^4.4.0, zustand@npm:^4.4.1":
   version: 4.5.7
   resolution: "zustand@npm:4.5.7"
   dependencies:

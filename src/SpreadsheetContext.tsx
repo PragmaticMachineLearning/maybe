@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react'
 
 // Import from the workspace package
-import HyperFormula from 'hyperformula'
+import { HyperFormula } from 'hyperformula'
 
 type CellContent = string | number | null;
 type SheetData = CellContent[][];
@@ -24,7 +24,7 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       licenseKey: 'gpl-v3',
       language: 'enGB',
       useColumnIndex: true,
-      sampleSize: 50000,
+      sampleSize: 100000,
       
     }
 

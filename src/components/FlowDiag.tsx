@@ -1,16 +1,17 @@
-import 'reactflow/dist/style.css'
+import '@xyflow/react/dist/style.css';
 
-import React, { useCallback, useContext, useEffect } from 'react'
-import ReactFlow, {
+import  {
   Background,
   Controls,
   Edge,
-  MarkerType,
+  Handle,
   Node,
   Position,
+  ReactFlow,
   useEdgesState,
   useNodesState,
-} from 'reactflow'
+} from '@xyflow/react'
+import React, { useCallback, useContext, useEffect } from 'react'
 
 import { SpreadsheetContext } from '../SpreadsheetContext'
 
@@ -23,9 +24,11 @@ const nodeTypes = {
       border: '1px solid #ccc',
       minWidth: '150px',
     }}>
+      <Handle type="target" position={Position.Left}/>
       <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
       <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
       <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
+      <Handle type="source" position={Position.Right}/>
     </div>
   ),
   value: ({ data }: { data: { address: string; value: any; type: string } }) => (
@@ -36,9 +39,11 @@ const nodeTypes = {
       border: '1px solid #ccc',
       minWidth: '150px',
     }}>
+      <Handle type="target" position={Position.Left}/>
       <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
       <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
       <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
+      <Handle type="source" position={Position.Right}/>
     </div>
   ),
  
@@ -99,8 +104,8 @@ const getVertexType = (vertex: any): string => {
 
 export const FlowDiag: React.FC = () => {
   const { hfInstance } = useContext(SpreadsheetContext)
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
   const updateGraphData = useCallback(() => {
     if (!hfInstance) return
@@ -130,12 +135,15 @@ export const FlowDiag: React.FC = () => {
       adjacentNodes.forEach((adjNode: any) => {
         const sourceId = getVertexId(node, hfInstance)
         const targetId = getVertexId(adjNode, hfInstance)
-        if (sourceId && targetId) {
+        const sourceAddress = getVertexAddress(node, hfInstance)
+        const targetAddress = getVertexAddress(adjNode, hfInstance)
+        if (sourceId && targetId && sourceAddress && targetAddress) {
           newEdges.push({
-            id: `${sourceId}-${targetId}`,
+            id: `${sourceAddress}-${targetAddress}`,
             source: sourceId,
             target: targetId,
-            animated: true,           
+            animated: true,
+           
           })
         }
       })
