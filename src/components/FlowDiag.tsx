@@ -16,7 +16,7 @@ import React, { useCallback, useContext, useEffect } from 'react'
 import { SpreadsheetContext } from '../SpreadsheetContext'
 
 const nodeTypes = {
-  formula: ({ data }: { data: { address: string; value: any; type: string } }) => (
+  formula: ({ data }: { data: { address: string; value: any; type: string; formula: string } }) => (
     <div style={{
       padding: '10px',
       borderRadius: '5px',
@@ -28,6 +28,7 @@ const nodeTypes = {
       <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
       <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
       <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
+      <div style={{ fontSize: '0.8em', color: '#888' }}>Formula: {data.formula}</div>
       <Handle type="source" position={Position.Right}/>
     </div>
   ),
@@ -62,6 +63,17 @@ const getVertexAddress = (vertex: any, hfInstance: any): string => {
   
   // If we can't find the address, this is an unknown vertex
   return 'Unknown'
+}
+
+const getVertexRawAddress = (vertex: any, hfInstance: any): {sheet: number, row: number, col: number} | null => {
+  // Get the address mapping from the HyperFormula instance
+  const addressMapping = hfInstance.addressMapping
+  for (const [address, v] of addressMapping.entries()){    
+    if (v === vertex) {
+      return address
+    }
+  }
+  return null
 }
 
 const getVertexId = (vertex: any, hfInstance: any): string => {
@@ -115,15 +127,23 @@ const getVertexValue = (vertex: any): string => {
 }
 
 const getVertexType = (vertex: any): string => {
+
+  
   if (vertex.formula) {
-    return 'Formula'
+    return "Formula"
   }
   if (vertex.parsedValue !== undefined) {
     return 'Value'
   }
   return 'Unknown'
 }
-
+const getFormula = (vertex: any, hfInstance: any): string => {
+  const address = getVertexRawAddress(vertex, hfInstance)
+  if (address) {
+    return hfInstance.getCellFormula(address)
+  }
+  return ''
+}
 export const FlowDiag: React.FC = () => {
   const { hfInstance } = useContext(SpreadsheetContext)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
@@ -144,7 +164,8 @@ export const FlowDiag: React.FC = () => {
       data: { 
         address: getVertexAddress(node, hfInstance),
         value: getVertexValue(node),
-        type: getVertexType(node)
+        type: getVertexType(node),
+        formula: getFormula(node, hfInstance)
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
