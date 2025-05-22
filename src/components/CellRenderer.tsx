@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react'
+import React, { useState } from 'react'
+import { GaussianPlot } from './GaussianPlot'
 
-import { DistributionPlot } from './GaussianPlot'
-
-type CellValue = string | number | number[] | null | { samples: number[] } | { mean: number, variance: number };
+type CellValue = string | number | number[] | null;
 
 interface CellRendererProps {
   row: number;
@@ -26,28 +25,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [editing, setEditing] = useState(false)
   const [tempValue, setTempValue] = useState('')
   const [showPlot, setShowPlot] = useState(false)
-  const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 })
-  const cellRef = useRef<HTMLTableCellElement>(null)
 
   const handleDoubleClick = () => {
-    if (isGaussian(value)) {
-      const gaussian = parseGaussian(value)
-      if (gaussian) {
-        setTempValue(`N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`)
-      } else {
-        setTempValue('')
-      }
-    } else if (isSampledDistribution(value)) {
-      const sampled = parseSampledDistribution(value)
-      if (sampled) {
-        const variance = sampled.std * sampled.std;
-        setTempValue(`S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
-      } else {
-        setTempValue('')
-      }
-    } else {
-      setTempValue(value ? String(value) : '')
-    }
+    setTempValue(String(value))
     setEditing(true)
   }
 
@@ -56,58 +36,18 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     setEditing(false)
   }
 
-  const isGaussian = (val: unknown): boolean => {
-    // Check if it's a GaussianNumber object from HyperFormula
-    if (val && typeof val === 'object' && val.hasOwnProperty('mean') && val.hasOwnProperty('variance')) {
-      return true;
-    }
-    
-    // Also check for string representation
-    if (typeof val === 'string') {
-      return val.startsWith('N(') && val.endsWith(')')
-    }
-    
-    return false;
+  const isGaussian = (val: unknown): val is string => {
+    if (typeof val !== 'string') return false
+    return val.startsWith('G(') && val.endsWith(')')
   }
 
-  const isSampledDistribution = (val: unknown): boolean => {
-    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
-      return true;
+  const parseGaussian = (val: string): { mean: number, variance: number } | null => {
+    const match = val.match(/^G\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/)
+    if (!match) return null
+    return {
+      mean: parseFloat(match[1]),
+      variance: parseFloat(match[2])
     }
-    return false;
-  }
-
-  const parseGaussian = (val: unknown): { mean: number, variance: number } | null => {
-    // If it's already a GaussianNumber object from HyperFormula
-    if (val && typeof val === 'object' && 'mean' in val && 'variance' in val) {
-      return {
-        mean: (val as any).mean,
-        variance: (val as any).variance
-      };
-    }
-    
-    // If it's a string representation
-    if (typeof val === 'string') {
-      const match = val.match(/^N\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/)
-      if (!match) return null
-      return {
-        mean: parseFloat(match[1]),
-        variance: parseFloat(match[2])
-      }
-    }
-    
-    return null;
-  }
-
-  const parseSampledDistribution = (val: unknown): { samples: number[], mean: number, std: number } | null => {
-    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
-      const samples = (val as any).samples;
-      const mean = samples.reduce((a: number, b: number) => a + b, 0) / samples.length;
-      const variance = samples.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / samples.length;
-      const std = Math.sqrt(variance);
-      return { samples, mean, std };
-    }
-    return null;
   }
 
   const handleCustomContextMenu = (e: React.MouseEvent) => {
@@ -116,46 +56,23 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       onContextMenu(e)
     }
     
-    if (cellRef.current) {
-      const rect = cellRef.current.getBoundingClientRect();
-      setPlotPosition({
-        top: rect.top,
-        left: rect.right + 10 // Position 10px to the right of the cell
-      });
-      
-      if (isGaussian(value) || isSampledDistribution(value)) {
-        setShowPlot(true);
+    // Only show plot option for Gaussian values
+    if (isGaussian(value as string)) {
+      const gaussian = parseGaussian(value as string)
+      if (gaussian) {
+        setShowPlot(true)
       }
     }
   }
 
   const formatValue = (val: CellValue): string => {
-    if (!val) return '';
-    
-    // Format GaussianNumber objects
-    if (isGaussian(val)) {
-      const gaussian = parseGaussian(val);
-      if (gaussian) {
-        return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
-      }
-    }
-    
-    // Format SampledDistribution objects
-    if (isSampledDistribution(val)) {
-      const sampled = parseSampledDistribution(val);
-      if (sampled) {
-        const variance = sampled.std * sampled.std;
-        return `S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
-      }
-    }
-    
-    return String(val);
+    if (!val) return ''
+    return String(val)
   }
 
   return (
     <>
       <td 
-        ref={cellRef}
         onClick={onClick}
         onContextMenu={handleCustomContextMenu}
         onDoubleClick={handleDoubleClick}
@@ -210,13 +127,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           </span>
         )}
       </td>
-      {showPlot && (isGaussian(value) || isSampledDistribution(value)) && (
-        <DistributionPlot
-          position={plotPosition}
-          mean={isGaussian(value) ? parseGaussian(value)!.mean : parseSampledDistribution(value)!.mean}
-          variance={isGaussian(value) ? parseGaussian(value)!.variance : parseSampledDistribution(value)!.std ** 2}
-          samples={isSampledDistribution(value) ? parseSampledDistribution(value)!.samples : undefined}
-          isGaussian={isGaussian(value)}
+      {showPlot && isGaussian(value as string) && (
+        <GaussianPlot
+          {...parseGaussian(value as string)!}
           onClose={() => setShowPlot(false)}
         />
       )}
