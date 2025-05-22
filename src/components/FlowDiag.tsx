@@ -11,43 +11,170 @@ import  {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react'
-import React, { useCallback, useContext, useEffect } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 
+import { DistributionPlot } from './GaussianPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext'
 
+const parseGaussian = (val: string): { mean: number, variance: number } | null => {
+  const match = val.match(/^N\(μ=(-?\d+\.?\d*),\s*σ²=(-?\d+\.?\d*)\)$/);
+  if (!match) return null;
+  return {
+    mean: parseFloat(match[1]),
+    variance: parseFloat(match[2])
+  };
+};
+
+const isGaussian = (val: any): boolean => {
+  if (typeof val === 'string') {
+    return val.startsWith('N(') && val.endsWith(')');
+  }
+  return false;
+};
+
+const isSampledDistribution = (val: any): boolean => {
+  if (typeof val === 'string') {
+    return val.startsWith('S(') && val.endsWith(')');
+  }
+  return false;
+};
+
+const parseSampledDistribution = (val: any): { mean: number, variance: number } | null => {
+  const match = val.match(/^S\(μ=(-?\d+\.?\d*),\s*σ²=(-?\d+\.?\d*)\)$/);
+  if (!match) return null;
+  return {
+    mean: parseFloat(match[1]),
+    variance: parseFloat(match[2])
+  };
+};
+
+
 const nodeTypes = {
-  formula: ({ data }: { data: { address: string; value: any; type: string; formula: string } }) => (
-    <div style={{
-      padding: '10px',
-      borderRadius: '5px',
-      backgroundColor: '#fff',
-      border: '1px solid #ccc',
-      minWidth: '150px',
-    }}>
-      <Handle type="target" position={Position.Left}/>
-      <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
-      <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
-      <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
-      <div style={{ fontSize: '0.8em', color: '#888' }}>Formula: {data.formula}</div>
-      <Handle type="source" position={Position.Right}/>
-    </div>
-  ),
-  value: ({ data }: { data: { address: string; value: any; type: string } }) => (
-    <div style={{
-      padding: '10px',
-      borderRadius: '5px',
-      backgroundColor: '#f0f8ff',
-      border: '1px solid #ccc',
-      minWidth: '150px',
-    }}>
-      <Handle type="target" position={Position.Left}/>
-      <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
-      <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
-      <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
-      <Handle type="source" position={Position.Right}/>
-    </div>
-  ),
- 
+  formula: ({ data }: { data: { address: string; value: any; type: string; formula: string, samples: any[] } }) => {
+    const [showChart, setShowChart] = useState(false);
+
+    const gaussianData = isGaussian(data.value) ? parseGaussian(data.value) : null;
+    const sampledDistributionData = isSampledDistribution(data.value) ? parseSampledDistribution(data.value) : null;
+    const samples = data.samples
+    return (
+      <div 
+        style={{
+          padding: '10px',
+          borderRadius: '5px',
+          backgroundColor: '#fff',
+          border: '1px solid #ccc',
+          minWidth: '150px',
+          width: showChart ? '400px' : 'auto',
+          transition: 'width 0.3s ease-in-out',
+        }}
+      >
+        <Handle type="target" position={Position.Left}/>
+        <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
+        <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
+        <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
+        <div style={{ fontSize: '0.8em', color: '#888' }}>Formula: {data.formula}</div>
+        {(gaussianData || sampledDistributionData) && (
+          <button
+            onClick={() => setShowChart(!showChart)}
+            style={{
+              marginTop: '8px',
+              padding: '4px 8px',
+              backgroundColor: showChart ? '#1890ff' : '#f0f0f0',
+              color: showChart ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.8em'
+            }}
+          >
+            {showChart ? 'Hide Chart' : 'Show Chart'}
+          </button>
+        )}
+        {showChart && (gaussianData || sampledDistributionData) && (
+          <div style={{ 
+            marginTop: '10px',
+            height: '250px',
+            width: 'calc(100% - 20px)',
+            position: 'relative',
+            marginLeft: 'auto',
+            marginRight: 'auto'
+          }}>
+            <DistributionPlot
+              position={{ top: 0, left: 0 }}
+              mean={gaussianData?.mean ?? sampledDistributionData?.mean ?? 0}
+              variance={gaussianData?.variance ?? sampledDistributionData?.variance ?? 0}
+              samples={samples}
+              onClose={() => setShowChart(false)}
+              isGaussian={!!gaussianData}
+              inline={true}
+            />
+          </div>
+        )}
+        <Handle type="source" position={Position.Right}/>
+      </div>
+    );
+  },
+  value: ({ data }: { data: { address: string; value: any; type: string } }) => {
+    const [showChart, setShowChart] = useState(false);
+
+    const gaussianData = isGaussian(data.value) ? parseGaussian(data.value) : null;
+    
+    return (
+      <div 
+        style={{
+          padding: '10px',
+          borderRadius: '5px',
+          backgroundColor: '#f0f8ff',
+          border: '1px solid #ccc',
+          minWidth: '150px',
+          width: showChart ? '400px' : 'auto',
+          transition: 'width 0.3s ease-in-out',
+        }}
+      >
+        <Handle type="target" position={Position.Left}/>
+        <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
+        <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
+        <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
+        {gaussianData && (
+          <button
+            onClick={() => setShowChart(!showChart)}
+            style={{
+              marginTop: '8px',
+              padding: '4px 8px',
+              backgroundColor: showChart ? '#1890ff' : '#f0f0f0',
+              color: showChart ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.8em'
+            }}
+          >
+            {showChart ? 'Hide Chart' : 'Show Chart'}
+          </button>
+        )}
+        {showChart && gaussianData && (
+          <div style={{ 
+            marginTop: '10px',
+            height: '250px',
+            width: 'calc(100% - 20px)',
+            position: 'relative',
+            marginLeft: 'auto',
+            marginRight: 'auto'
+          }}>
+            <DistributionPlot
+              position={{ top: 0, left: 0 }}
+              mean={gaussianData.mean}
+              variance={gaussianData.variance}
+              onClose={() => setShowChart(false)}
+              isGaussian={true}
+              inline={true}
+            />
+          </div>
+        )}
+        <Handle type="source" position={Position.Right}/>
+      </div>
+    );
+  },
 }
 
 const getVertexAddress = (vertex: any, hfInstance: any): string => {
@@ -144,6 +271,14 @@ const getFormula = (vertex: any, hfInstance: any): string => {
   }
   return ''
 }
+
+const getSamples = (vertex: any): any[] => {
+  if (vertex.cachedCellValue && vertex.cachedCellValue.samples) {
+    return vertex.cachedCellValue.samples
+  }
+  return []
+}
+
 export const FlowDiag: React.FC = () => {
   const { hfInstance } = useContext(SpreadsheetContext)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
@@ -154,7 +289,7 @@ export const FlowDiag: React.FC = () => {
 
     const graph = hfInstance.dependencyGraph.graph
     const graphNodes = graph.getNodes()
-    console.log("graphNodes", graphNodes)
+   
     
     // Create nodes
     const newNodes: Node[] = graphNodes.map((node: any, index: number) => ({
@@ -165,7 +300,8 @@ export const FlowDiag: React.FC = () => {
         address: getVertexAddress(node, hfInstance),
         value: getVertexValue(node),
         type: getVertexType(node),
-        formula: getFormula(node, hfInstance)
+        formula: getFormula(node, hfInstance),
+        samples: getSamples(node)
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,

@@ -10,6 +10,7 @@ interface DistributionPlotProps {
   onClose: () => void;
   position: { top: number; left: number };
   isGaussian: boolean;
+  inline?: boolean;
 }
 
 interface QueryState {
@@ -26,6 +27,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   onClose,
   position,
   isGaussian,
+  inline = false,
 }) => {
   const plotRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -206,6 +208,15 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     <div
       ref={plotRef}
       style={{
+        ...(inline ? 
+        {position: "static",
+        backgroundColor: "transparent",
+        padding: 0,
+        borderRadius: 0,
+        boxShadow: "none",
+        zIndex: "auto",
+        width: "100%",
+        height: "100%"} : {
         position: "absolute",
         top: position.top,
         left: position.left,
@@ -215,7 +226,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
         boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
         zIndex: 1000,
         width: "400px",
-        height: "300px",
+        height: "300px",})
       }}
     >
       <div style={{

@@ -24,7 +24,7 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       licenseKey: 'gpl-v3',
       language: 'enGB',
       useColumnIndex: true,
-      sampleSize: 100000,
+      sampleSize: 10000,
       
     }
 

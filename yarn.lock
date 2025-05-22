@@ -10371,11 +10371,11 @@ __metadata:
 
 "hyperformula@file:hyperformula::locator=probability-spreadsheet-root%40workspace%3A.":
   version: 3.0.0
-  resolution: "hyperformula@file:hyperformula#hyperformula::hash=72cc45&locator=probability-spreadsheet-root%40workspace%3A."
+  resolution: "hyperformula@file:hyperformula#hyperformula::hash=9b13ec&locator=probability-spreadsheet-root%40workspace%3A."
   dependencies:
     chevrotain: "npm:^6.5.0"
     tiny-emitter: "npm:^2.1.0"
-  checksum: 10c0/b73d166bde9b20cf45cba384874ac9c75c06680914d897f0678a998b530991cb359ea1fdb10f53a25b6cfc382b2fa9b8f8cd81c1a5f88f7584ffe20e117a8fe4
+  checksum: 10c0/f40f2641bbf1e260d5e0c29666291bc638fa2f3670a461df5e751fa6448f2caa667fb71404a7bc52648d1963b5db0482c7d732b905fb60f73f7faf192e4089bf
   languageName: node
   linkType: hard
 
