@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
-import { GaussianPlot } from './GaussianPlot'
+import React, { useContext, useRef, useState } from 'react'
 
-type CellValue = string | number | number[] | null;
+import { DistributionPlot } from './GaussianPlot'
+import { SpreadsheetContext } from '../SpreadsheetContext';
+
+type CellValue = string | number | number[] | null | { samples: number[] } | { mean: number, variance: number };
 
 interface CellRendererProps {
   row: number;
@@ -22,12 +24,36 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onContextMenu,
   isSelected = false,
 }) => {
+  const { getCellFormula } = useContext(SpreadsheetContext)
   const [editing, setEditing] = useState(false)
   const [tempValue, setTempValue] = useState('')
   const [showPlot, setShowPlot] = useState(false)
 
   const handleDoubleClick = () => {
-    setTempValue(String(value))
+    const formula = getCellFormula(row, col)
+    if (formula) {
+      setTempValue(formula)
+      setEditing(true)
+      return
+    } 
+    if (isGaussian(value)) {
+      const gaussian = parseGaussian(value)
+      if (gaussian) {
+        setTempValue(`N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`)
+      } else {
+        setTempValue('')
+      }
+    } else if (isSampledDistribution(value)) {
+      const sampled = parseSampledDistribution(value)
+      if (sampled) {
+        const variance = sampled.std * sampled.std;
+        setTempValue(`S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
+      } else {
+        setTempValue('')
+      }
+    } else {
+      setTempValue(value ? String(value) : '')
+    }
     setEditing(true)
   }
 
