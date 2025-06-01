@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react'
+import React, { useContext, useRef, useState } from 'react'
 
 import { DistributionPlot } from './GaussianPlot'
+import { SpreadsheetContext } from '../SpreadsheetContext';
 
 type CellValue = string | number | number[] | null | { samples: number[] } | { mean: number, variance: number };
 
@@ -23,6 +24,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onContextMenu,
   isSelected = false,
 }) => {
+  const { getCellFormula } = useContext(SpreadsheetContext)
   const [editing, setEditing] = useState(false)
   const [tempValue, setTempValue] = useState('')
   const [showPlot, setShowPlot] = useState(false)
@@ -30,6 +32,12 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const cellRef = useRef<HTMLTableCellElement>(null)
 
   const handleDoubleClick = () => {
+    const formula = getCellFormula(row, col)
+    if (formula) {
+      setTempValue(formula)
+      setEditing(true)
+      return
+    } 
     if (isGaussian(value)) {
       const gaussian = parseGaussian(value)
       if (gaussian) {

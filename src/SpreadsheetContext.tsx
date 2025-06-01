@@ -9,11 +9,13 @@ type SheetData = CellContent[][];
 interface SpreadsheetContextValue {
   hfInstance: HyperFormula | null;
   updateCell: (row: number, col: number, value: string) => void;
+  getCellFormula: (row: number, col: number) => string|null;
 }
 
 const SpreadsheetContext = createContext<SpreadsheetContextValue>({
   hfInstance: null,
   updateCell: () => {},
+  getCellFormula: () => null,
 })
 
 export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -63,8 +65,20 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [hfInstance])
 
+  const getCellFormula = useCallback((row: number, col: number) => {
+    if (!hfInstance) return null
+    try {
+      const formula = hfInstance.getCellFormula({ sheet: 0, row, col })
+      console.log('Cell formula:', formula)
+      return formula
+    } catch (error) {
+      console.error('Error getting cell formula:', error)
+      return null
+    }
+  }, [hfInstance])
+
   return (
-    <SpreadsheetContext.Provider value={{ hfInstance, updateCell }}>
+    <SpreadsheetContext.Provider value={{ hfInstance, updateCell, getCellFormula }}>
       {children}
     </SpreadsheetContext.Provider>
   )
