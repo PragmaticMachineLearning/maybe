@@ -15,6 +15,7 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 
 import { DistributionPlot } from './GaussianPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext'
+import { getLayoutedNodes } from './useLayoutNodes'
 
 const parseGaussian = (val: string): { mean: number, variance: number } | null => {
   const match = val.match(/^N\(μ=(-?\d+\.?\d*),\s*σ²=(-?\d+\.?\d*)\)$/);
@@ -284,18 +285,18 @@ export const FlowDiag: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
-  const updateGraphData = useCallback(() => {
+  const updateGraphData = useCallback(async () => {
     if (!hfInstance) return
 
     const graph = hfInstance.dependencyGraph.graph
     const graphNodes = graph.getNodes()
    
     
-    // Create nodes
+    // Create nodes with temporary positions (will be overridden by ELK layout)
     const newNodes: Node[] = graphNodes.map((node: any, index: number) => ({
       id: getVertexId(node, hfInstance),
       type: getVertexType(node).toLowerCase(),
-      position: { x: index * 200, y: index * 100 },
+      position: { x: 0, y: 0 }, // Temporary position - ELK will set the actual position
       data: { 
         address: getVertexAddress(node, hfInstance),
         value: getVertexValue(node),
@@ -307,6 +308,7 @@ export const FlowDiag: React.FC = () => {
       targetPosition: Position.Left,
     }))
     console.log("newNodes", newNodes)
+    
     // Create edges
     const newEdges: Edge[] = []
     graphNodes.forEach((node: any) => {
@@ -328,7 +330,12 @@ export const FlowDiag: React.FC = () => {
       })
     })
     console.log("newEdges", newEdges)
-    setNodes(newNodes)
+    
+    // Apply ELK layout to nodes
+    const layoutedNodes = await getLayoutedNodes(newNodes, newEdges)
+    
+    // Set nodes and edges with layout applied
+    setNodes(layoutedNodes)
     setEdges(newEdges)
   }, [hfInstance, setNodes, setEdges])
 
