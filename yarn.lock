@@ -2732,6 +2732,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/react-table@npm:^8.21.3":
+  version: 8.21.3
+  resolution: "@tanstack/react-table@npm:8.21.3"
+  dependencies:
+    "@tanstack/table-core": "npm:8.21.3"
+  peerDependencies:
+    react: ">=16.8"
+    react-dom: ">=16.8"
+  checksum: 10c0/85d1d0fcb690ecc011f68a5a61c96f82142e31a0270dcf9cbc699a6f36715b1653fe6ff1518302a6d08b7093351fc4cabefd055a7db3cd8ac01e068956b0f944
+  languageName: node
+  linkType: hard
+
+"@tanstack/table-core@npm:8.21.3":
+  version: 8.21.3
+  resolution: "@tanstack/table-core@npm:8.21.3"
+  checksum: 10c0/40e3560e6d55e07cc047024aa7f83bd47a9323d21920d4adabba8071fd2d21230c48460b26cedf392588f8265b9edc133abb1b0d6d0adf4dae0970032900a8c9
+  languageName: node
+  linkType: hard
+
 "@tootallnate/once@npm:1":
   version: 1.1.2
   resolution: "@tootallnate/once@npm:1.1.2"
@@ -10378,11 +10397,11 @@ __metadata:
 
 "hyperformula@file:hyperformula::locator=probability-spreadsheet-root%40workspace%3A.":
   version: 3.0.0
-  resolution: "hyperformula@file:hyperformula#hyperformula::hash=2421de&locator=probability-spreadsheet-root%40workspace%3A."
+  resolution: "hyperformula@file:hyperformula#hyperformula::hash=0c1f49&locator=probability-spreadsheet-root%40workspace%3A."
   dependencies:
     chevrotain: "npm:^6.5.0"
     tiny-emitter: "npm:^2.1.0"
-  checksum: 10c0/223fef849fe66647c65969198f7aa1163683bdf268b77a3ab0f8e826372f09cd9f40e2be89431e6090d3088c4d3d33c2f98d96c23cbe4c53457c672bbd5c96a3
+  checksum: 10c0/1a89c22e247635381639ae58728535169db8eae34aac23ef2a9ea7ba861b5bb9c7f06c0e874817bc09d8900577fe18924699ce34e54a0d95271ca5a5e3f716bd
   languageName: node
   linkType: hard
 
@@ -14996,6 +15015,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "probability-spreadsheet-root@workspace:."
   dependencies:
+    "@tanstack/react-table": "npm:^8.21.3"
     "@types/gaussian": "npm:^1.2.1"
     "@types/react": "npm:^18.2.43"
     "@types/react-dom": "npm:^18.2.17"
