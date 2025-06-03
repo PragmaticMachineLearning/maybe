@@ -29,7 +29,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [tempValue, setTempValue] = useState('')
   const [showPlot, setShowPlot] = useState(false)
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 })
-  const cellRef = useRef<HTMLTableCellElement>(null)
+  const cellRef = useRef<HTMLDivElement>(null)
 
   const handleDoubleClick = () => {
     const formula = getCellFormula(row, col)
@@ -162,13 +162,12 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
 
   return (
     <>
-      <td 
+      <div 
         ref={cellRef}
         onClick={onClick}
         onContextMenu={handleCustomContextMenu}
         onDoubleClick={handleDoubleClick}
         style={{ 
-          border: '1px solid #ddd',
           padding: '4px 8px',
           minWidth: '100px',
           height: '24px',
@@ -177,7 +176,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           cursor: 'pointer',
           transition: 'background-color 0.2s',
           position: 'relative',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {editing ? (
@@ -217,7 +218,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             {formatValue(value)}
           </span>
         )}
-      </td>
+      </div>
       {showPlot && (isGaussian(value) || isSampledDistribution(value)) && (
         <DistributionPlot
           position={plotPosition}

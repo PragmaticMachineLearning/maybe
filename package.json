@@ -16,6 +16,7 @@
     "build:hyperformula": "cd hyperformula && yarn compile && yarn bundle:es && yarn bundle:development && cd .."
   },
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
     "@xyflow/react": "^12.6.4",
     "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",
