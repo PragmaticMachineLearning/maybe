@@ -1,37 +1,54 @@
-import React, { useState, useContext } from 'react'
-import { SpreadsheetProvider, SpreadsheetContext } from './SpreadsheetContext'
+import React, { useState } from 'react'
+
+import { FlowDiag } from './components/FlowDiag'
+import { FormulaBar } from './components/FormulaBar'
 import { Spreadsheet } from './components/Spreadsheet'
+import { SpreadsheetProvider } from './SpreadsheetContext'
+import { Toolbar } from './components/Toolbar'
 
 const SpreadsheetWithWizard: React.FC = () => {
-  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
-
+  const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>({ row: 0, col: 0 })
+  const [useflowDiag, setUseFlowDiag] = useState<boolean>(false)
   const handleCellSelect = (row: number, col: number) => {
     setSelectedCell({ row, col })
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <header style={{ marginBottom: '20px' }}>
-        <h1 style={{ margin: 0 }}>Probability Distribution Spreadsheet</h1>
-        {selectedCell && (
-          <span style={{ color: '#666', fontSize: '14px', marginTop: '8px', display: 'block' }}>
-            Selected: {String.fromCharCode(65 + selectedCell.col)}{selectedCell.row + 1}
-          </span>
-        )}
+    <div style={{ padding: '20px', paddingTop: '30px' }}>
+     
+      <header style={{ marginBottom: '4px' }}>
+          
+        <Toolbar 
+          useFlowDiag={useflowDiag} 
+          onToggleFlowDiag={() => setUseFlowDiag(!useflowDiag)} 
+        />
+        
       </header>
 
-      <Spreadsheet 
-        rows={20} 
-        columns={10} 
-        onCellSelect={handleCellSelect}
-        selectedCell={selectedCell}
-      />
+      {!useflowDiag && (
+        <FormulaBar 
+          selectedCell={selectedCell}
+          onFormulaSubmit={(row, col, formula) => {
+            // This will be handled by the FormulaBar component itself via the SpreadsheetContext
+            // We could add additional logic here if needed
+            console.log(`Formula submitted for ${String.fromCharCode(65 + col)}${row + 1}: ${formula}`)
+          }}
+        />
+      )}
+
+      {useflowDiag ? (
+        <FlowDiag/>
+      ) : (
+        <Spreadsheet rows={50} columns={26} onCellSelect={handleCellSelect} selectedCell={selectedCell} />
+      )}
     </div>
   )
 }
 
 export const App: React.FC = () => (
-  <SpreadsheetProvider>
-    <SpreadsheetWithWizard />
-  </SpreadsheetProvider>
+  
+    <SpreadsheetProvider>
+      <SpreadsheetWithWizard />
+    </SpreadsheetProvider>
+  
 )

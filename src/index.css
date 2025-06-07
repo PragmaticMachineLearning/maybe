@@ -4,14 +4,52 @@
   line-height: 1.5;
   font-weight: 400;
 
+  /* Light theme variables */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-surface: #ffffff;
+  --bg-header: #f5f5f5;
+  --bg-hover: #f9fafb;
+  --text-primary: #213547;
+  --text-secondary: #333333;
+  --text-muted: #6b7280;
+  --border-color: #ddd;
+  --border-header: #ccc;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-hover: rgba(0, 0, 0, 0.15);
+  --resize-handle: #ddd;
+  --resize-handle-active: #007acc;
+  --resize-handle-bg: rgba(0, 122, 204, 0.1);
+
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark theme variables */
+:root.dark {
+  --bg-primary: #1f2937;
+  --bg-secondary: #111827;
+  --bg-surface: #1f2937;
+  --bg-header: #374151;
+  --bg-hover: #2d3748;
+  --text-primary: #f9fafb;
+  --text-secondary: #e5e7eb;
+  --text-muted: #9ca3af;
+  --border-color: #4b5563;
+  --border-header: #6b7280;
+  --shadow: rgba(0, 0, 0, 0.3);
+  --shadow-hover: rgba(0, 0, 0, 0.4);
+  --resize-handle: #6b7280;
+  --resize-handle-active: #3b82f6;
+  --resize-handle-bg: rgba(59, 130, 246, 0.1);
+
+  color-scheme: dark;
 }
 
 a {
@@ -27,18 +65,24 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f8f9fa;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1 {
   font-size: 2em;
   line-height: 1.1;
   margin: 0 0 1rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 button {
   font-family: inherit;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
 }
 
 button:hover {
@@ -47,40 +91,98 @@ button:hover {
 
 /* Spreadsheet specific styles */
 .spreadsheet-table {
-  background: white;
+  background: var(--bg-surface);
   border-collapse: collapse;
   width: 100%;
 }
 
 .spreadsheet-table th,
 .spreadsheet-table td {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   padding: 8px;
   text-align: left;
+  color: var(--text-primary);
 }
 
 .spreadsheet-table th {
-  background-color: #f5f5f5;
+  background-color: var(--bg-header);
   font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Column resize handle styles */
+th:hover .resizer {
+  border-right: 2px solid var(--resize-handle) !important;
+}
+
+th .resizer:hover {
+  border-right: 2px solid var(--resize-handle-active) !important;
+}
+
+th .resizer.isResizing {
+  border-right: 2px solid var(--resize-handle-active) !important;
+  background-color: var(--resize-handle-bg);
+}
+
+/* Make resize handles more visible on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  th .resizer {
+    border-right: 2px solid var(--resize-handle) !important;
+    width: 8px;
+  }
 }
 
 /* Distribution wizard styles */
 .distribution-wizard {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px var(--shadow);
   padding: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+/* Dark mode adjustments for inputs and form elements */
+:root.dark input,
+:root.dark select,
+:root.dark textarea {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+:root.dark input:focus,
+:root.dark select:focus,
+:root.dark textarea:focus {
+  border-color: var(--resize-handle-active);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--resize-handle-bg);
+}
+
+/* Scrollbar styling for dark mode */
+:root.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+:root.dark ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+:root.dark ::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+:root.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--border-header);
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
   }
   a:hover {
     color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
   }
 }

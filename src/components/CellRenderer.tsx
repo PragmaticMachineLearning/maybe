@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 
 import { DistributionPlot } from './GaussianPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext';
@@ -24,12 +24,26 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onContextMenu,
   isSelected = false,
 }) => {
-  const { getCellFormula } = useContext(SpreadsheetContext)
+  const { getCellFormula, liveEditingState, setLiveEditingState } = useContext(SpreadsheetContext)
   const [editing, setEditing] = useState(false)
   const [tempValue, setTempValue] = useState('')
   const [showPlot, setShowPlot] = useState(false)
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 })
   const cellRef = useRef<HTMLDivElement>(null)
+
+  // Update live editing state whenever tempValue changes
+  useEffect(() => {
+    if (editing) {
+      setLiveEditingState({ row, col, value: tempValue })
+    }
+  }, [editing, tempValue, row, col, setLiveEditingState])
+
+  // Clear live editing state when cell stops editing
+  useEffect(() => {
+    if (!editing && liveEditingState?.row === row && liveEditingState?.col === col) {
+      setLiveEditingState(null)
+    }
+  }, [editing, row, col, liveEditingState, setLiveEditingState])
 
   const handleDoubleClick = () => {
     const formula = getCellFormula(row, col)
@@ -48,8 +62,14 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     } else if (isSampledDistribution(value)) {
       const sampled = parseSampledDistribution(value)
       if (sampled) {
-        const variance = sampled.std * sampled.std;
-        setTempValue(`S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`)
+        const sortedSamples = sampled.samples.sort((a, b) => a - b)
+        const n = sortedSamples.length
+        const lowerIndex = Math.floor(n * 0.025)
+        const upperIndex = Math.floor(n * 0.975)
+        const lowerBound = sortedSamples[lowerIndex]
+        const upperBound = sortedSamples[upperIndex]
+        console.log("lowerBound", lowerBound, "upperBound", upperBound)
+        setTempValue(`S(95% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}])`)
       } else {
         setTempValue('')
       }
@@ -62,6 +82,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const handleBlur = () => {
     onEdit(row, col, tempValue)
     setEditing(false)
+  }
+
+  const handleTempValueChange = (newValue: string) => {
+    setTempValue(newValue)
+    // The useEffect above will automatically update the live editing state
   }
 
   const isGaussian = (val: unknown): boolean => {
@@ -152,8 +177,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if (isSampledDistribution(val)) {
       const sampled = parseSampledDistribution(val);
       if (sampled) {
-        const variance = sampled.std * sampled.std;
-        return `S(μ=${sampled.mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
+        const sortedSamples = sampled.samples.sort((a, b) => a - b)
+        const n = sortedSamples.length
+        const lowerIndex = Math.floor(n * 0.025)
+        const upperIndex = Math.floor(n * 0.975)
+        const lowerBound = sortedSamples[lowerIndex]
+        const upperBound = sortedSamples[upperIndex]
+        return `S(95% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}])`
       }
     }
     
@@ -168,24 +198,26 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         onContextMenu={handleCustomContextMenu}
         onDoubleClick={handleDoubleClick}
         style={{ 
-          padding: '4px 8px',
-          minWidth: '100px',
-          height: '24px',
-          backgroundColor: isSelected ? '#e3f2fd' : 'white',
-          color: '#333',
+          padding: '2px 4px',
+          height: '20px',
+          backgroundColor: isSelected ? 'var(--resize-handle-bg)' : 'var(--bg-surface)',
+          color: 'var(--text-primary)',
           cursor: 'pointer',
           transition: 'background-color 0.2s',
           position: 'relative',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           width: '100%',
           boxSizing: 'border-box',
+          fontSize: '12px',
+          borderRight:'1px solid var(--border-color)',
+          borderBottom:'1px solid var(--border-color)',
         }}
       >
         {editing ? (
           <input
             autoFocus
             value={tempValue}
-            onChange={(e) => setTempValue(e.target.value)}
+            onChange={(e) => handleTempValueChange(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleBlur()
@@ -201,7 +233,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
               position: 'absolute',
               top: 0,
               left: 0,
-              color: '#333',
+              color: 'var(--text-primary)',
               fontFamily: 'inherit',
               fontSize: 'inherit'
             }}
@@ -213,7 +245,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            color: '#333'
+            color: 'var(--text-primary)'
           }}>
             {formatValue(value)}
           </span>

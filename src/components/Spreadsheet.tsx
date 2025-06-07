@@ -63,9 +63,20 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     hfInstance.on("valuesUpdated", updateCellData);
 
     return () => {
-      hfInstance.off("valuesUpdated", updateCellData);
-    };
-  }, [hfInstance, rows, columns]);
+      hfInstance.off('valuesUpdated', updateCellData)
+    }
+  }, [hfInstance, rows, columns])
+  
+  const getColumnName = (index: number): string => {
+    let result = '';
+    let num = index;
+
+    while (num >= 0){
+      result = String.fromCharCode(65 + (num % 26)) + result;
+      num = Math.floor(num / 26) - 1;
+    }
+    return result;
+  }
 
   // Convert 2D array data to row objects for TanStack Table
   const tableData = useMemo(() => {
@@ -73,7 +84,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     for (let r = 0; r < rows; r++) {
       const row: SpreadsheetRow = { rowIndex: r }
       for (let c = 0; c < columns; c++) {
-        const columnKey = String.fromCharCode(65 + c) // A, B, C, etc.
+        const columnKey = getColumnName(c) // A, B, C, etc.
         row[columnKey] = cellData[r]?.[c]
       }
       data.push(row)
@@ -94,14 +105,15 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
           {row.original.rowIndex + 1}
         </div>
       ),
-      size: 50,
+      size: 20,
       enableSorting: false,
       enableColumnFilter: false,
+      enableResizing: false, // Don't allow resizing the row number column
     })
 
     // Data columns (A, B, C, etc.)
     for (let c = 0; c < columns; c++) {
-      const columnKey = String.fromCharCode(65 + c)
+      const columnKey = getColumnName(c)
       cols.push({
         id: columnKey,
         header: columnKey,
@@ -123,9 +135,12 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
             />
           )
         },
-        size: 120,
-        enableSorting: false,
-        enableColumnFilter: false,
+        size: 60,
+        minSize: 40,
+        maxSize: 400,
+        enableSorting: true,
+        enableColumnFilter: true,
+        enableResizing: true, // Enable resizing for data columns
       })
     }
 
@@ -145,6 +160,8 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     enableFilters: false,
     enableColumnFilters: false,
     enableGlobalFilter: false,
+    enableColumnResizing: true, // Enable column resizing
+    columnResizeMode: 'onChange', // Update column size while dragging
     // Provide our update function to table meta
     meta: {
       updateData: handleCellValueChange,
@@ -154,7 +171,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
   })
 
   return (
-    <div style={{ overflowX: "auto", padding: "20px" }}>
+    <div style={{ overflowX: 'auto', overflowY: 'auto' }}>
       <table style={tableStyle}>
         <thead>
           {table.getHeaderGroups().map(headerGroup => (
@@ -165,6 +182,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
                   style={{
                     ...headerStyle,
                     width: header.getSize(),
+                    position: 'relative',
                   }}
                 >
                   {header.isPlaceholder
@@ -173,6 +191,15 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
                         header.column.columnDef.header,
                         header.getContext()
                       )}
+                  {/* Resize handle */}
+                  {header.column.getCanResize() && (
+                    <div
+                      onMouseDown={header.getResizeHandler()}
+                      onTouchStart={header.getResizeHandler()}
+                      style={resizeHandleStyle}
+                      className={`resizer ${header.column.getIsResizing() ? 'isResizing' : ''}`}
+                    />
+                  )}
                 </th>
               ))}
             </tr>
@@ -187,7 +214,10 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
                   style={{
                     width: cell.column.getSize(),
                     padding: 0,
-                    border: '1px solid #ddd',
+                    border: '1px solid var(--border-color)',
+
+                    borderColor: 'collapse',
+                    position: 'relative',
                   }}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -202,32 +232,57 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
 };
 
 const tableStyle = {
-  borderCollapse: "collapse" as const,
-  width: "100%",
-  minWidth: "600px",
-  backgroundColor: "white",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-};
+  borderCollapse: 'collapse' as const,
+  width: '100%',
+  minWidth: '600px',
+  backgroundColor: 'var(--bg-surface)',
+  boxShadow: '0 1px 3px var(--shadow)',
+  tableLayout: 'fixed' as const, // Important for column resizing
+  border: '1px solid var(--border-color)',
+}
 
 const headerStyle = {
-  backgroundColor: "#f5f5f5",
-  border: "1px solid #ccc",
-  padding: "4px 8px",
-  textAlign: "center" as const,
-  fontWeight: "bold" as const,
-  position: "sticky" as const,
+  backgroundColor: 'var(--bg-header)',
+  border: '1px solid var(--border-header)',
+  borderRight:'1px solid var(--border-color)',
+  borderBottom:'1px solid var(--border-color)',
+  padding: '4px 8px',
+  textAlign: 'center' as const,
+  fontWeight: 'normal' as const,
+  fontSize: '12px',
+  position: 'sticky' as const,
   top: 0,
-  zIndex: 1
+  zIndex: 1,
+  color: 'var(--text-secondary)', // Use CSS variable for theme support
 }
 
 const headerCellStyle = {
-  backgroundColor: '#f5f5f5',
-  border: 'none',
-  padding: '4px 8px',
+  backgroundColor: 'var(--bg-header)',
+  border: '1px solid var(--border-color)',
+  borderRight:'1px solid var(--border-color)',
+  borderBottom:'1px solid var(--border-color)',
+  padding: '2px 4px',
   textAlign: 'center' as const,
-  fontWeight: 'bold' as const,
-  height: '24px',
+  fontWeight: 'normal' as const,
+  fontSize: '12px',
+  height: '20px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  color: 'var(--text-secondary)', // Use CSS variable for theme support
+}
+
+const resizeHandleStyle = {
+  position: 'absolute' as const,
+  right: 0,
+  top: 0,
+  height: '100%',
+  width: '6px',
+  backgroundColor: 'transparent',
+  cursor: 'col-resize',
+  userSelect: 'none' as const,
+  touchAction: 'none',
+  borderRight: '2px solid transparent',
+  transition: 'border-color 0.2s ease',
+  zIndex: 2,
 }
