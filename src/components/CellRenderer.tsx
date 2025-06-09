@@ -5,6 +5,20 @@ import { SpreadsheetContext } from '../SpreadsheetContext';
 
 type CellValue = string | number | number[] | null | { samples: number[] } | { mean: number, variance: number };
 
+// Distribution view options for the dropdown
+enum DistributionViewType {
+  CONFIDENCE_INTERVAL = 'confidence_interval',
+  MEAN_STD = 'mean_std',
+  GAUSSIAN_NOTATION = 'gaussian_notation',
+  PERCENTILES = 'percentiles',
+}
+
+interface DistributionViewOptions {
+  type: DistributionViewType;
+  confidenceLevel?: number;
+  percentileLevel?: number;
+}
+
 interface CellRendererProps {
   row: number;
   col: number;
@@ -29,7 +43,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [tempValue, setTempValue] = useState('')
   const [showPlot, setShowPlot] = useState(false)
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 })
+  const [showViewDropdown, setShowViewDropdown] = useState(false)
+  const [viewOptions, setViewOptions] = useState<DistributionViewOptions>({
+    type: DistributionViewType.GAUSSIAN_NOTATION,
+    confidenceLevel: 95
+  })
   const cellRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Update live editing state whenever tempValue changes
   useEffect(() => {
@@ -45,6 +65,20 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
   }, [editing, row, col, liveEditingState, setLiveEditingState])
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowViewDropdown(false)
+      }
+    }
+
+    if (showViewDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showViewDropdown])
+
   const handleDoubleClick = () => {
     const formula = getCellFormula(row, col)
     if (formula) {
@@ -55,21 +89,16 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if (isGaussian(value)) {
       const gaussian = parseGaussian(value)
       if (gaussian) {
-        setTempValue(`N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`)
+        const gaussianDistRepresentation = `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
+        setTempValue(gaussianDistRepresentation)
       } else {
         setTempValue('')
       }
     } else if (isSampledDistribution(value)) {
       const sampled = parseSampledDistribution(value)
       if (sampled) {
-        const sortedSamples = sampled.samples.sort((a, b) => a - b)
-        const n = sortedSamples.length
-        const lowerIndex = Math.floor(n * 0.025)
-        const upperIndex = Math.floor(n * 0.975)
-        const lowerBound = sortedSamples[lowerIndex]
-        const upperBound = sortedSamples[upperIndex]
-        console.log("lowerBound", lowerBound, "upperBound", upperBound)
-        setTempValue(`S(95% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}])`)
+        const sampledDistRepresentation = `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
+        setTempValue(sampledDistRepresentation)
       } else {
         setTempValue('')
       }
@@ -162,14 +191,31 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
   }
 
-  const formatValue = (val: CellValue): string => {
+  const formatValue = (val: CellValue, options: DistributionViewOptions): string => {
     if (!val) return '';
     
     // Format GaussianNumber objects
     if (isGaussian(val)) {
       const gaussian = parseGaussian(val);
       if (gaussian) {
-        return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
+        switch (options.type) {
+          case DistributionViewType.GAUSSIAN_NOTATION:
+            return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
+          case DistributionViewType.MEAN_STD:
+            const std = Math.sqrt(gaussian.variance);
+            return `μ=${gaussian.mean.toFixed(2)} ± ${std.toFixed(2)}`;
+          case DistributionViewType.CONFIDENCE_INTERVAL:
+            const confidenceLevel = options.confidenceLevel || 95;
+            const zScore = getZScore(confidenceLevel / 100);
+            const margin = zScore * Math.sqrt(gaussian.variance);
+            return `${confidenceLevel}% CI [${(gaussian.mean - margin).toFixed(2)}, ${(gaussian.mean + margin).toFixed(2)}]`;
+          case DistributionViewType.PERCENTILES:
+            const p25 = gaussian.mean - 0.674 * Math.sqrt(gaussian.variance); // Approx 25th percentile
+            const p75 = gaussian.mean + 0.674 * Math.sqrt(gaussian.variance); // Approx 75th percentile
+            return `P25-P75: [${p25.toFixed(2)}, ${p75.toFixed(2)}]`;
+          default:
+            return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
+        }
       }
     }
     
@@ -177,18 +223,51 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if (isSampledDistribution(val)) {
       const sampled = parseSampledDistribution(val);
       if (sampled) {
-        const sortedSamples = sampled.samples.sort((a, b) => a - b)
-        const n = sortedSamples.length
-        const lowerIndex = Math.floor(n * 0.025)
-        const upperIndex = Math.floor(n * 0.975)
-        const lowerBound = sortedSamples[lowerIndex]
-        const upperBound = sortedSamples[upperIndex]
-        return `S(95% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}])`
+        const sortedSamples = sampled.samples.sort((a, b) => a - b);
+        const n = sortedSamples.length;
+        
+        switch (options.type) {
+          case DistributionViewType.CONFIDENCE_INTERVAL:
+            const confidenceLevel = options.confidenceLevel || 95;
+            const lowerIndex = Math.floor(n * (1 - confidenceLevel / 100) / 2);
+            const upperIndex = Math.floor(n * (1 + confidenceLevel / 100) / 2);
+            const lowerBound = sortedSamples[lowerIndex];
+            const upperBound = sortedSamples[upperIndex];
+            return `${confidenceLevel}% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}]`;
+          case DistributionViewType.MEAN_STD:
+            return `μ=${sampled.mean.toFixed(2)} ± ${sampled.std.toFixed(2)}`;
+          case DistributionViewType.PERCENTILES:
+            const p25 = sortedSamples[Math.floor(n * 0.25)];
+            const p75 = sortedSamples[Math.floor(n * 0.75)];
+            return `P25-P75: [${p25.toFixed(2)}, ${p75.toFixed(2)}]`;
+          case DistributionViewType.GAUSSIAN_NOTATION:
+            return `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
+          default:
+            return `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
+        }
       }
     }
     
     return String(val);
   }
+
+  // Helper function to get Z-score for confidence intervals
+  const getZScore = (confidence: number): number => {
+    // Simplified Z-score lookup for common confidence levels
+    const zScores: { [key: number]: number } = {
+      0.90: 1.645,
+      0.95: 1.96,
+      0.99: 2.576
+    };
+    return zScores[confidence] || 1.96; // Default to 95% CI
+  }
+
+  const handleViewOptionChange = (newOptions: DistributionViewOptions) => {
+    setViewOptions(newOptions);
+    setShowViewDropdown(false);
+  }
+
+  const isDistribution = isGaussian(value) || isSampledDistribution(value);
 
   return (
     <>
@@ -211,6 +290,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           fontSize: '12px',
           borderRight:'1px solid var(--border-color)',
           borderBottom:'1px solid var(--border-color)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}
       >
         {editing ? (
@@ -240,15 +322,117 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             aria-label={`Cell ${String.fromCharCode(65 + col)}${row + 1}`}
           />
         ) : (
-          <span style={{
-            display: 'block',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            color: 'var(--text-primary)'
-          }}>
-            {formatValue(value)}
-          </span>
+          <>
+            <span style={{
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              color: 'var(--text-primary)',
+              flex: 1
+            }}>
+              {formatValue(value, viewOptions)}
+            </span>
+            {isDistribution && !editing && (
+              <div style={{ position: 'relative', marginLeft: '4px' }} ref={dropdownRef}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowViewDropdown(!showViewDropdown);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    color: 'var(--text-secondary)',
+                    fontSize: '10px',
+                    opacity: 0.7,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                  title="Change view"
+                >
+                  ▼
+                </button>
+                {showViewDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    zIndex: 1000,
+                    minWidth: '180px',
+                    fontSize: '12px'
+                  }}>
+                    <div style={{ padding: '4px 0' }}>
+                      <button
+                        onClick={() => handleViewOptionChange({ type: DistributionViewType.CONFIDENCE_INTERVAL, confidenceLevel: 95 })}
+                        style={{
+                          width: '100%',
+                          padding: '6px 12px',
+                          border: 'none',
+                          background: viewOptions.type === DistributionViewType.CONFIDENCE_INTERVAL ? 'var(--bg-accent)' : 'transparent',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: 'inherit'
+                        }}
+                      >
+                        95% Confidence Interval
+                      </button>
+                      <button
+                        onClick={() => handleViewOptionChange({ type: DistributionViewType.MEAN_STD })}
+                        style={{
+                          width: '100%',
+                          padding: '6px 12px',
+                          border: 'none',
+                          background: viewOptions.type === DistributionViewType.MEAN_STD ? 'var(--bg-accent)' : 'transparent',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: 'inherit'
+                        }}
+                      >
+                        Mean ± Std Dev
+                      </button>
+                                             {(isGaussian(value) || isSampledDistribution(value)) && (
+                         <button
+                           onClick={() => handleViewOptionChange({ type: DistributionViewType.GAUSSIAN_NOTATION })}
+                           style={{
+                             width: '100%',
+                             padding: '6px 12px',
+                             border: 'none',
+                             background: viewOptions.type === DistributionViewType.GAUSSIAN_NOTATION ? 'var(--bg-accent)' : 'transparent',
+                             textAlign: 'left',
+                             cursor: 'pointer',
+                             fontSize: 'inherit'
+                           }}
+                         >
+                           Gaussian Notation
+                         </button>
+                       )}
+                      <button
+                        onClick={() => handleViewOptionChange({ type: DistributionViewType.PERCENTILES })}
+                        style={{
+                          width: '100%',
+                          padding: '6px 12px',
+                          border: 'none',
+                          background: viewOptions.type === DistributionViewType.PERCENTILES ? 'var(--bg-accent)' : 'transparent',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: 'inherit'
+                        }}
+                      >
+                        Percentiles (25th-75th)
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
       {showPlot && (isGaussian(value) || isSampledDistribution(value)) && (
