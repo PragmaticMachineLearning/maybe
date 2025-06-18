@@ -18,7 +18,7 @@ const formatCellValue = (value: any): string => {
     // Check for GaussianNumber pattern
     if (typeof value.mean === 'number' && typeof value.variance === 'number') {
      
-      return `N(μ=${value.mean}, σ²=${value.variance})`
+      return `N(μ=${value.mean.toFixed(2)}, σ²=${value.variance.toFixed(2)})`
     }
     
    

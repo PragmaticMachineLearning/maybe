@@ -5,6 +5,81 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
+    <script>
+      // Bullet-proof theme script - runs before first paint to prevent flash
+      (function() {
+        const THEME_KEY = 'theme';
+        const THEME_LIGHT = 'light';
+        const THEME_DARK = 'dark';
+        const THEME_SYSTEM = 'system';
+        
+        function getSystemTheme() {
+          return window.matchMedia('(prefers-color-scheme: dark)').matches ? THEME_DARK : THEME_LIGHT;
+        }
+        
+        function getStoredTheme() {
+          try {
+            return localStorage.getItem(THEME_KEY);
+          } catch (e) {
+            return null;
+          }
+        }
+        
+        function resolveTheme(theme) {
+          if (theme === THEME_SYSTEM || !theme) {
+            return getSystemTheme();
+          }
+          return theme === THEME_DARK ? THEME_DARK : THEME_LIGHT;
+        }
+        
+        function applyTheme(theme) {
+          const resolvedTheme = resolveTheme(theme);
+          const root = document.documentElement;
+          
+          if (resolvedTheme === THEME_DARK) {
+            root.classList.add('dark');
+            root.style.colorScheme = 'dark';
+          } else {
+            root.classList.remove('dark');
+            root.style.colorScheme = 'light';
+          }
+        }
+        
+        // Initialize theme immediately
+        const storedTheme = getStoredTheme();
+        applyTheme(storedTheme);
+        
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+          const currentTheme = getStoredTheme();
+          if (currentTheme === THEME_SYSTEM || !currentTheme) {
+            applyTheme(THEME_SYSTEM);
+          }
+        });
+        
+        // Expose theme utilities to window for React hook
+        window.__theme = {
+          get: function() {
+            return getStoredTheme() || THEME_SYSTEM;
+          },
+          set: function(theme) {
+            try {
+              if (theme === THEME_SYSTEM) {
+                localStorage.removeItem(THEME_KEY);
+              } else {
+                localStorage.setItem(THEME_KEY, theme);
+              }
+              applyTheme(theme);
+            } catch (e) {
+              console.warn('Failed to save theme preference:', e);
+            }
+          },
+          getResolved: function() {
+            return resolveTheme(getStoredTheme());
+          }
+        };
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

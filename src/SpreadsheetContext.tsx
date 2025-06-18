@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react'
 
 // Import from the workspace package
-import { HyperFormula } from 'hyperformula'
+import { HyperFormula } from 'gaussformula'
 
 type CellContent = string | number | null;
 type SheetData = CellContent[][];

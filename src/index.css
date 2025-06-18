@@ -67,7 +67,7 @@ body {
   min-height: 100vh;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  /* No transition for instant theme switching */
 }
 
 h1 {
@@ -176,6 +176,24 @@ th .resizer.isResizing {
 :root.dark ::-webkit-scrollbar-thumb:hover {
   background: var(--border-header);
 }
+
+/* Selective transitions for smooth UX without slowing theme switching */
+button,
+input,
+select,
+textarea {
+  transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+}
+
+/* Theme-aware Tailwind utilities - for when you want to use Tailwind classes */
+.dark .bg-white { background-color: var(--bg-surface); }
+.dark .bg-gray-50 { background-color: var(--bg-secondary); }
+.dark .bg-gray-100 { background-color: var(--bg-hover); }
+.dark .text-gray-900 { color: var(--text-primary); }
+.dark .text-gray-600 { color: var(--text-secondary); }
+.dark .text-gray-500 { color: var(--text-muted); }
+.dark .border-gray-200 { border-color: var(--border-color); }
+.dark .border-gray-300 { border-color: var(--border-header); }
 
 @media (prefers-color-scheme: light) {
   :root {
