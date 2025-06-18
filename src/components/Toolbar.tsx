@@ -1,4 +1,5 @@
 import React from 'react'
+import { ThemeToggle } from './ThemeToggle'
 
 interface ToolbarProps {
   useFlowDiag: boolean
@@ -82,6 +83,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag 
           )}
         </svg>
       </button>
+
+      {/* Theme Toggle */}
+      <div style={{ 
+        marginLeft: 'auto',
+        display: 'flex',
+        alignItems: 'center'
+      }}>
+        <ThemeToggle showLabel={false} />
+      </div>
     </div>
   )
 } 

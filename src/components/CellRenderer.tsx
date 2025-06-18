@@ -10,13 +10,11 @@ enum DistributionViewType {
   CONFIDENCE_INTERVAL = 'confidence_interval',
   MEAN_STD = 'mean_std',
   GAUSSIAN_NOTATION = 'gaussian_notation',
-  PERCENTILES = 'percentiles',
 }
 
 interface DistributionViewOptions {
   type: DistributionViewType;
   confidenceLevel?: number;
-  percentileLevel?: number;
 }
 
 interface CellRendererProps {
@@ -45,7 +43,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 })
   const [showViewDropdown, setShowViewDropdown] = useState(false)
   const [viewOptions, setViewOptions] = useState<DistributionViewOptions>({
-    type: DistributionViewType.GAUSSIAN_NOTATION,
+    type: DistributionViewType.CONFIDENCE_INTERVAL,
     confidenceLevel: 95
   })
   const cellRef = useRef<HTMLDivElement>(null)
@@ -198,6 +196,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if (isGaussian(val)) {
       const gaussian = parseGaussian(val);
       if (gaussian) {
+        
         switch (options.type) {
           case DistributionViewType.GAUSSIAN_NOTATION:
             return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
@@ -209,10 +208,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             const zScore = getZScore(confidenceLevel / 100);
             const margin = zScore * Math.sqrt(gaussian.variance);
             return `${confidenceLevel}% CI [${(gaussian.mean - margin).toFixed(2)}, ${(gaussian.mean + margin).toFixed(2)}]`;
-          case DistributionViewType.PERCENTILES:
-            const p25 = gaussian.mean - 0.674 * Math.sqrt(gaussian.variance); // Approx 25th percentile
-            const p75 = gaussian.mean + 0.674 * Math.sqrt(gaussian.variance); // Approx 75th percentile
-            return `P25-P75: [${p25.toFixed(2)}, ${p75.toFixed(2)}]`;
           default:
             return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
         }
@@ -236,10 +231,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             return `${confidenceLevel}% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}]`;
           case DistributionViewType.MEAN_STD:
             return `μ=${sampled.mean.toFixed(2)} ± ${sampled.std.toFixed(2)}`;
-          case DistributionViewType.PERCENTILES:
-            const p25 = sortedSamples[Math.floor(n * 0.25)];
-            const p75 = sortedSamples[Math.floor(n * 0.75)];
-            return `P25-P75: [${p25.toFixed(2)}, ${p75.toFixed(2)}]`;
           case DistributionViewType.GAUSSIAN_NOTATION:
             return `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
           default:
@@ -360,7 +351,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                     position: 'absolute',
                     top: '100%',
                     right: 0,
-                    backgroundColor: 'white',
+                    backgroundColor: 'var(--bg-surface)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '4px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
@@ -375,7 +366,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                           width: '100%',
                           padding: '6px 12px',
                           border: 'none',
-                          background: viewOptions.type === DistributionViewType.CONFIDENCE_INTERVAL ? 'var(--bg-accent)' : 'transparent',
+                          background: viewOptions.type === DistributionViewType.CONFIDENCE_INTERVAL ? 'var(--resize-handle-active)' : 'transparent',
+                          color: 'var(--text-primary)',
                           textAlign: 'left',
                           cursor: 'pointer',
                           fontSize: 'inherit'
@@ -389,7 +381,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                           width: '100%',
                           padding: '6px 12px',
                           border: 'none',
-                          background: viewOptions.type === DistributionViewType.MEAN_STD ? 'var(--bg-accent)' : 'transparent',
+                          background: viewOptions.type === DistributionViewType.MEAN_STD ? 'var(--resize-handle-active)' : 'transparent',
+                          color: 'var(--text-primary)',
                           textAlign: 'left',
                           cursor: 'pointer',
                           fontSize: 'inherit'
@@ -404,7 +397,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                              width: '100%',
                              padding: '6px 12px',
                              border: 'none',
-                             background: viewOptions.type === DistributionViewType.GAUSSIAN_NOTATION ? 'var(--bg-accent)' : 'transparent',
+                             background: viewOptions.type === DistributionViewType.GAUSSIAN_NOTATION ? 'var(--resize-handle-active)' : 'transparent',
+                             color: 'var(--text-primary)',
                              textAlign: 'left',
                              cursor: 'pointer',
                              fontSize: 'inherit'
@@ -413,20 +407,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                            Gaussian Notation
                          </button>
                        )}
-                      <button
-                        onClick={() => handleViewOptionChange({ type: DistributionViewType.PERCENTILES })}
-                        style={{
-                          width: '100%',
-                          padding: '6px 12px',
-                          border: 'none',
-                          background: viewOptions.type === DistributionViewType.PERCENTILES ? 'var(--bg-accent)' : 'transparent',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          fontSize: 'inherit'
-                        }}
-                      >
-                        Percentiles (25th-75th)
-                      </button>
+                      
                     </div>
                   </div>
                 )}
