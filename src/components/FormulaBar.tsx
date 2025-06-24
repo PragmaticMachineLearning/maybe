@@ -32,7 +32,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
   selectedCell, 
   onFormulaSubmit 
 }) => {
-  const { hfInstance, getCellFormula, submitFormula, liveEditingState } = useContext(SpreadsheetContext)
+  const { hfInstance, submitFormula, liveEditingState } = useContext(SpreadsheetContext)
   const [formulaInput, setFormulaInput] = useState('')
   const [isEditing, setIsEditing] = useState(false)
 
