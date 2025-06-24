@@ -3,12 +3,9 @@ import React, { useContext, useEffect, useRef, useState } from 'react'
 import { DistributionPlot } from './GaussianPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext';
 
-type CellValue = string | number | number[] | null | { samples: number[] } | { mean: number, variance: number };
-
 // Distribution view options for the dropdown
 enum DistributionViewType {
   CONFIDENCE_INTERVAL = 'confidence_interval',
-  MEAN_STD = 'mean_std',
   GAUSSIAN_NOTATION = 'gaussian_notation',
 }
 
@@ -26,6 +23,8 @@ interface CellRendererProps {
   onContextMenu?: (e: React.MouseEvent) => void;
   isSelected?: boolean;
 }
+
+type CellValue = string | number | number[] | null | { samples: number[] } | { mean: number, variance: number };
 
 export const CellRenderer: React.FC<CellRendererProps> = ({
   row,
@@ -100,7 +99,16 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       } else {
         setTempValue('')
       }
-    } else {
+    } else if (isConfidenceInterval(value)) {
+      const ci = parseConfidenceInterval(value)
+      if (ci) {
+        const ciDistRepresentation = `CI[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
+        setTempValue(ciDistRepresentation)
+      } else {
+        setTempValue('')
+      }
+    }
+    else {
       setTempValue(value ? String(value) : '')
     }
     setEditing(true)
@@ -189,20 +197,77 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
   }
 
+  // Helper to detect ConfidenceIntervalNumber
+  const isConfidenceInterval = (val: unknown): boolean => {
+    if (val && typeof val === 'object' && 'lower' in val && 'upper' in val && 'confidenceLevel' in val) {
+      return true;
+    }
+    // Also support string representation
+    if (typeof val === 'string') {
+      return val.startsWith('CI[') && val.endsWith(']');
+    }
+    return false;
+  }
+
+  // Helper to parse ConfidenceIntervalNumber
+  const parseConfidenceInterval = (val: unknown): { lower: number, upper: number, confidenceLevel: number } | null => {
+    if (val && typeof val === 'object' && 'lower' in val && 'upper' in val && 'confidenceLevel' in val) {
+      return {
+        lower: (val as any).lower,
+        upper: (val as any).upper,
+        confidenceLevel: (val as any).confidenceLevel,
+      };
+    }
+    if (typeof val === 'string') {
+      const match = val.match(/^CI\[(\-?\d+\.?\d*),\s*(\-?\d+\.?\d*)\]$/);
+      if (!match) return null;
+      return {
+        lower: parseFloat(match[1]),
+        upper: parseFloat(match[2]),
+        confidenceLevel: 95,
+      };
+    }
+    return null;
+  }
+
+  // Helper function to convert confidence interval to Gaussian format
+  const confidenceIntervalToGaussian = (lower: number, upper: number, confidenceLevel: number): { mean: number; variance: number } => {
+    const mean = (lower + upper) / 2;
+    const zScore = confidenceLevel === 90 ? 1.645 : confidenceLevel === 99 ? 2.576 : 1.96; // Default to 95%
+    const standardDeviation = (upper - lower) / (2 * zScore);
+    const variance = standardDeviation * standardDeviation;
+    return { mean, variance };
+  };
+
+  // Update isDistribution to include confidence intervals
+  const isDistribution = isGaussian(value) || isSampledDistribution(value) || isConfidenceInterval(value);
+
+  // Update formatValue to handle confidence intervals
   const formatValue = (val: CellValue, options: DistributionViewOptions): string => {
     if (!val) return '';
-    
+
+    // Format ConfidenceIntervalNumber
+    if (isConfidenceInterval(val)) {
+      const ci = parseConfidenceInterval(val);
+      if (ci) {
+        switch (options.type) {
+          case DistributionViewType.CONFIDENCE_INTERVAL:
+            return `${ci.confidenceLevel}% CI [${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
+          case DistributionViewType.GAUSSIAN_NOTATION:
+            const gaussian = confidenceIntervalToGaussian(ci.lower, ci.upper, ci.confidenceLevel);
+            return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
+          default:
+            return `${ci.confidenceLevel}% CI [${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
+        }
+      }
+    }
     // Format GaussianNumber objects
     if (isGaussian(val)) {
       const gaussian = parseGaussian(val);
       if (gaussian) {
-        
         switch (options.type) {
           case DistributionViewType.GAUSSIAN_NOTATION:
             return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
-          case DistributionViewType.MEAN_STD:
-            const std = Math.sqrt(gaussian.variance);
-            return `μ=${gaussian.mean.toFixed(2)} ± ${std.toFixed(2)}`;
           case DistributionViewType.CONFIDENCE_INTERVAL:
             const confidenceLevel = options.confidenceLevel || 95;
             const zScore = getZScore(confidenceLevel / 100);
@@ -213,14 +278,12 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         }
       }
     }
-    
     // Format SampledDistribution objects
     if (isSampledDistribution(val)) {
       const sampled = parseSampledDistribution(val);
       if (sampled) {
         const sortedSamples = sampled.samples.sort((a, b) => a - b);
         const n = sortedSamples.length;
-        
         switch (options.type) {
           case DistributionViewType.CONFIDENCE_INTERVAL:
             const confidenceLevel = options.confidenceLevel || 95;
@@ -229,8 +292,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             const lowerBound = sortedSamples[lowerIndex];
             const upperBound = sortedSamples[upperIndex];
             return `${confidenceLevel}% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}]`;
-          case DistributionViewType.MEAN_STD:
-            return `μ=${sampled.mean.toFixed(2)} ± ${sampled.std.toFixed(2)}`;
+         
           case DistributionViewType.GAUSSIAN_NOTATION:
             return `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
           default:
@@ -238,7 +300,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         }
       }
     }
-    
+
     return String(val);
   }
 
@@ -257,8 +319,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     setViewOptions(newOptions);
     setShowViewDropdown(false);
   }
-
-  const isDistribution = isGaussian(value) || isSampledDistribution(value);
 
   return (
     <>
@@ -375,38 +435,24 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                       >
                         95% Confidence Interval
                       </button>
-                      <button
-                        onClick={() => handleViewOptionChange({ type: DistributionViewType.MEAN_STD })}
-                        style={{
-                          width: '100%',
-                          padding: '6px 12px',
-                          border: 'none',
-                          background: viewOptions.type === DistributionViewType.MEAN_STD ? 'var(--resize-handle-active)' : 'transparent',
-                          color: 'var(--text-primary)',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          fontSize: 'inherit'
-                        }}
-                      >
-                        Mean ± Std Dev
-                      </button>
-                                             {(isGaussian(value) || isSampledDistribution(value)) && (
-                         <button
-                           onClick={() => handleViewOptionChange({ type: DistributionViewType.GAUSSIAN_NOTATION })}
-                           style={{
-                             width: '100%',
-                             padding: '6px 12px',
-                             border: 'none',
-                             background: viewOptions.type === DistributionViewType.GAUSSIAN_NOTATION ? 'var(--resize-handle-active)' : 'transparent',
-                             color: 'var(--text-primary)',
-                             textAlign: 'left',
-                             cursor: 'pointer',
-                             fontSize: 'inherit'
-                           }}
-                         >
-                           Gaussian Notation
-                         </button>
-                       )}
+                      
+                      {(isGaussian(value) || isSampledDistribution(value) || isConfidenceInterval(value)) && (
+                        <button
+                          onClick={() => handleViewOptionChange({ type: DistributionViewType.GAUSSIAN_NOTATION })}
+                          style={{
+                            width: '100%',
+                            padding: '6px 12px',
+                            border: 'none',
+                            background: viewOptions.type === DistributionViewType.GAUSSIAN_NOTATION ? 'var(--resize-handle-active)' : 'transparent',
+                            color: 'var(--text-primary)',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            fontSize: 'inherit'
+                          }}
+                        >
+                          Gaussian Notation
+                        </button>
+                      )}
                       
                     </div>
                   </div>
@@ -416,11 +462,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           </>
         )}
       </div>
-      {showPlot && (isGaussian(value) || isSampledDistribution(value)) && (
+      {showPlot && (isGaussian(value) || isSampledDistribution(value) || isConfidenceInterval(value)) && (
         <DistributionPlot
           position={plotPosition}
-          mean={isGaussian(value) ? parseGaussian(value)!.mean : parseSampledDistribution(value)!.mean}
-          variance={isGaussian(value) ? parseGaussian(value)!.variance : parseSampledDistribution(value)!.std ** 2}
+          mean={isGaussian(value) ? parseGaussian(value)!.mean : isSampledDistribution(value) ? parseSampledDistribution(value)!.mean : parseConfidenceInterval(value)!.lower + (parseConfidenceInterval(value)!.upper - parseConfidenceInterval(value)!.lower) / 2}
+          variance={isGaussian(value) ? parseGaussian(value)!.variance : isSampledDistribution(value) ? parseSampledDistribution(value)!.std ** 2 : Math.pow((parseConfidenceInterval(value)!.upper - parseConfidenceInterval(value)!.lower) / (2 * 1.96), 2)}
           samples={isSampledDistribution(value) ? parseSampledDistribution(value)!.samples : undefined}
           isGaussian={isGaussian(value)}
           onClose={() => setShowPlot(false)}

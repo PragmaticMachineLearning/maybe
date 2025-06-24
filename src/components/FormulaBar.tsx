@@ -17,11 +17,13 @@ const formatCellValue = (value: any): string => {
   if (typeof value === 'object' && value !== null) {
     // Check for GaussianNumber pattern
     if (typeof value.mean === 'number' && typeof value.variance === 'number') {
-     
       return `N(μ=${value.mean.toFixed(2)}, σ²=${value.variance.toFixed(2)})`
     }
     
-   
+    // Check for ConfidenceIntervalNumber pattern
+    if (typeof value.lower === 'number' && typeof value.upper === 'number' && typeof value.confidenceLevel === 'number') {
+      return `CI[${value.lower.toFixed(2)}, ${value.upper.toFixed(2)}]`
+    }
   }
 
   // For regular values, convert to string
