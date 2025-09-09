@@ -49,6 +49,27 @@ const parseSampledDistribution = (val: any): { mean: number, variance: number } 
   };
 };
 
+const isConfidenceInterval = (val: any): boolean => {
+  if (typeof val === 'string') {
+    return val.startsWith('CI[') && val.endsWith(']');
+  }
+  return false;
+};
+
+const parseConfidenceInterval = (val: any): { mean: number, variance: number } | null => {
+  const match = val.match(/^CI\[(-?\d+\.?\d*),\s*(-?\d+\.?\d*)\]$/);
+  if (!match) return null;
+  const lower = parseFloat(match[1]);
+  const upper = parseFloat(match[2]);
+  const mean = (lower + upper) / 2;
+  // Estimate variance based on 95% confidence interval (assuming normal distribution)
+  const standardDeviation = (upper - lower) / (2 * 1.96);
+  const variance = standardDeviation * standardDeviation;
+  return {
+    mean,
+    variance
+  };
+};
 
 const nodeTypes = {
   formula: ({ data }: { data: { address: string; value: any; type: string; formula: string, samples: any[] } }) => {
@@ -56,6 +77,7 @@ const nodeTypes = {
 
     const gaussianData = isGaussian(data.value) ? parseGaussian(data.value) : null;
     const sampledDistributionData = isSampledDistribution(data.value) ? parseSampledDistribution(data.value) : null;
+    const confidenceIntervalData = isConfidenceInterval(data.value) ? parseConfidenceInterval(data.value) : null;
     const samples = data.samples
     return (
       <div 
@@ -74,7 +96,7 @@ const nodeTypes = {
         <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Formula: {data.formula}</div>
-        {(gaussianData || sampledDistributionData) && (
+        {(gaussianData || sampledDistributionData || confidenceIntervalData) && (
           <button
             onClick={() => setShowChart(!showChart)}
             style={{
@@ -91,7 +113,7 @@ const nodeTypes = {
             {showChart ? 'Hide Chart' : 'Show Chart'}
           </button>
         )}
-        {showChart && (gaussianData || sampledDistributionData) && (
+        {showChart && (gaussianData || sampledDistributionData || confidenceIntervalData) && (
           <div style={{ 
             marginTop: '10px',
             height: '250px',
@@ -102,8 +124,8 @@ const nodeTypes = {
           }}>
             <DistributionPlot
               position={{ top: 0, left: 0 }}
-              mean={gaussianData?.mean ?? sampledDistributionData?.mean ?? 0}
-              variance={gaussianData?.variance ?? sampledDistributionData?.variance ?? 0}
+              mean={gaussianData?.mean ?? sampledDistributionData?.mean ?? confidenceIntervalData?.mean ?? 0}
+              variance={gaussianData?.variance ?? sampledDistributionData?.variance ?? confidenceIntervalData?.variance ?? 0}
               samples={samples}
               onClose={() => setShowChart(false)}
               isGaussian={!!gaussianData}
@@ -119,6 +141,7 @@ const nodeTypes = {
     const [showChart, setShowChart] = useState(false);
 
     const gaussianData = isGaussian(data.value) ? parseGaussian(data.value) : null;
+    const confidenceIntervalData = isConfidenceInterval(data.value) ? parseConfidenceInterval(data.value) : null;
     
     return (
       <div 
@@ -136,7 +159,7 @@ const nodeTypes = {
         <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
         <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
-        {gaussianData && (
+        {(gaussianData || confidenceIntervalData) && (
           <button
             onClick={() => setShowChart(!showChart)}
             style={{
@@ -153,7 +176,7 @@ const nodeTypes = {
             {showChart ? 'Hide Chart' : 'Show Chart'}
           </button>
         )}
-        {showChart && gaussianData && (
+        {showChart && (gaussianData || confidenceIntervalData) && (
           <div style={{ 
             marginTop: '10px',
             height: '250px',
@@ -164,10 +187,10 @@ const nodeTypes = {
           }}>
             <DistributionPlot
               position={{ top: 0, left: 0 }}
-              mean={gaussianData.mean}
-              variance={gaussianData.variance}
+              mean={gaussianData?.mean ?? confidenceIntervalData?.mean ?? 0}
+              variance={gaussianData?.variance ?? confidenceIntervalData?.variance ?? 0}
               onClose={() => setShowChart(false)}
-              isGaussian={true}
+              isGaussian={!!gaussianData}
               inline={true}
             />
           </div>
@@ -232,6 +255,9 @@ const getVertexValue = (vertex: any): string => {
         const mean = samples.reduce((a: number, b: number) => a + b, 0) / samples.length;
         const variance = samples.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / samples.length;
         return `S(μ=${mean.toFixed(2)}, σ²=${variance.toFixed(2)})`;
+      } else if ('lower' in vertex.cachedCellValue && 'upper' in vertex.cachedCellValue) {
+        // Confidence interval
+        return `CI[${vertex.cachedCellValue.lower.toFixed(2)}, ${vertex.cachedCellValue.upper.toFixed(2)}]`;
       }
     }
     return vertex.cachedCellValue.toString();
@@ -243,6 +269,9 @@ const getVertexValue = (vertex: any): string => {
       if ('mean' in vertex.parsedValue && 'variance' in vertex.parsedValue) {
         // Gaussian distribution
         return `N(μ=${vertex.parsedValue.mean.toFixed(2)}, σ²=${vertex.parsedValue.variance.toFixed(2)})`;
+      } else if ('lower' in vertex.parsedValue && 'upper' in vertex.parsedValue) {
+        // Confidence interval
+        return `CI[${vertex.parsedValue.lower.toFixed(2)}, ${vertex.parsedValue.upper.toFixed(2)}]`;
       }
     }
     return vertex.parsedValue.toString();
@@ -293,7 +322,7 @@ export const FlowDiag: React.FC = () => {
    
     
     // Create nodes with temporary positions (will be overridden by ELK layout)
-    const newNodes: Node[] = graphNodes.map((node: any, index: number) => ({
+    const newNodes: Node[] = graphNodes.map((node: any) => ({
       id: getVertexId(node, hfInstance),
       type: getVertexType(node).toLowerCase(),
       position: { x: 0, y: 0 }, // Temporary position - ELK will set the actual position

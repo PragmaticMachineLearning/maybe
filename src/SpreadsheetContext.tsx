@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react'
 
-// Import from the workspace package
+// Import from the local workspace package
 import { HyperFormula } from 'gaussformula'
 
 type CellContent = string | number | null;
