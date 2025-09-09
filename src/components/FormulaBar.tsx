@@ -19,6 +19,16 @@ const formatCellValue = (value: any): string => {
     if (typeof value.mean === 'number' && typeof value.variance === 'number') {
       return `N(μ=${value.mean.toFixed(2)}, σ²=${value.variance.toFixed(2)})`
     }
+
+    // Check for LogNormalNumber pattern
+    if (typeof value.mu === 'number' && typeof value.sigma2 === 'number') {
+      return `LN(μ=${value.mu.toFixed(2)}, σ²=${value.sigma2.toFixed(2)})`
+    }
+
+    // Check for UniformNumber pattern
+    if (typeof value.a === 'number' && typeof value.b === 'number') {
+      return `U[${value.a.toFixed(2)}, ${value.b.toFixed(2)}]`
+    }
     
     // Check for ConfidenceIntervalNumber pattern
     if (typeof value.lower === 'number' && typeof value.upper === 'number' && typeof value.confidenceLevel === 'number') {
