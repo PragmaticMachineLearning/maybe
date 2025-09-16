@@ -13,71 +13,15 @@ import  {
 } from '@xyflow/react'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 
-import { DistributionPlot } from './GaussianPlot'
+import { DistributionPlot } from './DistributionPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext'
 import { getLayoutedNodes } from './useLayoutNodes'
 
-const parseGaussian = (val: string): { mean: number, variance: number } | null => {
-  const match = val.match(/^N\(μ=(-?\d+\.?\d*),\s*σ²=(-?\d+\.?\d*)\)$/);
-  if (!match) return null;
-  return {
-    mean: parseFloat(match[1]),
-    variance: parseFloat(match[2])
-  };
-};
-
-const isGaussian = (val: any): boolean => {
-  if (typeof val === 'string') {
-    return val.startsWith('N(') && val.endsWith(')');
-  }
-  return false;
-};
-
-const isSampledDistribution = (val: any): boolean => {
-  if (typeof val === 'string') {
-    return val.startsWith('S(') && val.endsWith(')');
-  }
-  return false;
-};
-
-const parseSampledDistribution = (val: any): { mean: number, variance: number } | null => {
-  const match = val.match(/^S\(μ=(-?\d+\.?\d*),\s*σ²=(-?\d+\.?\d*)\)$/);
-  if (!match) return null;
-  return {
-    mean: parseFloat(match[1]),
-    variance: parseFloat(match[2])
-  };
-};
-
-const isConfidenceInterval = (val: any): boolean => {
-  if (typeof val === 'string') {
-    return val.startsWith('CI[') && val.endsWith(']');
-  }
-  return false;
-};
-
-const parseConfidenceInterval = (val: any): { mean: number, variance: number } | null => {
-  const match = val.match(/^CI\[(-?\d+\.?\d*),\s*(-?\d+\.?\d*)\]$/);
-  if (!match) return null;
-  const lower = parseFloat(match[1]);
-  const upper = parseFloat(match[2]);
-  const mean = (lower + upper) / 2;
-  // Estimate variance based on 95% confidence interval (assuming normal distribution)
-  const standardDeviation = (upper - lower) / (2 * 1.96);
-  const variance = standardDeviation * standardDeviation;
-  return {
-    mean,
-    variance
-  };
-};
 
 const nodeTypes = {
   formula: ({ data }: { data: { address: string; value: any; type: string; formula: string, samples: any[] } }) => {
     const [showChart, setShowChart] = useState(false);
 
-    const gaussianData = isGaussian(data.value) ? parseGaussian(data.value) : null;
-    const sampledDistributionData = isSampledDistribution(data.value) ? parseSampledDistribution(data.value) : null;
-    const confidenceIntervalData = isConfidenceInterval(data.value) ? parseConfidenceInterval(data.value) : null;
     const samples = data.samples
     return (
       <div 
@@ -96,7 +40,7 @@ const nodeTypes = {
         <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Formula: {data.formula}</div>
-        {(gaussianData || sampledDistributionData || confidenceIntervalData) && (
+        {samples.length > 0 && (
           <button
             onClick={() => setShowChart(!showChart)}
             style={{
@@ -113,7 +57,7 @@ const nodeTypes = {
             {showChart ? 'Hide Chart' : 'Show Chart'}
           </button>
         )}
-        {showChart && (gaussianData || sampledDistributionData || confidenceIntervalData) && (
+        {showChart && samples.length > 0 && (
           <div style={{ 
             marginTop: '10px',
             height: '250px',
@@ -124,11 +68,8 @@ const nodeTypes = {
           }}>
             <DistributionPlot
               position={{ top: 0, left: 0 }}
-              mean={gaussianData?.mean ?? sampledDistributionData?.mean ?? confidenceIntervalData?.mean ?? 0}
-              variance={gaussianData?.variance ?? sampledDistributionData?.variance ?? confidenceIntervalData?.variance ?? 0}
               samples={samples}
               onClose={() => setShowChart(false)}
-              isGaussian={!!gaussianData}
               inline={true}
             />
           </div>
@@ -140,8 +81,7 @@ const nodeTypes = {
   value: ({ data }: { data: { address: string; value: any; type: string } }) => {
     const [showChart, setShowChart] = useState(false);
 
-    const gaussianData = isGaussian(data.value) ? parseGaussian(data.value) : null;
-    const confidenceIntervalData = isConfidenceInterval(data.value) ? parseConfidenceInterval(data.value) : null;
+    const valueSamples = getSamples({ cachedCellValue: data.value });
     
     return (
       <div 
@@ -159,7 +99,7 @@ const nodeTypes = {
         <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
         <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
-        {(gaussianData || confidenceIntervalData) && (
+        {valueSamples.length > 0 && (
           <button
             onClick={() => setShowChart(!showChart)}
             style={{
@@ -176,7 +116,7 @@ const nodeTypes = {
             {showChart ? 'Hide Chart' : 'Show Chart'}
           </button>
         )}
-        {showChart && (gaussianData || confidenceIntervalData) && (
+        {showChart && valueSamples.length > 0 && (
           <div style={{ 
             marginTop: '10px',
             height: '250px',
@@ -187,10 +127,8 @@ const nodeTypes = {
           }}>
             <DistributionPlot
               position={{ top: 0, left: 0 }}
-              mean={gaussianData?.mean ?? confidenceIntervalData?.mean ?? 0}
-              variance={gaussianData?.variance ?? confidenceIntervalData?.variance ?? 0}
+              samples={valueSamples}
               onClose={() => setShowChart(false)}
-              isGaussian={!!gaussianData}
               inline={true}
             />
           </div>
@@ -312,11 +250,35 @@ const getFormula = (vertex: any, hfInstance: any): string => {
   return ''
 }
 
-const getSamples = (vertex: any): any[] => {
-  if (vertex.cachedCellValue && vertex.cachedCellValue.samples) {
-    return vertex.cachedCellValue.samples
+// Helper function to extract samples from any distribution type
+const getSamples = (vertex: any): number[] => {
+  const value = vertex.cachedCellValue || vertex.parsedValue;
+  if (!value) return [];
+  
+  // Check if it's already a SampledDistribution
+  if (value && typeof value === 'object' && 'samples' in value && Array.isArray(value.samples)) {
+    return value.samples;
   }
-  return []
+  
+  // Check if it has getSamples method (GaussianNumber, LogNormalNumber, UniformNumber)
+  if (value && typeof value === 'object' && 'getSamples' in value && typeof value.getSamples === 'function') {
+    try {
+      return value.getSamples();
+    } catch (e) {
+      console.log('Error calling getSamples:', e);
+    }
+  }
+  
+  // Check if it has toSamples method (ConfidenceIntervalNumber)
+  if (value && typeof value === 'object' && 'toSamples' in value && typeof value.toSamples === 'function') {
+    try {
+      return value.toSamples();
+    } catch (e) {
+      console.log('Error calling toSamples:', e);
+    }
+  }
+  
+  return [];
 }
 
 export const FlowDiag: React.FC = () => {

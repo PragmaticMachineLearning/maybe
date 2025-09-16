@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react'
 
-import { DistributionPlot } from './GaussianPlot'
+import { DistributionPlot } from './DistributionPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext';
 import type { CIInterpretation } from '../../hyperformula/src/interpreter/InterpreterValue';
 
@@ -405,6 +405,34 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       const std = Math.sqrt(variance);
       return { samples, mean, std };
     }
+    return null;
+  }
+
+  // Helper function to extract samples from any distribution type
+  const getSamplesFromDistribution = (val: unknown): number[] | null => {
+    // Check if it's already a SampledDistribution
+    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
+      return (val as any).samples;
+    }
+    
+    // Check if it has getSamples method (GaussianNumber, LogNormalNumber, UniformNumber)
+    if (val && typeof val === 'object' && 'getSamples' in val && typeof (val as any).getSamples === 'function') {
+      try {
+        return (val as any).getSamples();
+      } catch (e) {
+        console.log('Error calling getSamples:', e);
+      }
+    }
+    
+    // Check if it has toSamples method (ConfidenceIntervalNumber)
+    if (val && typeof val === 'object' && 'toSamples' in val && typeof (val as any).toSamples === 'function') {
+      try {
+        return (val as any).toSamples();
+      } catch (e) {
+        console.log('Error calling toSamples:', e);
+      }
+    }
+    
     return null;
   }
 
@@ -860,52 +888,16 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           </>
         )}
       </div>
-      {showPlot && (isGaussian(value) || isSampledDistribution(value) || isConfidenceInterval(value) || isLogNormal(value) || isUniform(value)) && (
-        <DistributionPlot
-          position={plotPosition}
-          mean={
-            isGaussian(value) ? parseGaussian(value)!.mean :
-            isSampledDistribution(value) ? parseSampledDistribution(value)!.mean :
-            isConfidenceInterval(value) ? (
-              typeof value === 'object' && value !== null && 'toGaussian' in value ?
-                (value as any).toGaussian().mean :
-                parseConfidenceInterval(value)!.lower + (parseConfidenceInterval(value)!.upper - parseConfidenceInterval(value)!.lower) / 2
-            ) :
-            isLogNormal(value) ? (
-              typeof value === 'object' && value !== null && 'getMean' in value ?
-                (value as any).getMean() :
-                Math.exp(parseLogNormal(value)!.mu + parseLogNormal(value)!.sigma2 / 2)
-            ) :
-            isUniform(value) ? (
-              typeof value === 'object' && value !== null && 'getMean' in value ?
-                (value as any).getMean() :
-                (parseUniform(value)!.a + parseUniform(value)!.b) / 2
-            ) : 0
-          }
-          variance={
-            isGaussian(value) ? parseGaussian(value)!.variance :
-            isSampledDistribution(value) ? parseSampledDistribution(value)!.std ** 2 :
-            isConfidenceInterval(value) ? (
-              typeof value === 'object' && value !== null && 'toGaussian' in value ?
-                (value as any).toGaussian().variance :
-                Math.pow((parseConfidenceInterval(value)!.upper - parseConfidenceInterval(value)!.lower) / (2 * 1.96), 2)
-            ) :
-            isLogNormal(value) ? (
-              typeof value === 'object' && value !== null && 'getVariance' in value ?
-                (value as any).getVariance() :
-                (Math.exp(parseLogNormal(value)!.sigma2) - 1) * Math.exp(2 * parseLogNormal(value)!.mu + parseLogNormal(value)!.sigma2)
-            ) :
-            isUniform(value) ? (
-              typeof value === 'object' && value !== null && 'getVariance' in value ?
-                (value as any).getVariance() :
-                Math.pow(parseUniform(value)!.b - parseUniform(value)!.a, 2) / 12
-            ) : 0
-          }
-          samples={isSampledDistribution(value) ? parseSampledDistribution(value)!.samples : undefined}
-          isGaussian={isGaussian(value)}
-          onClose={() => setShowPlot(false)}
-        />
-      )}
+      {showPlot && isDistribution && (() => {
+        const samples = getSamplesFromDistribution(value);
+        return samples ? (
+          <DistributionPlot
+            position={plotPosition}
+            samples={samples}
+            onClose={() => setShowPlot(false)}
+          />
+        ) : null;
+      })()}
     </>
   )
 } 

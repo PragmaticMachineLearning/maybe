@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import ReactECharts from "echarts-for-react";
-import { normal } from "../../hyperformula/src/interpreter/plugin/3rdparty/jstat/jstat";
 
 interface DistributionPlotProps {
-  mean: number;
-  variance: number;
-  samples?: number[];
+  samples: number[];
   onClose: () => void;
   position: { top: number; left: number };
-  isGaussian: boolean;
   inline?: boolean;
 }
 
@@ -21,12 +17,9 @@ interface QueryState {
 }
 
 export const DistributionPlot: React.FC<DistributionPlotProps> = ({
-  mean,
-  variance,
   samples,
   onClose,
   position,
-  isGaussian,
   inline = false,
 }) => {
   const plotRef = useRef<HTMLDivElement>(null);
@@ -38,38 +31,40 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     showCI: false,
   });
 
-  // Generate points for the distribution curve
+  // Calculate mean and variance from samples
+  const mean = samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
+  const variance = samples.reduce((sum, sample) => sum + Math.pow(sample - mean, 2), 0) / samples.length;
   const stdDev = Math.sqrt(variance);
+
+  // Generate points for the distribution curve using kernel density estimation
   const points = 100;
   const range = stdDev * 4; // Plot ±4 standard deviations
   const step = (range * 2) / points;
+  const bandwidth = 1.06 * stdDev * Math.pow(samples.length, -0.2); // Silverman's rule of thumb
 
   const data = Array.from({ length: points }, (_, i) => {
     const x = mean - range + i * step;
-    let y;
-    if (samples) {
-      // For sampled distribution, use kernel density estimation
-      const bandwidth = 1.06 * stdDev * Math.pow(samples.length, -0.2); // Silverman's rule of thumb
-      y = samples.reduce((sum, sample) => {
-        const u = (x - sample) / bandwidth;
-        return sum + Math.exp(-0.5 * u * u) / (bandwidth * Math.sqrt(2 * Math.PI));
-      }, 0) / samples.length;
-    } else {
-      // For Gaussian distribution, use normal PDF
-      y = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
-    }
+    // Use kernel density estimation for all distributions
+    const y = samples.reduce((sum, sample) => {
+      const u = (x - sample) / bandwidth;
+      return sum + Math.exp(-0.5 * u * u) / (bandwidth * Math.sqrt(2 * Math.PI));
+    }, 0) / samples.length;
     return [x, y];
   });
 
-  // Calculate percentile and confidence interval values
-  const percentileValue = isGaussian ? normal.inv(queryState.percentile / 100, mean, stdDev) : null;
-  const zScore = isGaussian ? normal.inv((1 + queryState.confidenceLevel / 100) / 2, 0, 1) : null;
-  const ciLower = isGaussian ? mean - zScore! * stdDev : null;
-  const ciUpper = isGaussian ? mean + zScore! * stdDev : null;
+  // Calculate percentile and confidence interval values from samples
+  const sortedSamples = [...samples].sort((a, b) => a - b);
+  const percentileIndex = Math.floor((queryState.percentile / 100) * sortedSamples.length);
+  const percentileValue = sortedSamples[Math.min(percentileIndex, sortedSamples.length - 1)];
+  
+  const ciLowerIndex = Math.floor(((100 - queryState.confidenceLevel) / 200) * sortedSamples.length);
+  const ciUpperIndex = Math.floor(((100 + queryState.confidenceLevel) / 200) * sortedSamples.length);
+  const ciLower = sortedSamples[Math.min(ciLowerIndex, sortedSamples.length - 1)];
+  const ciUpper = sortedSamples[Math.min(ciUpperIndex, sortedSamples.length - 1)];
 
   const option = {
     title: {
-      text: isGaussian ? "Gaussian Plot" : "Sampled Distribution Plot",
+      text: "Distribution Plot",
       left: "center",
       textStyle: {
         fontSize: 14,
@@ -122,7 +117,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     },
     series: [
       {
-        name: isGaussian ? "Gaussian PDF" : "Sampled PDF",
+        name: "Distribution PDF",
         type: "line",
         smooth: true,
         data: data,
@@ -237,21 +232,19 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
         gap: '8px',
         zIndex: 1
       }}>
-        {isGaussian && (
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '4px',
-              color: '#666',
-              fontSize: '16px'
-            }}
-          >
-            ⚙️
-          </button>
-        )}
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            color: '#666',
+            fontSize: '16px'
+          }}
+        >
+          ⚙️
+        </button>
         <button
           onClick={onClose}
           style={{
@@ -267,7 +260,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
         </button>
       </div>
 
-      {showSettings && isGaussian && (
+      {showSettings && (
         <div style={{
           position: 'absolute',
           top: '40px',
