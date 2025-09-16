@@ -201,6 +201,12 @@ const getVertexValue = (vertex: any): string => {
       } else if ('lower' in vertex.cachedCellValue && 'upper' in vertex.cachedCellValue) {
         // Confidence interval
         return `CI[${vertex.cachedCellValue.lower.toFixed(2)}, ${vertex.cachedCellValue.upper.toFixed(2)}]`;
+      } else if ('mu' in vertex.cachedCellValue && 'sigma2' in vertex.cachedCellValue) {
+        // Log-normal distribution
+        return `LN(μ=${vertex.cachedCellValue.mu.toFixed(2)}, σ²=${vertex.cachedCellValue.sigma2.toFixed(2)})`;
+      } else if ('a' in vertex.cachedCellValue && 'b' in vertex.cachedCellValue) {
+        // Uniform distribution
+        return `U(${vertex.cachedCellValue.a.toFixed(2)}, ${vertex.cachedCellValue.b.toFixed(2)})`;
       }
     }
     return vertex.cachedCellValue.toString();
@@ -220,6 +226,12 @@ const getVertexValue = (vertex: any): string => {
       } else if ('lower' in vertex.parsedValue && 'upper' in vertex.parsedValue) {
         // Confidence interval
         return `CI[${vertex.parsedValue.lower.toFixed(2)}, ${vertex.parsedValue.upper.toFixed(2)}]`;
+      } else if ('mu' in vertex.parsedValue && 'sigma2' in vertex.parsedValue) {
+        // Log-normal distribution
+        return `LN(μ=${vertex.parsedValue.mu.toFixed(2)}, σ²=${vertex.parsedValue.sigma2.toFixed(2)})`;
+      } else if ('a' in vertex.parsedValue && 'b' in vertex.parsedValue) {
+        // Uniform distribution
+        return `U(${vertex.parsedValue.a.toFixed(2)}, ${vertex.parsedValue.b.toFixed(2)})`;
       }
     }
     return vertex.parsedValue.toString();
