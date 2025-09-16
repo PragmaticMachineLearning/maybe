@@ -12,6 +12,11 @@ const formatCellValue = (value: any): string => {
   if (value === null || value === undefined) {
     return ''
   }
+  
+  // Handle boolean values from comparison operations
+  if (typeof value === 'boolean') {
+    return value ? 'TRUE' : 'FALSE';
+  }
 
   // Check if it's a distribution object
   if (typeof value === 'object' && value !== null) {
