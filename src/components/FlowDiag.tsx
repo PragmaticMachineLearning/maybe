@@ -245,6 +245,11 @@ const getVertexId = (vertex: any, hfInstance: any): string => {
 const getVertexValue = (vertex: any): string => {
   // Handle FormulaCellVertex with cachedCellValue
   if (vertex.cachedCellValue !== undefined) {
+    // Handle boolean values from comparison operations
+    if (typeof vertex.cachedCellValue === 'boolean') {
+      return vertex.cachedCellValue ? 'TRUE' : 'FALSE';
+    }
+    
     if (vertex.cachedCellValue && typeof vertex.cachedCellValue === 'object') {
       if ('mean' in vertex.cachedCellValue && 'variance' in vertex.cachedCellValue) {
         // Gaussian distribution
@@ -265,6 +270,11 @@ const getVertexValue = (vertex: any): string => {
 
   // Handle ValueCellVertex with parsedValue
   if (vertex.parsedValue !== undefined) {
+    // Handle boolean values from comparison operations
+    if (typeof vertex.parsedValue === 'boolean') {
+      return vertex.parsedValue ? 'TRUE' : 'FALSE';
+    }
+    
     if (vertex.parsedValue && typeof vertex.parsedValue === 'object') {
       if ('mean' in vertex.parsedValue && 'variance' in vertex.parsedValue) {
         // Gaussian distribution
