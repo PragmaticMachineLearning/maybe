@@ -4,20 +4,16 @@ import { DistributionPlot } from './DistributionPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext';
 import type { CIInterpretation } from '../../hyperformula/src/interpreter/InterpreterValue';
 
-// Distribution view options for the dropdown
+// Distribution interpretation options for the dropdown
 enum DistributionViewType {
-  CONFIDENCE_INTERVAL = 'confidence_interval',
-  GAUSSIAN_NOTATION = 'gaussian_notation',
-  LOG_NORMAL_NOTATION = 'log_normal_notation',
-  UNIFORM_NOTATION = "uniform_notation",
-  NATIVE_DISTRIBUTION = 'native_distribution'
+  NORMAL = 'normal',
+  LOGNORMAL = 'lognormal',
+  UNIFORM = 'uniform'
 }
 
 
 interface DistributionViewOptions {
   type: DistributionViewType;
-  confidenceLevel?: number;
-  ciInterpretation?: CIInterpretation;
 }
 
 interface CellRendererProps {
@@ -41,14 +37,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onContextMenu,
   isSelected = false,
 }) => {
-  // Debug logging to understand what values we're receiving
-  if (value !== null && value !== undefined) {
-    if (typeof value === 'object') {
-      console.log(`Cell (${row}, ${col}) received object:`, value, 'Type:', Object.getPrototypeOf(value)?.constructor?.name, 'Keys:', Object.keys(value));
-    } else {
-      console.log(`Cell (${row}, ${col}) received primitive:`, value, 'Type:', typeof value);
-    }
-  }
   
   // Helper to detect ConfidenceIntervalNumber - defined early for use in initialization
   const isConfidenceInterval = (val: unknown): boolean => {
@@ -57,7 +45,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
     // Also support string representation
     if (typeof val === 'string') {
-      // Support "X to Y" format (Guesstimate style) or "CI[X, Y]"
+      // Support "X to Y" format or "CI[X, Y]"
       return /^\d+\.?\d*\s+to\s+\d+\.?\d*$/.test(val) || 
              (val.startsWith('CI[') && val.endsWith(']'));
     }
@@ -81,7 +69,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         return {
           lower: parseFloat(match[1]),
           upper: parseFloat(match[2]),
-          confidenceLevel: 90, // Default to 90% like Guesstimate
+          confidenceLevel: 90, // Default to 90%
           interpretation: 'normal',
         };
       }
@@ -106,19 +94,19 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 })
   const [showViewDropdown, setShowViewDropdown] = useState(false)
   const [viewOptions, setViewOptions] = useState<DistributionViewOptions>(() => {
-    // Initialize with CI interpretation if the value is a CI
+    // Initialize with the detected interpretation if the value is a CI
     if (isConfidenceInterval(value)) {
       const ci = parseConfidenceInterval(value);
+      const interpretation = ci?.interpretation || 'normal';
       return {
-        type: DistributionViewType.NATIVE_DISTRIBUTION,
-        confidenceLevel: ci?.confidenceLevel || 90,
-        ciInterpretation: ci?.interpretation || 'normal'
+        type: interpretation === 'normal' ? DistributionViewType.NORMAL :
+              interpretation === 'lognormal' ? DistributionViewType.LOGNORMAL :
+              interpretation === 'uniform' ? DistributionViewType.UNIFORM :
+              DistributionViewType.NORMAL
       };
     }
     return {
-      type: DistributionViewType.NATIVE_DISTRIBUTION,
-      confidenceLevel: 90,
-      ciInterpretation: 'normal'
+      type: DistributionViewType.NORMAL
     };
   })
   const cellRef = useRef<HTMLDivElement>(null)
@@ -159,11 +147,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       setEditing(true)
       return
     } 
-    if (isGaussian(value)) {
-      const gaussian = parseGaussian(value)
-      if (gaussian) {
-        const gaussianDistRepresentation = `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
-        setTempValue(gaussianDistRepresentation)
+    if (isConfidenceInterval(value)) {
+      const ci = parseConfidenceInterval(value)
+      if (ci) {
+        const ciDistRepresentation = `[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
+        setTempValue(ciDistRepresentation)
       } else {
         setTempValue('')
       }
@@ -172,30 +160,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       if (sampled) {
         const sampledDistRepresentation = `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
         setTempValue(sampledDistRepresentation)
-      } else {
-        setTempValue('')
-      }
-    } else if (isConfidenceInterval(value)) {
-      const ci = parseConfidenceInterval(value)
-      if (ci) {
-        const ciDistRepresentation = `CI[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
-        setTempValue(ciDistRepresentation)
-      } else {
-        setTempValue('')
-      }
-    } else if (isLogNormal(value)) {
-      const ln = parseLogNormal(value)
-      if (ln) {
-        const lnDistRepresentation = `LN(${ln.mu.toFixed(2)}, ${ln.sigma2.toFixed(2)})`;
-        setTempValue(lnDistRepresentation)
-      } else {
-        setTempValue('')
-      }
-    } else if (isUniform(value)) {
-      const u = parseUniform(value)
-      if (u) {
-        const uDistRepresentation = `U(${u.a.toFixed(2)}, ${u.b.toFixed(2)})`;
-        setTempValue(uDistRepresentation)
       } else {
         setTempValue('')
       }
@@ -216,113 +180,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     // The useEffect above will automatically update the live editing state
   }
 
-  const isGaussian = (val: unknown): boolean => {
-    // Check if it's a GaussianNumber object from HyperFormula
-    // Use multiple detection methods to handle class identity issues across module boundaries
-    if (val && typeof val === 'object') {
-      const hasGaussianProps = 'mean' in val && 'variance' in val;
-      const hasGaussianMethods = 'getMean' in val && 'getVariance' in val && 'getSamples' in val;
-      const hasDetailedType = 'getDetailedType' in val && typeof (val as any).getDetailedType === 'function';
-      
-      if (hasGaussianProps || (hasGaussianMethods && hasDetailedType)) {
-        console.log('Gaussian object detected:', val, 'Constructor:', Object.getPrototypeOf(val)?.constructor?.name);
-        
-        // Additional check: try calling getDetailedType if it exists
-        if (hasDetailedType) {
-          try {
-            const detailedType = (val as any).getDetailedType();
-            console.log('DetailedType:', detailedType);
-            if (detailedType === 'NUMBER_GAUSSIAN') {
-              return true;
-            }
-          } catch (e) {
-            console.log('Error calling getDetailedType:', e);
-          }
-        }
-        
-        return hasGaussianProps;
-      }
-    }
-    
-    // Also check for string representation
-    if (typeof val === 'string') {
-      return val.startsWith('N(') && val.endsWith(')')
-    }
-    
-    return false;
-  }
-
-  const isLogNormal = (val: unknown): boolean => {
-    // Check if it's a LogNormalNumber object from HyperFormula
-    // Use multiple detection methods to handle class identity issues across module boundaries
-    if (val && typeof val === 'object') {
-      const hasLogNormalProps = 'mu' in val && 'sigma2' in val;
-      const hasLogNormalMethods = 'getMean' in val && 'getVariance' in val && 'getSamples' in val;
-      const hasDetailedType = 'getDetailedType' in val && typeof (val as any).getDetailedType === 'function';
-      
-      if (hasLogNormalProps || (hasLogNormalMethods && hasDetailedType)) {
-        console.log('LogNormal object detected:', val, 'Constructor:', Object.getPrototypeOf(val)?.constructor?.name);
-        
-        // Additional check: try calling getDetailedType if it exists
-        if (hasDetailedType) {
-          try {
-            const detailedType = (val as any).getDetailedType();
-            console.log('DetailedType:', detailedType);
-            if (detailedType === 'NUMBER_LOGNORMAL') {
-              return true;
-            }
-          } catch (e) {
-            console.log('Error calling getDetailedType:', e);
-          }
-        }
-        
-        return hasLogNormalProps;
-      }
-    }
-    
-    // Also check for string representation
-    if (typeof val === 'string') {
-      return val.startsWith('LN(') && val.endsWith(')')
-    }
-    
-    return false;
-  }
-
-  const isUniform = (val: unknown): boolean => {
-    // Check if it's a UniformNumber object from HyperFormula
-    // Use multiple detection methods to handle class identity issues across module boundaries
-    if (val && typeof val === 'object') {
-      const hasUniformProps = 'a' in val && 'b' in val;
-      const hasUniformMethods = 'getMean' in val && 'getVariance' in val && 'getSamples' in val;
-      const hasDetailedType = 'getDetailedType' in val && typeof (val as any).getDetailedType === 'function';
-      
-      if (hasUniformProps || (hasUniformMethods && hasDetailedType)) {
-        console.log('Uniform object detected:', val, 'Constructor:', Object.getPrototypeOf(val)?.constructor?.name);
-        
-        // Additional check: try calling getDetailedType if it exists
-        if (hasDetailedType) {
-          try {
-            const detailedType = (val as any).getDetailedType();
-            console.log('DetailedType:', detailedType);
-            if (detailedType === 'NUMBER_UNIFORM') {
-              return true;
-            }
-          } catch (e) {
-            console.log('Error calling getDetailedType:', e);
-          }
-        }
-        
-        return hasUniformProps;
-      }
-    }
-    
-    // Also check for string representation
-    if (typeof val === 'string') {
-      return val.startsWith('U(') && val.endsWith(')')
-    }
-    
-    return false;
-  }
 
   const isSampledDistribution = (val: unknown): boolean => {
     if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
@@ -331,71 +188,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return false;
   }
 
-  const parseGaussian = (val: unknown): { mean: number, variance: number } | null => {
-    // If it's already a GaussianNumber object from HyperFormula
-    if (val && typeof val === 'object' && 'mean' in val && 'variance' in val) {
-      return {
-        mean: (val as any).mean,
-        variance: (val as any).variance
-      };
-    }
-    
-    // If it's a string representation
-    if (typeof val === 'string') {
-      const match = val.match(/^N\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/)
-      if (!match) return null
-      return {
-        mean: parseFloat(match[1]),
-        variance: parseFloat(match[2])
-      }
-    }
-    
-    return null;
-  }
-
-  const parseLogNormal = (val: unknown): { mu: number, sigma2: number } | null => {
-    // If it's already a LogNormalNumber object from HyperFormula
-    if (val && typeof val === 'object' && 'mu' in val && 'sigma2' in val) {
-      return {
-        mu: (val as any).mu,
-        sigma2: (val as any).sigma2
-      };
-    }
-    
-    // If it's a string representation
-    if (typeof val === 'string') {
-      const match = val.match(/^LN\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\)$/i)
-      if (!match) return null
-      return {
-        mu: parseFloat(match[1]),
-        sigma2: parseFloat(match[2])
-      }
-    }
-    
-    return null;
-  }
-
-  const parseUniform = (val: unknown): { a: number, b: number } | null => {
-    // If it's already a UniformNumber object from HyperFormula
-    if (val && typeof val === 'object' && 'a' in val && 'b' in val) {
-      return {
-        a: (val as any).a,
-        b: (val as any).b
-      };
-    }
-    
-    // If it's a string representation
-    if (typeof val === 'string') {
-      const match = val.match(/^U\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\)$/i)
-      if (!match) return null
-      return {
-        a: parseFloat(match[1]),
-        b: parseFloat(match[2])
-      }
-    }
-    
-    return null;
-  }
 
   const parseSampledDistribution = (val: unknown): { samples: number[], mean: number, std: number } | null => {
     if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
@@ -408,23 +200,14 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return null;
   }
 
-  // Helper function to extract samples from any distribution type
+  // Helper function to extract samples from distribution types (simplified for unified approach)
   const getSamplesFromDistribution = (val: unknown): number[] | null => {
-    // Check if it's already a SampledDistribution
+    // Check if it's a SampledDistribution (output from calculations)
     if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
       return (val as any).samples;
     }
     
-    // Check if it has getSamples method (GaussianNumber, LogNormalNumber, UniformNumber)
-    if (val && typeof val === 'object' && 'getSamples' in val && typeof (val as any).getSamples === 'function') {
-      try {
-        return (val as any).getSamples();
-      } catch (e) {
-        console.log('Error calling getSamples:', e);
-      }
-    }
-    
-    // Check if it has toSamples method (ConfidenceIntervalNumber)
+    // Check if it has toSamples method (ConfidenceIntervalNumber - our only input type)
     if (val && typeof val === 'object' && 'toSamples' in val && typeof (val as any).toSamples === 'function') {
       try {
         return (val as any).toSamples();
@@ -449,14 +232,28 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         left: rect.right + 10 // Position 10px to the right of the cell
       });
       
-      if (isGaussian(value) || isSampledDistribution(value) || isLogNormal(value) || isUniform(value)) {
+      if (isConfidenceInterval(value) || isSampledDistribution(value)) {
         setShowPlot(true);
       }
     }
   }
 
-  // Update isDistribution to include all distribution types
-  const isDistribution = isGaussian(value) || isSampledDistribution(value) || isConfidenceInterval(value) || isLogNormal(value) || isUniform(value);
+  // Update isDistribution to only include the two types we support in unified approach
+  const isDistribution = isConfidenceInterval(value) || isSampledDistribution(value);
+
+  // Helper to calculate median for confidence intervals
+  const getConfidenceIntervalMedian = (ci: { lower: number, upper: number, interpretation?: CIInterpretation }): number => {
+    switch (ci.interpretation) {
+      case 'lognormal':
+        // For log-normal: median = geometric mean
+        return Math.sqrt(ci.lower * ci.upper);
+      case 'uniform':
+      case 'normal':
+      default:
+        // For normal/uniform: median = arithmetic mean
+        return (ci.lower + ci.upper) / 2;
+    }
+  };
 
   // Update formatValue to handle confidence intervals
   const formatValue = (val: CellValue, options: DistributionViewOptions): string => {
@@ -476,131 +273,47 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     if (isConfidenceInterval(val)) {
       const ci = parseConfidenceInterval(val);
       if (ci) {
+        const median = getConfidenceIntervalMedian(ci);
+        
         switch (options.type) {
-          case DistributionViewType.CONFIDENCE_INTERVAL:
-          case DistributionViewType.NATIVE_DISTRIBUTION:
-            // Show interpretation type for clarity
-            const interpLabel = ci.interpretation === 'normal' ? 'N' : 
-                              ci.interpretation === 'uniform' ? 'U' : 
-                              ci.interpretation === 'lognormal' ? 'LN' : '';
-            return `${ci.lower.toFixed(2)} to ${ci.upper.toFixed(2)} (${interpLabel})`;
-          case DistributionViewType.GAUSSIAN_NOTATION:
-            // Calculate as Gaussian based on CI interpretation
+          case DistributionViewType.NORMAL:
+            // Show as normal distribution approximation
             const mean = (ci.lower + ci.upper) / 2;
             const zScore = ci.confidenceLevel === 90 ? 1.645 : 1.96;
             const std = (ci.upper - ci.lower) / (2 * zScore);
-            return `N(μ=${mean.toFixed(2)}, σ²=${(std * std).toFixed(2)})`;
-          case DistributionViewType.LOG_NORMAL_NOTATION:
-            // Calculate log-normal parameters
+            return `N(μ=${mean.toFixed(2)}, σ=${std.toFixed(2)})`;
+            
+          case DistributionViewType.LOGNORMAL:
+            // Show as log-normal parameters
             if (ci.lower > 0 && ci.upper > 0) {
               const lnLower = Math.log(ci.lower);
               const lnUpper = Math.log(ci.upper);
               const mu = (lnLower + lnUpper) / 2;
               const sigma = (lnUpper - lnLower) / 3.29;
-              return `LN(μ=${mu.toFixed(2)}, σ²=${(sigma * sigma).toFixed(2)})`;
+              return `LN(μ=${mu.toFixed(2)}, σ=${sigma.toFixed(2)})`;
             }
-            return `${ci.lower.toFixed(2)} to ${ci.upper.toFixed(2)}`;
-          case DistributionViewType.UNIFORM_NOTATION:
+            return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`;
+            
+          case DistributionViewType.UNIFORM:
+            // Show as uniform distribution
             return `U[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
+            
           default:
-            return `${ci.lower.toFixed(2)} to ${ci.upper.toFixed(2)}`;
+            return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`;
         }
       }
     }
-    // Format LogNormalNumber objects
-    if (isLogNormal(val)) {
-      const logNormal = parseLogNormal(val);
-      if (logNormal) {
-        switch (options.type) {
-          case DistributionViewType.NATIVE_DISTRIBUTION:
-            return `LN(${logNormal.mu.toFixed(2)}, ${logNormal.sigma2.toFixed(2)})`;
-          case DistributionViewType.CONFIDENCE_INTERVAL:
-            // For log-normal, estimate confidence interval from mean and variance
-            const mean = Math.exp(logNormal.mu + logNormal.sigma2 / 2);
-            const variance = (Math.exp(logNormal.sigma2) - 1) * Math.exp(2 * logNormal.mu + logNormal.sigma2);
-            const std = Math.sqrt(variance);
-            const confidenceLevel = options.confidenceLevel || 95;
-            const zScore = getZScore(confidenceLevel / 100);
-            const margin = zScore * std;
-            return `${confidenceLevel}% CI [${(mean - margin).toFixed(2)}, ${(mean + margin).toFixed(2)}]`;
-          default:
-            return `LN(${logNormal.mu.toFixed(2)}, ${logNormal.sigma2.toFixed(2)})`;
-        }
-      }
-    }
-    // Format UniformNumber objects
-    if (isUniform(val)) {
-      const uniform = parseUniform(val);
-      if (uniform) {
-        switch (options.type) {
-          case DistributionViewType.NATIVE_DISTRIBUTION:
-            return `U(${uniform.a.toFixed(2)}, ${uniform.b.toFixed(2)})`;
-          case DistributionViewType.CONFIDENCE_INTERVAL:
-            const confidenceLevel = options.confidenceLevel || 95;
-            // For uniform distribution, confidence interval is based on order statistics
-            const width = uniform.b - uniform.a;
-            const margin = width * (1 - confidenceLevel / 100) / 2;
-            return `${confidenceLevel}% CI [${(uniform.a + margin).toFixed(2)}, ${(uniform.b - margin).toFixed(2)}]`;
-          default:
-            return `U[${uniform.a.toFixed(2)}, ${uniform.b.toFixed(2)}]`;
-        }
-      }
-    }
-    // Format GaussianNumber objects
-    if (isGaussian(val)) {
-      const gaussian = parseGaussian(val);
-      if (gaussian) {
-        switch (options.type) {
-          case DistributionViewType.NATIVE_DISTRIBUTION:
-            return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
-          case DistributionViewType.CONFIDENCE_INTERVAL:
-            const confidenceLevel = options.confidenceLevel || 95;
-            const zScore = getZScore(confidenceLevel / 100);
-            const margin = zScore * Math.sqrt(gaussian.variance);
-            return `${confidenceLevel}% CI [${(gaussian.mean - margin).toFixed(2)}, ${(gaussian.mean + margin).toFixed(2)}]`;
-          default:
-            return `N(μ=${gaussian.mean.toFixed(2)}, σ²=${gaussian.variance.toFixed(2)})`;
-        }
-      }
-    }
-    // Format SampledDistribution objects
-    // Sampled distributions are unique - they result from arithmetic operations that don't preserve
-    // other distribution types, so we should not provide options to convert them back to parametric forms
+    // These distribution types no longer exist as input types in our unified approach
+    // Format SampledDistribution objects (results from calculations)
+    // Always show as samples with mean and std deviation
     if (isSampledDistribution(val)) {
       const sampled = parseSampledDistribution(val);
       if (sampled) {
-        const sortedSamples = sampled.samples.sort((a, b) => a - b);
-        const n = sortedSamples.length;
-        switch (options.type) {
-          case DistributionViewType.NATIVE_DISTRIBUTION:
-            return `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
-          case DistributionViewType.CONFIDENCE_INTERVAL:
-            const confidenceLevel = options.confidenceLevel || 95;
-            const lowerIndex = Math.floor(n * (1 - confidenceLevel / 100) / 2);
-            const upperIndex = Math.floor(n * (1 + confidenceLevel / 100) / 2);
-            const lowerBound = sortedSamples[lowerIndex];
-            const upperBound = sortedSamples[upperIndex];
-            return `${confidenceLevel}% CI [${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}]`;
-          // For sampled distributions, we only show native and confidence interval views
-          // since they are the result of operations that don't preserve parametric distribution types
-          default:
-            return `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
-        }
+        return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
       }
     }
 
     return String(val);
-  }
-
-  // Helper function to get Z-score for confidence intervals
-  const getZScore = (confidence: number): number => {
-    // Simplified Z-score lookup for common confidence levels
-    const zScores: { [key: number]: number } = {
-      0.90: 1.645,
-      0.95: 1.96,
-      0.99: 2.576
-    };
-    return zScores[confidence] || 1.96; // Default to 95% CI
   }
 
   const handleViewOptionChange = (newOptions: DistributionViewOptions) => {
@@ -704,182 +417,69 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                     borderRadius: '4px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                     zIndex: 1000,
-                    minWidth: '220px',
+                    minWidth: '180px',
                     fontSize: '12px'
                   }}>
                     <div style={{ padding: '4px 0' }}>
-                      {/* Show interpretation options for confidence intervals */}
+                      {/* Only show interpretation options for confidence intervals */}
                       {isConfidenceInterval(value) && (
                         <>
                           <div style={{ 
                             padding: '6px 12px', 
                             borderBottom: '1px solid var(--border-color)',
                             fontWeight: 'bold',
-                            color: 'var(--text-secondary)'
-                          }}>
-                            Interpretation:
-                          </div>
-                          <button
-                            onClick={() => {
-                              // TODO: Update the CI interpretation to 'normal'
-                              handleViewOptionChange({ 
-                                ...viewOptions, 
-                                ciInterpretation: 'normal' 
-                              });
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '6px 12px',
-                              border: 'none',
-                              background: viewOptions.ciInterpretation === 'normal' ? 'var(--resize-handle-active)' : 'transparent',
-                              color: 'var(--text-primary)',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontSize: 'inherit'
-                            }}
-                          >
-                            Normal (symmetric CI)
-                          </button>
-                          <button
-                            onClick={() => {
-                              // TODO: Update the CI interpretation to 'uniform'
-                              handleViewOptionChange({ 
-                                ...viewOptions, 
-                                ciInterpretation: 'uniform' 
-                              });
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '6px 12px',
-                              border: 'none',
-                              background: viewOptions.ciInterpretation === 'uniform' ? 'var(--resize-handle-active)' : 'transparent',
-                              color: 'var(--text-primary)',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontSize: 'inherit'
-                            }}
-                          >
-                            Uniform (hard bounds)
-                          </button>
-                          <button
-                            onClick={() => {
-                              // TODO: Update the CI interpretation to 'lognormal'
-                              handleViewOptionChange({ 
-                                ...viewOptions, 
-                                ciInterpretation: 'lognormal' 
-                              });
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '6px 12px',
-                              border: 'none',
-                              background: viewOptions.ciInterpretation === 'lognormal' ? 'var(--resize-handle-active)' : 'transparent',
-                              color: 'var(--text-primary)',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              fontSize: 'inherit'
-                            }}
-                          >
-                            Log-normal (positive only)
-                          </button>
-                          <div style={{ 
-                            padding: '6px 12px', 
-                            borderBottom: '1px solid var(--border-color)',
-                            borderTop: '1px solid var(--border-color)',
-                            marginTop: '4px',
-                            fontWeight: 'bold',
-                            color: 'var(--text-secondary)'
+                            color: 'var(--text-secondary)',
+                            fontSize: '11px'
                           }}>
                             View as:
                           </div>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleViewOptionChange({ type: DistributionViewType.CONFIDENCE_INTERVAL, confidenceLevel: 95 })}
-                        style={{
-                          width: '100%',
-                          padding: '6px 12px',
-                          border: 'none',
-                          background: viewOptions.type === DistributionViewType.CONFIDENCE_INTERVAL ? 'var(--resize-handle-active)' : 'transparent',
-                          color: 'var(--text-primary)',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          fontSize: 'inherit'
-                        }}
-                      >
-                        95% Confidence Interval
-                      </button>
-                      
-                      {(isGaussian(value) || isSampledDistribution(value) || isConfidenceInterval(value) || isLogNormal(value) || isUniform(value)) && (
-                        <>
                           <button
-                            onClick={() => handleViewOptionChange({ type: DistributionViewType.NATIVE_DISTRIBUTION })}
+                            onClick={() => handleViewOptionChange({ type: DistributionViewType.NORMAL })}
                             style={{
                               width: '100%',
                               padding: '6px 12px',
                               border: 'none',
-                              background: viewOptions.type === DistributionViewType.NATIVE_DISTRIBUTION ? 'var(--resize-handle-active)' : 'transparent',
+                              background: viewOptions.type === DistributionViewType.NORMAL ? 'var(--resize-handle-active)' : 'transparent',
                               color: 'var(--text-primary)',
                               textAlign: 'left',
                               cursor: 'pointer',
                               fontSize: 'inherit'
                             }}
                           >
-                            Native Format
+                            Normal Distribution
                           </button>
-                          {/* Show distribution conversion options only for confidence intervals */}
-                          {isConfidenceInterval(value) && (
-                            <>
-                              <button
-                                onClick={() => handleViewOptionChange({ type: DistributionViewType.GAUSSIAN_NOTATION })}
-                                style={{
-                                  width: '100%',
-                                  padding: '6px 12px',
-                                  border: 'none',
-                                  background: viewOptions.type === DistributionViewType.GAUSSIAN_NOTATION ? 'var(--resize-handle-active)' : 'transparent',
-                                  color: 'var(--text-primary)',
-                                  textAlign: 'left',
-                                  cursor: 'pointer',
-                                  fontSize: 'inherit'
-                                }}
-                              >
-                                Gaussian Approximation
-                              </button>
-                              <button
-                                onClick={() => handleViewOptionChange({ type: DistributionViewType.LOG_NORMAL_NOTATION })}
-                                style={{
-                                  width: '100%',
-                                  padding: '6px 12px',
-                                  border: 'none',
-                                  background: viewOptions.type === DistributionViewType.LOG_NORMAL_NOTATION ? 'var(--resize-handle-active)' : 'transparent',
-                                  color: 'var(--text-primary)',
-                                  textAlign: 'left',
-                                  cursor: 'pointer',
-                                  fontSize: 'inherit'
-                                }}
-                              >
-                                Log-Normal Approximation
-                              </button>
-                              <button
-                                onClick={() => handleViewOptionChange({ type: DistributionViewType.UNIFORM_NOTATION })}
-                                style={{
-                                  width: '100%',
-                                  padding: '6px 12px',
-                                  border: 'none',
-                                  background: viewOptions.type === DistributionViewType.UNIFORM_NOTATION ? 'var(--resize-handle-active)' : 'transparent',
-                                  color: 'var(--text-primary)',
-                                  textAlign: 'left',
-                                  cursor: 'pointer',
-                                  fontSize: 'inherit'
-                                }}
-                              >
-                                Uniform Approximation
-                              </button>
-                            </>
-                          )}
+                          <button
+                            onClick={() => handleViewOptionChange({ type: DistributionViewType.LOGNORMAL })}
+                            style={{
+                              width: '100%',
+                              padding: '6px 12px',
+                              border: 'none',
+                              background: viewOptions.type === DistributionViewType.LOGNORMAL ? 'var(--resize-handle-active)' : 'transparent',
+                              color: 'var(--text-primary)',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: 'inherit'
+                            }}
+                          >
+                            Log-Normal Distribution
+                          </button>
+                          <button
+                            onClick={() => handleViewOptionChange({ type: DistributionViewType.UNIFORM })}
+                            style={{
+                              width: '100%',
+                              padding: '6px 12px',
+                              border: 'none',
+                              background: viewOptions.type === DistributionViewType.UNIFORM ? 'var(--resize-handle-active)' : 'transparent',
+                              color: 'var(--text-primary)',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              fontSize: 'inherit'
+                            }}
+                          >
+                            Uniform Distribution
+                          </button>
                         </>
                       )}
-                      
                     </div>
                   </div>
                 )}
@@ -890,13 +490,45 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       </div>
       {showPlot && isDistribution && (() => {
         const samples = getSamplesFromDistribution(value);
-        return samples ? (
+        if (!samples) return null;
+        
+        // Get distribution type and confidence interval info
+        let distributionType: 'normal' | 'lognormal' | 'uniform' = 'normal';
+        let confidenceInterval: { lower: number; upper: number; confidenceLevel: number } | undefined;
+        
+        if (isConfidenceInterval(value)) {
+          const ci = parseConfidenceInterval(value);
+          if (ci) {
+            confidenceInterval = {
+              lower: ci.lower,
+              upper: ci.upper,
+              confidenceLevel: ci.confidenceLevel,
+            };
+            
+            // Map view options to distribution types
+            switch (viewOptions.type) {
+              case DistributionViewType.NORMAL:
+                distributionType = 'normal';
+                break;
+              case DistributionViewType.LOGNORMAL:
+                distributionType = 'lognormal';
+                break;
+              case DistributionViewType.UNIFORM:
+                distributionType = 'uniform';
+                break;
+            }
+          }
+        }
+        
+        return (
           <DistributionPlot
             position={plotPosition}
             samples={samples}
             onClose={() => setShowPlot(false)}
+            distributionType={distributionType}
+            confidenceInterval={confidenceInterval}
           />
-        ) : null;
+        );
       })()}
     </>
   )
