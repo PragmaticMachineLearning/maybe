@@ -7,6 +7,8 @@ interface DistributionPlotProps {
   onClose: () => void;
   position: { top: number; left: number };
   inline?: boolean;
+  distributionType?: 'normal' | 'lognormal' | 'uniform';
+  confidenceInterval?: { lower: number; upper: number; confidenceLevel: number };
 }
 
 interface QueryState {
@@ -21,6 +23,8 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   onClose,
   position,
   inline = false,
+  distributionType = 'normal',
+  confidenceInterval,
 }) => {
   const plotRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -31,26 +35,102 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     showCI: false,
   });
 
-  // Calculate mean and variance from samples
-  const mean = samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
-  const variance = samples.reduce((sum, sample) => sum + Math.pow(sample - mean, 2), 0) / samples.length;
-  const stdDev = Math.sqrt(variance);
+  // Calculate distribution parameters based on type
+  const getDistributionParameters = () => {
+    if (distributionType === 'uniform' && confidenceInterval) {
+      return {
+        type: 'uniform' as const,
+        a: confidenceInterval.lower,
+        b: confidenceInterval.upper,
+      };
+    }
+    
+    if (distributionType === 'lognormal' && confidenceInterval) {
+      // Calculate lognormal parameters from confidence interval
+      const lnLower = Math.log(confidenceInterval.lower);
+      const lnUpper = Math.log(confidenceInterval.upper);
+      const mu = (lnLower + lnUpper) / 2;
+      const sigma = (lnUpper - lnLower) / 3.29; // For 90% CI
+      return {
+        type: 'lognormal' as const,
+        mu,
+        sigma,
+      };
+    }
+    
+    // Default to normal distribution
+    if (confidenceInterval) {
+      const zScore = confidenceInterval.confidenceLevel === 90 ? 1.645 : 1.96;
+      const mean = (confidenceInterval.lower + confidenceInterval.upper) / 2;
+      const std = (confidenceInterval.upper - confidenceInterval.lower) / (2 * zScore);
+      return {
+        type: 'normal' as const,
+        mean,
+        std,
+      };
+    }
+    
+    // Fallback to sample statistics
+    const mean = samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
+    const variance = samples.reduce((sum, sample) => sum + Math.pow(sample - mean, 2), 0) / samples.length;
+    const std = Math.sqrt(variance);
+    return {
+      type: 'normal' as const,
+      mean,
+      std,
+    };
+  };
 
-  // Generate points for the distribution curve using kernel density estimation
-  const points = 100;
-  const range = stdDev * 4; // Plot ±4 standard deviations
-  const step = (range * 2) / points;
-  const bandwidth = 1.06 * stdDev * Math.pow(samples.length, -0.2); // Silverman's rule of thumb
+  const params = getDistributionParameters();
 
-  const data = Array.from({ length: points }, (_, i) => {
-    const x = mean - range + i * step;
-    // Use kernel density estimation for all distributions
-    const y = samples.reduce((sum, sample) => {
-      const u = (x - sample) / bandwidth;
-      return sum + Math.exp(-0.5 * u * u) / (bandwidth * Math.sqrt(2 * Math.PI));
-    }, 0) / samples.length;
-    return [x, y];
-  });
+  // Generate theoretical PDF data based on distribution type
+  const generatePDFData = () => {
+    const points = 200;
+    
+    if (params.type === 'uniform') {
+      const { a, b } = params;
+      const range = b - a;
+      const step = range / points;
+      const pdfValue = 1 / range; // Uniform PDF is constant
+      
+      return Array.from({ length: points }, (_, i) => {
+        const x = a + i * step;
+        return [x, pdfValue];
+      });
+    }
+    
+    if (params.type === 'lognormal') {
+      const { mu, sigma } = params;
+      const minX = Math.exp(mu - 4 * sigma);
+      const maxX = Math.exp(mu + 4 * sigma);
+      const step = (maxX - minX) / points;
+      
+      return Array.from({ length: points }, (_, i) => {
+        const x = minX + i * step;
+        if (x <= 0) return [x, 0];
+        // Log-normal PDF: f(x) = 1/(x*σ*√(2π)) * exp(-(ln(x)-μ)²/(2σ²))
+        const lnX = Math.log(x);
+        const pdfValue = (1 / (x * sigma * Math.sqrt(2 * Math.PI))) * 
+                        Math.exp(-Math.pow(lnX - mu, 2) / (2 * sigma * sigma));
+        return [x, pdfValue];
+      });
+    }
+    
+    // Normal distribution
+    const { mean, std } = params;
+    const range = std * 4;
+    const step = (range * 2) / points;
+    
+    return Array.from({ length: points }, (_, i) => {
+      const x = mean - range + i * step;
+      // Normal PDF: f(x) = 1/(σ*√(2π)) * exp(-(x-μ)²/(2σ²))
+      const pdfValue = (1 / (std * Math.sqrt(2 * Math.PI))) * 
+                      Math.exp(-Math.pow(x - mean, 2) / (2 * std * std));
+      return [x, pdfValue];
+    });
+  };
+
+  const data = generatePDFData();
 
   // Calculate percentile and confidence interval values from samples
   const sortedSamples = [...samples].sort((a, b) => a - b);
@@ -62,9 +142,22 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   const ciLower = sortedSamples[Math.min(ciLowerIndex, sortedSamples.length - 1)];
   const ciUpper = sortedSamples[Math.min(ciUpperIndex, sortedSamples.length - 1)];
 
+  const getDistributionTitle = () => {
+    switch (distributionType) {
+      case 'normal':
+        return 'Normal Distribution';
+      case 'lognormal':
+        return 'Log-Normal Distribution';
+      case 'uniform':
+        return 'Uniform Distribution';
+      default:
+        return 'Distribution Plot';
+    }
+  };
+
   const option = {
     title: {
-      text: "Distribution Plot",
+      text: getDistributionTitle(),
       left: "center",
       textStyle: {
         fontSize: 14,
@@ -91,7 +184,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       type: "value",
       name: "Value",
       nameLocation: "middle",
-      nameGap: 30,
+      namezp: 30,
       axisLine: {
         lineStyle: {
           color: '#666'
@@ -117,7 +210,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     },
     series: [
       {
-        name: "Distribution PDF",
+        name: `${getDistributionTitle()} PDF`,
         type: "line",
         smooth: true,
         data: data,
