@@ -1,5 +1,9 @@
-import React from 'react'
+import type { ExampleCell, ExampleDefinition } from '../examples/examples'
+import React, { useContext, useEffect, useRef, useState } from 'react'
+
+import { SpreadsheetContext } from '../SpreadsheetContext'
 import { ThemeToggle } from './ThemeToggle'
+import { spreadsheetExamples } from '../examples/examples'
 
 interface ToolbarProps {
   useFlowDiag: boolean
@@ -7,6 +11,63 @@ interface ToolbarProps {
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag }) => {
+  const { hfInstance } = useContext(SpreadsheetContext)
+  const [showExamplesDropdown, setShowExamplesDropdown] = useState(false)
+  const examplesDropdownRef = useRef<HTMLDivElement>(null)
+  const examplesButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showExamplesDropdown) {
+      return
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (
+        examplesDropdownRef.current &&
+        !examplesDropdownRef.current.contains(target) &&
+        examplesButtonRef.current &&
+        !examplesButtonRef.current.contains(target)
+      ) {
+        setShowExamplesDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showExamplesDropdown])
+
+  const handleExampleSelect = (example: ExampleDefinition) => {
+    if (!hfInstance) {
+      return
+    }
+
+    const { width, height } = hfInstance.getSheetDimensions(0)
+    const requiredWidth = example.data.reduce((max, row) => Math.max(max, row.length), 0)
+    const targetWidth = Math.max(width, requiredWidth)
+    const targetHeight = Math.max(height, example.data.length)
+
+    const nextSheet: ExampleCell[][] = Array.from({ length: targetHeight }, () =>
+      Array.from<ExampleCell>({ length: targetWidth }, () => null)
+    )
+
+    example.data.forEach((rowData, rowIndex) => {
+      if (rowIndex >= targetHeight) {
+        return
+      }
+      rowData.forEach((cellContent, colIndex) => {
+        if (colIndex >= targetWidth) {
+          return
+        }
+        nextSheet[rowIndex][colIndex] = cellContent ?? null
+      })
+    })
+
+    hfInstance.setSheetContent(0, nextSheet)
+    setShowExamplesDropdown(false)
+  }
+
   return (
     <div style={{
       display: 'flex',
@@ -83,6 +144,127 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag 
           )}
         </svg>
       </button>
+
+      {/* Examples Button */}
+      <div style={{ position: 'relative' }}>
+        <button
+          ref={examplesButtonRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowExamplesDropdown(!showExamplesDropdown)
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '8px',
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)',
+            backgroundColor: 'var(--bg-surface)',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            fontFamily: 'inherit',
+            boxShadow: '0 1px 3px var(--shadow)',
+            transition: 'all 0.2s ease',
+            outline: 'none',
+            height: '40px',
+            paddingLeft: '12px',
+            paddingRight: '12px',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--bg-hover)'
+            e.currentTarget.style.borderColor = 'var(--border-header)'
+            e.currentTarget.style.transform = 'translateY(-1px)'
+            e.currentTarget.style.boxShadow = '0 2px 6px var(--shadow-hover)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--bg-surface)'
+            e.currentTarget.style.borderColor = 'var(--border-color)'
+            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.boxShadow = '0 1px 3px var(--shadow)'
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.outline = '2px solid var(--resize-handle-active)'
+            e.currentTarget.style.outlineOffset = '2px'
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.outline = 'none'
+          }}
+          title="Load an example spreadsheet"
+        >
+          Examples
+        </button>
+        {showExamplesDropdown && (
+          <div
+            ref={examplesDropdownRef}
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              marginTop: '4px',
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              zIndex: 1200,
+              minWidth: '240px',
+              padding: '6px 0',
+            }}
+          >
+            <div
+              style={{
+                padding: '6px 12px',
+                fontWeight: 'bold',
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              Load an example
+            </div>
+            {spreadsheetExamples.map((example) => (
+              <button
+                key={example.id}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleExampleSelect(example)
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'none',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <div style={{ fontWeight: 500 }}>{example.name}</div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    color: 'var(--text-secondary)',
+                    marginTop: '2px',
+                  }}
+                >
+                  {example.description}
+                </div>
+              </button>
+            ))}
+            <div
+              style={{
+                padding: '8px 12px 4px',
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              Selecting an example replaces the current sheet contents.
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Theme Toggle */}
       <div style={{ 

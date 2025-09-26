@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useRef, useState } from 'react'
 
+import type { CIInterpretation } from '../../hyperformula/src/interpreter/InterpreterValue';
 import { DistributionPlot } from './DistributionPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext';
-import type { CIInterpretation } from '../../hyperformula/src/interpreter/InterpreterValue';
 
 // Distribution interpretation options for the dropdown
 enum DistributionViewType {
@@ -140,6 +140,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
   }, [showViewDropdown])
 
+
   const handleDoubleClick = () => {
     const formula = getCellFormula(row, col)
     if (formula) {
@@ -240,6 +241,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
 
   // Update isDistribution to only include the two types we support in unified approach
   const isDistribution = isConfidenceInterval(value) || isSampledDistribution(value);
+  
+  // Only show view options for confidence intervals, not sampled distributions
+  const showViewOptions = isConfidenceInterval(value);
 
   // Helper to calculate median for confidence intervals
   const getConfidenceIntervalMedian = (ci: { lower: number, upper: number, interpretation?: CIInterpretation }): number => {
@@ -321,6 +325,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     setShowViewDropdown(false);
   }
 
+
   return (
     <>
       <div 
@@ -385,7 +390,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             }}>
               {formatValue(value, viewOptions)}
             </span>
-            {isDistribution && !editing && (
+            {showViewOptions && !editing && (
               <div style={{ position: 'relative', marginLeft: '4px' }} ref={dropdownRef}>
                 <button
                   onClick={(e) => {
