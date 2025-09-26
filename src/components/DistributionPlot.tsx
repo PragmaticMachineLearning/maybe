@@ -1,13 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ReactECharts from "echarts-for-react";
+
+type DistributionKind = 'normal' | 'lognormal' | 'uniform' | 'sampled';
 
 interface DistributionPlotProps {
   samples: number[];
   onClose: () => void;
-  position: { top: number; left: number };
+  position?: { top: number; left: number };
   inline?: boolean;
-  distributionType?: 'normal' | 'lognormal' | 'uniform';
+  distributionType?: DistributionKind;
   confidenceInterval?: { lower: number; upper: number; confidenceLevel: number };
 }
 
@@ -18,264 +20,470 @@ interface QueryState {
   showCI: boolean;
 }
 
+const SettingsIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = "currentColor" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M12 15.5C13.933 15.5 15.5 13.933 15.5 12C15.5 10.067 13.933 8.5 12 8.5C10.067 8.5 8.5 10.067 8.5 12C8.5 13.933 10.067 15.5 12 15.5Z"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M19.4 15.5C19.547 15.05 19.647 14.575 19.694 14.084L21.5 12L19.694 9.916C19.647 9.425 19.547 8.95 19.4 8.5L21 6L18.5 4.4C18.05 4.253 17.575 4.153 17.084 4.106L15 2.3L12.916 4.106C12.425 4.153 11.95 4.253 11.5 4.4L9 3L7.4 5.5C7.253 5.95 7.153 6.425 7.106 6.916L5.3 9L7.106 11.084C7.153 11.575 7.253 12.05 7.4 12.5L6 15L8.5 16.6C8.95 16.747 9.425 16.847 9.916 16.894L12 18.7L14.084 16.894C14.575 16.847 15.05 16.747 15.5 16.6L18 18L19.4 15.5Z"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const CloseIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = "currentColor" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M7 7L17 17"
+      stroke={color}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    <path
+      d="M17 7L7 17"
+      stroke={color}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const DEFAULT_QUERY_STATE: QueryState = {
+  percentile: 95,
+  confidenceLevel: 95,
+  showPercentile: false,
+  showCI: true,
+};
+
+const toMeanAndStd = (values: number[]) => {
+  if (!values.length) {
+    return { mean: 0, std: 0 };
+  }
+  const mean = values.reduce((acc, value) => acc + value, 0) / values.length;
+  const variance = values.reduce((acc, value) => acc + Math.pow(value - mean, 2), 0) / values.length;
+  return { mean, std: Math.sqrt(Math.max(variance, 0)) };
+};
+
+const toLogNormalParams = (values: number[]) => {
+  const positives = values.filter((value) => value > 0);
+  if (positives.length < 2) {
+    return null;
+  }
+  const logs = positives.map((value) => Math.log(value));
+  const { mean, std } = toMeanAndStd(logs);
+  if (!Number.isFinite(mean) || !Number.isFinite(std) || std === 0) {
+    return null;
+  }
+  return { mu: mean, sigma: std };
+};
+
+const createUniformParams = (values: number[]) => {
+  if (!values.length) {
+    return null;
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (!Number.isFinite(min) || !Number.isFinite(max) || min === max) {
+    return null;
+  }
+  return { a: min, b: max };
+};
+
+const percentileFromSorted = (sorted: number[], percentile: number) => {
+  if (!sorted.length) {
+    return NaN;
+  }
+  const clamped = Math.min(Math.max(percentile, 0), 100);
+  const index = (clamped / 100) * (sorted.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) {
+    return sorted[lower];
+  }
+  const weight = index - lower;
+  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+};
+
+const kernelDensityEstimate = (values: number[], points = 200) => {
+  if (!values.length) {
+    return [];
+  }
+
+  const sorted = [...values].sort((a, b) => a - b);
+  const { std } = toMeanAndStd(sorted);
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+  const range = Math.max(max - min, 1e-6);
+  const bandwidth = std > 0 ? 1.06 * std * Math.pow(sorted.length, -1 / 5) : range / Math.sqrt(12);
+  const safeBandwidth = bandwidth > 0 ? bandwidth : range / 25;
+
+  const pad = range * 0.15 || 1;
+  const start = min - pad;
+  const step = (max + pad - start) / points;
+
+  return Array.from({ length: points }, (_, idx) => {
+    const x = start + idx * step;
+    const density = sorted.reduce((acc, sample) => {
+      const u = (x - sample) / safeBandwidth;
+      return acc + Math.exp(-0.5 * u * u);
+    }, 0) / (sorted.length * safeBandwidth * Math.sqrt(2 * Math.PI));
+    return [x, density];
+  });
+};
+
+const zScoreForConfidence = (confidenceLevel: number) => {
+  if (confidenceLevel >= 99.9) return 3.29;
+  if (confidenceLevel >= 99) return 2.576;
+  if (confidenceLevel >= 98) return 2.326;
+  if (confidenceLevel >= 95) return 1.96;
+  if (confidenceLevel >= 90) return 1.645;
+  if (confidenceLevel >= 80) return 1.282;
+  if (confidenceLevel >= 70) return 1.036;
+  return 1.0;
+};
+
+const createNormalData = (mean: number, std: number, points = 200) => {
+  if (!Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
+    return [];
+  }
+  const range = std * 4;
+  const step = (range * 2) / points;
+  return Array.from({ length: points }, (_, idx) => {
+    const x = mean - range + idx * step;
+    const pdfValue = (1 / (std * Math.sqrt(2 * Math.PI))) * Math.exp(-Math.pow(x - mean, 2) / (2 * std * std));
+    return [x, pdfValue];
+  });
+};
+
+const createLogNormalData = (mu: number, sigma: number, points = 200) => {
+  if (!Number.isFinite(mu) || !Number.isFinite(sigma) || sigma <= 0) {
+    return [];
+  }
+  const minX = Math.exp(mu - 4 * sigma);
+  const maxX = Math.exp(mu + 4 * sigma);
+  const step = (maxX - minX) / points;
+  return Array.from({ length: points }, (_, idx) => {
+    const x = minX + idx * step;
+    if (x <= 0) {
+      return [x, 0];
+    }
+    const lnX = Math.log(x);
+    const pdfValue = (1 / (x * sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-Math.pow(lnX - mu, 2) / (2 * sigma * sigma));
+    return [x, pdfValue];
+  });
+};
+
+const createUniformData = (a: number, b: number, points = 200) => {
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a >= b) {
+    return [];
+  }
+  const height = 1 / (b - a);
+  const step = (b - a) / points;
+  const data: Array<[number, number]> = [];
+  data.push([a - step, 0]);
+  for (let idx = 0; idx <= points; idx += 1) {
+    const x = a + idx * step;
+    data.push([x, height]);
+  }
+  data.push([b + step, 0]);
+  return data;
+};
+
 export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   samples,
   onClose,
   position,
   inline = false,
-  distributionType = 'normal',
+  distributionType,
   confidenceInterval,
 }) => {
+  const accentColor = '#4e8376';
+  const accentArea = 'rgba(78, 131, 118, 0.18)';
+  const highlightColor = '#b67c68';
+
   const plotRef = useRef<HTMLDivElement>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [queryState, setQueryState] = useState<QueryState>({
-    percentile: 95,
-    confidenceLevel: 95,
-    showPercentile: false,
-    showCI: false,
-  });
+  const [queryState, setQueryState] = useState<QueryState>(() => ({
+    ...DEFAULT_QUERY_STATE,
+    confidenceLevel: confidenceInterval?.confidenceLevel ?? DEFAULT_QUERY_STATE.confidenceLevel,
+    showCI: Boolean(confidenceInterval),
+  }));
 
-  // Calculate distribution parameters based on type
-  const getDistributionParameters = () => {
-    if (distributionType === 'uniform' && confidenceInterval) {
-      return {
-        type: 'uniform' as const,
-        a: confidenceInterval.lower,
-        b: confidenceInterval.upper,
-      };
+  const distributionKind: DistributionKind = useMemo(() => {
+    if (distributionType) {
+      return distributionType;
     }
-    
-    if (distributionType === 'lognormal' && confidenceInterval) {
-      // Calculate lognormal parameters from confidence interval
-      const lnLower = Math.log(confidenceInterval.lower);
-      const lnUpper = Math.log(confidenceInterval.upper);
-      const mu = (lnLower + lnUpper) / 2;
-      const sigma = (lnUpper - lnLower) / 3.29; // For 90% CI
-      return {
-        type: 'lognormal' as const,
-        mu,
-        sigma,
-      };
-    }
-    
-    // Default to normal distribution
-    if (confidenceInterval) {
-      const zScore = confidenceInterval.confidenceLevel === 90 ? 1.645 : 1.96;
-      const mean = (confidenceInterval.lower + confidenceInterval.upper) / 2;
-      const std = (confidenceInterval.upper - confidenceInterval.lower) / (2 * zScore);
-      return {
-        type: 'normal' as const,
-        mean,
-        std,
-      };
-    }
-    
-    // Fallback to sample statistics
-    const mean = samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
-    const variance = samples.reduce((sum, sample) => sum + Math.pow(sample - mean, 2), 0) / samples.length;
-    const std = Math.sqrt(variance);
+    return confidenceInterval ? 'normal' : 'sampled';
+  }, [distributionType, confidenceInterval]);
+
+  const sortedSamples = useMemo(() => [...samples].sort((a, b) => a - b), [samples]);
+
+  const percentileValue = useMemo(
+    () => percentileFromSorted(sortedSamples, queryState.percentile),
+    [sortedSamples, queryState.percentile]
+  );
+
+  const ciBounds = useMemo(() => {
+    const tail = (100 - queryState.confidenceLevel) / 2;
     return {
-      type: 'normal' as const,
-      mean,
-      std,
+      lower: percentileFromSorted(sortedSamples, tail),
+      upper: percentileFromSorted(sortedSamples, 100 - tail),
     };
-  };
+  }, [sortedSamples, queryState.confidenceLevel]);
 
-  const params = getDistributionParameters();
-
-  // Generate theoretical PDF data based on distribution type
-  const generatePDFData = () => {
-    const points = 200;
-    
-    if (params.type === 'uniform') {
-      const { a, b } = params;
-      const range = b - a;
-      const step = range / points;
-      const pdfValue = 1 / range; // Uniform PDF is constant
-      
-      return Array.from({ length: points }, (_, i) => {
-        const x = a + i * step;
-        return [x, pdfValue];
-      });
+  const distributionParams = useMemo(() => {
+    switch (distributionKind) {
+      case 'uniform': {
+        if (confidenceInterval) {
+          return { type: 'uniform' as const, a: confidenceInterval.lower, b: confidenceInterval.upper };
+        }
+        const params = createUniformParams(samples);
+        return params ? { type: 'uniform' as const, ...params } : null;
+      }
+      case 'lognormal': {
+        if (confidenceInterval && confidenceInterval.lower > 0 && confidenceInterval.upper > 0) {
+          const z = zScoreForConfidence(confidenceInterval.confidenceLevel);
+          const lnLower = Math.log(confidenceInterval.lower);
+          const lnUpper = Math.log(confidenceInterval.upper);
+          const mu = (lnLower + lnUpper) / 2;
+          const sigma = (lnUpper - lnLower) / (2 * z);
+          if (Number.isFinite(mu) && Number.isFinite(sigma) && sigma > 0) {
+            return { type: 'lognormal' as const, mu, sigma };
+          }
+        }
+        const params = toLogNormalParams(samples);
+        return params ? { type: 'lognormal' as const, ...params } : null;
+      }
+      case 'normal': {
+        if (confidenceInterval) {
+          const z = zScoreForConfidence(confidenceInterval.confidenceLevel);
+          const mean = (confidenceInterval.lower + confidenceInterval.upper) / 2;
+          const std = (confidenceInterval.upper - confidenceInterval.lower) / (2 * z);
+          return { type: 'normal' as const, mean, std };
+        }
+        const { mean, std } = toMeanAndStd(samples);
+        return std > 0 ? { type: 'normal' as const, mean, std } : null;
+      }
+      default:
+        return null;
     }
-    
-    if (params.type === 'lognormal') {
-      const { mu, sigma } = params;
-      const minX = Math.exp(mu - 4 * sigma);
-      const maxX = Math.exp(mu + 4 * sigma);
-      const step = (maxX - minX) / points;
-      
-      return Array.from({ length: points }, (_, i) => {
-        const x = minX + i * step;
-        if (x <= 0) return [x, 0];
-        // Log-normal PDF: f(x) = 1/(x*σ*√(2π)) * exp(-(ln(x)-μ)²/(2σ²))
-        const lnX = Math.log(x);
-        const pdfValue = (1 / (x * sigma * Math.sqrt(2 * Math.PI))) * 
-                        Math.exp(-Math.pow(lnX - mu, 2) / (2 * sigma * sigma));
-        return [x, pdfValue];
-      });
+  }, [distributionKind, confidenceInterval, samples]);
+
+  const pdfData = useMemo(() => {
+    switch (distributionKind) {
+      case 'uniform':
+        if (distributionParams && 'a' in distributionParams) {
+          return createUniformData(distributionParams.a, distributionParams.b);
+        }
+        return kernelDensityEstimate(samples);
+      case 'lognormal':
+        if (distributionParams && 'mu' in distributionParams) {
+          return createLogNormalData(distributionParams.mu, distributionParams.sigma);
+        }
+        const positive = samples.filter((value) => value > 0);
+        return positive.length ? kernelDensityEstimate(positive) : kernelDensityEstimate(samples);
+      case 'normal':
+        if (distributionParams && 'mean' in distributionParams) {
+          return createNormalData(distributionParams.mean, distributionParams.std);
+        }
+        return kernelDensityEstimate(samples);
+      case 'sampled':
+      default:
+        return kernelDensityEstimate(samples);
     }
-    
-    // Normal distribution
-    const { mean, std } = params;
-    const range = std * 4;
-    const step = (range * 2) / points;
-    
-    return Array.from({ length: points }, (_, i) => {
-      const x = mean - range + i * step;
-      // Normal PDF: f(x) = 1/(σ*√(2π)) * exp(-(x-μ)²/(2σ²))
-      const pdfValue = (1 / (std * Math.sqrt(2 * Math.PI))) * 
-                      Math.exp(-Math.pow(x - mean, 2) / (2 * std * std));
-      return [x, pdfValue];
-    });
-  };
+  }, [distributionKind, distributionParams, samples]);
 
-  const data = generatePDFData();
+  const densitySeriesData = pdfData.length
+    ? pdfData
+    : sortedSamples.length
+      ? sortedSamples.map((value) => [value, 0])
+      : [[0, 0]];
 
-  // Calculate percentile and confidence interval values from samples
-  const sortedSamples = [...samples].sort((a, b) => a - b);
-  const percentileIndex = Math.floor((queryState.percentile / 100) * sortedSamples.length);
-  const percentileValue = sortedSamples[Math.min(percentileIndex, sortedSamples.length - 1)];
-  
-  const ciLowerIndex = Math.floor(((100 - queryState.confidenceLevel) / 200) * sortedSamples.length);
-  const ciUpperIndex = Math.floor(((100 + queryState.confidenceLevel) / 200) * sortedSamples.length);
-  const ciLower = sortedSamples[Math.min(ciLowerIndex, sortedSamples.length - 1)];
-  const ciUpper = sortedSamples[Math.min(ciUpperIndex, sortedSamples.length - 1)];
+  const percentileEnabled = queryState.showPercentile && Number.isFinite(percentileValue);
+  const ciEnabled = queryState.showCI && Number.isFinite(ciBounds.lower) && Number.isFinite(ciBounds.upper) && ciBounds.lower <= ciBounds.upper;
 
-  const getDistributionTitle = () => {
-    switch (distributionType) {
+  const getDistributionTitle = useCallback((): string => {
+    switch (distributionKind) {
       case 'normal':
         return 'Normal Distribution';
       case 'lognormal':
         return 'Log-Normal Distribution';
       case 'uniform':
         return 'Uniform Distribution';
+      case 'sampled':
       default:
-        return 'Distribution Plot';
+        return 'Empirical Distribution';
     }
-  };
+  }, [distributionKind]);
 
-  const option = {
+  const option = useMemo(() => ({
+    backgroundColor: 'transparent',
     title: {
       text: getDistributionTitle(),
-      left: "center",
+      left: 'center',
       textStyle: {
         fontSize: 14,
-        fontWeight: 'normal',
-        color: '#333'
-      }
+        fontWeight: 500,
+        color: '#2f3a3a',
+      },
     },
     tooltip: {
-      trigger: "axis",
-      formatter: function (params: any) {
-        const x = params[0].data[0];
-        const y = params[0].data[1];
-        return `Value: ${x.toFixed(2)}<br/>
-                Density: ${y.toFixed(4)}`;
-      },
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderColor: '#ddd',
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      backgroundColor: 'rgba(255,255,255,0.92)',
+      borderColor: '#cedad6',
       borderWidth: 1,
-      textStyle: {
-        color: '#333'
-      }
+      textStyle: { color: '#2f3a3a' },
+      formatter: (params: any) => {
+        if (!params || !params.length) return '';
+        const datum = params[0].data;
+        if (!Array.isArray(datum)) return '';
+        const [x, y] = datum;
+        return `Value: ${Number(x).toFixed(3)}<br/>Density: ${Number(y).toPrecision(3)}`;
+      },
+    },
+    grid: {
+      top: 48,
+      left: '10%',
+      right: '6%',
+      bottom: '12%',
+      containLabel: true,
     },
     xAxis: {
-      type: "value",
-      name: "Value",
-      nameLocation: "middle",
-      namezp: 30,
+      type: 'value',
+      name: 'Value',
+      nameLocation: 'middle',
+      nameGap: 32,
       axisLine: {
-        lineStyle: {
-          color: '#666'
-        }
+        lineStyle: { color: '#6a7a78' },
       },
       axisLabel: {
-        color: '#666'
-      }
+        color: '#6a7a78',
+        formatter: (value: number) => Number(value).toPrecision(3),
+      },
+      splitLine: {
+        lineStyle: { color: 'rgba(206, 218, 214, 0.4)' },
+      },
     },
     yAxis: {
-      type: "value",
-      name: "Probability Density",
-      nameLocation: "middle",
+      type: 'value',
+      name: 'Density',
+      nameLocation: 'middle',
       nameGap: 40,
       axisLine: {
-        lineStyle: {
-          color: '#666'
-        }
+        lineStyle: { color: '#6a7a78' },
       },
       axisLabel: {
-        color: '#666'
-      }
+        color: '#6a7a78',
+      },
+      splitLine: {
+        lineStyle: { color: 'rgba(206, 218, 214, 0.3)' },
+      },
     },
     series: [
       {
-        name: `${getDistributionTitle()} PDF`,
-        type: "line",
+        name: distributionKind === 'sampled' ? 'Empirical Density' : `${getDistributionTitle()} PDF`,
+        type: 'line',
         smooth: true,
-        data: data,
+        showSymbol: false,
+        data: densitySeriesData,
         areaStyle: {
-          opacity: 0.2,
-          color: '#1890ff'
+          opacity: 1,
+          color: accentArea,
         },
         lineStyle: {
           width: 2,
-          color: '#1890ff'
+          color: accentColor,
         },
-        markLine: queryState.showPercentile ? {
-          silent: true,
-          data: [
-            {
-              xAxis: percentileValue,
-              lineStyle: {
-                color: '#ff4d4f',
-                type: 'dashed',
-                width: 2
-              },
+        markLine: percentileEnabled
+          ? {
+              silent: true,
+              symbol: ['none', 'none'],
               label: {
                 formatter: `${queryState.percentile}th percentile`,
-                position: 'end',
-                color: '#ff4d4f'
-              }
-            }
-          ]
-        } : undefined,
-        markArea: queryState.showCI ? {
-          silent: true,
-          data: [
-            [
-              {
-                xAxis: ciLower,
-                itemStyle: {
-                  color: 'rgba(24, 144, 255, 0.1)'
-                }
+                position: 'insideEndTop',
+                color: highlightColor,
+                fontWeight: 500,
               },
-              {
-                xAxis: ciUpper,
-                itemStyle: {
-                  color: 'rgba(24, 144, 255, 0.1)'
-                }
-              }
-            ]
-          ],
-          label: {
-            formatter: `${queryState.confidenceLevel}% CI`,
-            position: 'inside',
-            color: '#1890ff'
-          }
-        } : undefined
+              data: [
+                {
+                  xAxis: percentileValue,
+                  lineStyle: {
+                    color: highlightColor,
+                    type: 'dashed',
+                    width: 1.5,
+                  },
+                },
+              ],
+            }
+          : undefined,
+        markArea: ciEnabled
+          ? {
+              silent: true,
+              itemStyle: {
+                color: 'rgba(78, 131, 118, 0.12)',
+              },
+              label: {
+                show: true,
+                formatter: `${queryState.confidenceLevel}% interval`,
+                color: accentColor,
+                fontSize: 11,
+                position: 'inside',
+              },
+              data: [
+                [
+                  { xAxis: ciBounds.lower },
+                  { xAxis: ciBounds.upper },
+                ],
+              ],
+            }
+          : undefined,
       },
     ],
-    grid: {
-      left: "10%",
-      right: "10%",
-      bottom: "10%",
-      containLabel: true,
-    },
-  };
+  }), [
+    accentArea,
+    accentColor,
+    ciBounds.lower,
+    ciBounds.upper,
+    ciEnabled,
+    distributionKind,
+    getDistributionTitle,
+    highlightColor,
+    densitySeriesData,
+    percentileEnabled,
+    percentileValue,
+    queryState.confidenceLevel,
+    queryState.percentile,
+  ]);
 
   // Handle clicks outside the plot to close it
   useEffect(() => {
+    if (inline) {
+      return
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (plotRef.current && !plotRef.current.contains(event.target as Node)) {
         onClose();
@@ -286,149 +494,226 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [onClose]);
+  }, [inline, onClose]);
 
   const handleQueryChange = (field: keyof QueryState, value: number | boolean) => {
-    setQueryState(prev => ({ ...prev, [field]: value }));
+    setQueryState((prev) => {
+      if (field === 'percentile' && typeof value === 'number') {
+        const clamped = Math.min(Math.max(value, 0), 100);
+        return { ...prev, percentile: clamped };
+      }
+      if (field === 'confidenceLevel' && typeof value === 'number') {
+        const clamped = Math.min(Math.max(value, 0), 100);
+        return { ...prev, confidenceLevel: clamped };
+      }
+      if (field === 'showPercentile' && typeof value === 'boolean') {
+        return { ...prev, showPercentile: value };
+      }
+      if (field === 'showCI' && typeof value === 'boolean') {
+        return { ...prev, showCI: value };
+      }
+      return prev;
+    });
   };
+
+  useEffect(() => {
+    if (inline) {
+      setShowSettings(true);
+    }
+  }, [inline]);
+
+  useEffect(() => {
+    if (confidenceInterval) {
+      setQueryState((prev) => ({
+        ...prev,
+        confidenceLevel: confidenceInterval.confidenceLevel,
+      }));
+    } else {
+      setQueryState((prev) => ({
+        ...prev,
+        showCI: false,
+      }));
+    }
+  }, [confidenceInterval]);
+
+  const containerStyle = useMemo(() => inline ? {
+    position: "static" as const,
+    backgroundColor: "transparent",
+    padding: "0 10px",
+    borderRadius: 0,
+    boxShadow: "none",
+    zIndex: "auto" as const,
+    width: "100%",
+    minHeight: "100%",
+    boxSizing: "border-box" as const,
+  } : {
+    position: "fixed" as const,
+    top: position?.top ?? 0,
+    left: position?.left ?? 0,
+    backgroundColor: "var(--bg-surface)",
+    padding: "24px",
+    borderRadius: "20px",
+    boxShadow: "0 24px 60px rgba(15, 31, 31, 0.22)",
+    zIndex: 1000,
+    width: "min(420px, calc(100vw - 32px))",
+    maxHeight: "calc(100vh - 32px)",
+    minHeight: "min(360px, calc(100vh - 32px))",
+    overflow: "hidden",
+    boxSizing: "border-box" as const,
+  }, [inline, position?.left, position?.top]);
 
   return (
     <div
       ref={plotRef}
-      style={{
-        ...(inline ? 
-        {position: "static",
-        backgroundColor: "transparent",
-        padding: 0,
-        borderRadius: 0,
-        boxShadow: "none",
-        zIndex: "auto",
-        width: "100%",
-        height: "100%"} : {
-        position: "absolute",
-        top: position.top,
-        left: position.left,
-        backgroundColor: "white",
-        padding: "20px",
-        borderRadius: "8px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        zIndex: 1000,
-        width: "400px",
-        height: "300px",})
-      }}
+      style={containerStyle}
     >
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        display: 'flex',
-        gap: '8px',
-        zIndex: 1
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: showSettings ? (inline ? "16px" : "20px") : (inline ? "12px" : "16px"),
+          gap: "12px"
+        }}
+      >
         <button
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => setShowSettings(prev => !prev)}
           style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px',
-            color: '#666',
-            fontSize: '16px'
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            border: "1px solid var(--border-color)",
+            backgroundColor: showSettings ? "var(--bg-hover)" : "var(--bg-surface)",
+            color: "var(--text-secondary)",
+            padding: "8px 14px",
+            borderRadius: "999px",
+            cursor: "pointer",
+            boxShadow: showSettings ? "0 12px 28px rgba(15, 31, 31, 0.14)" : "0 4px 12px rgba(15, 31, 31, 0.08)",
+            transition: "all 0.2s ease",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontSize: "11px"
           }}
+          aria-expanded={showSettings}
         >
-          ⚙️
+          <SettingsIcon size={16} color="var(--text-secondary)" />
+          Analysis
         </button>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px',
-            color: '#666',
-            fontSize: '16px'
-          }}
-        >
-          ×
-        </button>
+        {!inline && (
+          <button
+            onClick={onClose}
+            style={{
+              border: "1px solid var(--border-color)",
+              backgroundColor: "var(--bg-surface)",
+              color: "var(--text-secondary)",
+              padding: "8px",
+              borderRadius: "999px",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 12px rgba(15, 31, 31, 0.08)"
+            }}
+            aria-label="Close analysis"
+          >
+            <CloseIcon size={14} color="var(--text-secondary)" />
+          </button>
+        )}
       </div>
 
       {showSettings && (
-        <div style={{
-          position: 'absolute',
-          top: '40px',
-          right: '10px',
-          backgroundColor: 'white',
-          padding: '12px',
-          borderRadius: '4px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          zIndex: 2,
-          width: '200px'
-        }}>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', marginBottom: '4px', color: '#333' }}>
-              Percentile:
+        <div
+          style={{
+            width: "100%",
+            backgroundColor: "var(--bg-surface)",
+            padding: inline ? "16px" : "18px",
+            borderRadius: "18px",
+            border: "1px solid var(--border-color)",
+            boxShadow: "0 18px 40px rgba(15, 31, 31, 0.16)",
+            marginBottom: inline ? "20px" : "24px",
+            display: "grid",
+            gap: "18px",
+            boxSizing: "border-box"
+          }}
+        >
+          <div style={{ display: "grid", gap: "10px" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-secondary)", fontSize: "13px" }}>
+              Percentile
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={queryState.percentile}
-                onChange={(e) => handleQueryChange('percentile', Number(e.target.value))}
+                onChange={(e) => handleQueryChange("percentile", Number(e.target.value))}
                 style={{
-                  width: '60px',
-                  marginLeft: '8px',
-                  padding: '4px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px'
+                  width: "90%",
+                  padding: "10px 12px",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "12px",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  fontSize: "13px"
                 }}
               />
             </label>
-            <button
-              onClick={() => handleQueryChange('showPercentile', !queryState.showPercentile)}
-              style={{
-                background: queryState.showPercentile ? '#ff4d4f' : '#f0f0f0',
-                color: queryState.showPercentile ? 'white' : '#333',
-                border: 'none',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginTop: '4px'
-              }}
-            >
-              {queryState.showPercentile ? 'Hide' : 'Show'} Percentile
-            </button>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "var(--text-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Marker</span>
+              <button
+                onClick={() => handleQueryChange("showPercentile", !queryState.showPercentile)}
+                style={{
+                  background: queryState.showPercentile ? "var(--resize-handle-active)" : "var(--bg-secondary)",
+                  color: queryState.showPercentile ? "var(--bg-surface)" : "var(--text-secondary)",
+                  border: "1px solid var(--border-color)",
+                  padding: "8px 16px",
+                  borderRadius: "999px",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  transition: "all 0.2s ease"
+                }}
+              >
+                {queryState.showPercentile ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', color: '#333' }}>
-              Confidence Level:
+
+          <div style={{ display: "grid", gap: "10px" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-secondary)", fontSize: "13px" }}>
+              Confidence Level
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={queryState.confidenceLevel}
-                onChange={(e) => handleQueryChange('confidenceLevel', Number(e.target.value))}
+                onChange={(e) => handleQueryChange("confidenceLevel", Number(e.target.value))}
                 style={{
-                  width: '60px',
-                  marginLeft: '8px',
-                  padding: '4px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px'
+                  width: "90%",
+                  padding: "10px 12px",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "12px",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  fontSize: "13px"
                 }}
               />
             </label>
             <button
-              onClick={() => handleQueryChange('showCI', !queryState.showCI)}
+              onClick={() => handleQueryChange("showCI", !queryState.showCI)}
               style={{
-                background: queryState.showCI ? '#1890ff' : '#f0f0f0',
-                color: queryState.showCI ? 'white' : '#333',
-                border: 'none',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                marginTop: '4px'
+                background: queryState.showCI ? "var(--resize-handle-active)" : "var(--bg-secondary)",
+                color: queryState.showCI ? "var(--bg-surface)" : "var(--text-secondary)",
+                border: "1px solid var(--border-color)",
+                padding: "8px 16px",
+                borderRadius: "999px",
+                cursor: "pointer",
+                fontSize: "11px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                transition: "all 0.2s ease"
               }}
             >
-              {queryState.showCI ? 'Hide' : 'Show'} CI
+              {queryState.showCI ? "Hide" : "Show"} Confidence Interval
             </button>
           </div>
         </div>
@@ -436,7 +721,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
 
       <ReactECharts
         option={option}
-        style={{ height: "100%" }}
+        style={{ height: inline ? "260px" : "240px" }}
         opts={{ renderer: "svg" }}
       />
     </div>

@@ -1,8 +1,105 @@
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  getConfidenceIntervalMedian,
+  getSamplesFromDistribution,
+  isConfidenceIntervalValue,
+  isSampledDistributionValue,
+  parseConfidenceIntervalValue,
+  parseSampledDistributionValue,
+} from '../utils/distributionUtils'
 
-import type { CIInterpretation } from '../../hyperformula/src/interpreter/InterpreterValue';
 import { DistributionPlot } from './DistributionPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext';
+
+const ChevronDownIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M6 9L12 15L18 9"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+const DistributionIcon: React.FC = () => (
+  <svg
+    width={18}
+    height={18}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M4 18C6 14 8.5 9 12 9C15.5 9 16.5 14 20 6"
+      stroke="var(--resize-handle-active)"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <line
+      x1="4"
+      y1="18"
+      x2="20"
+      y2="18"
+      stroke="var(--border-color)"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+    />
+  </svg>
+)
+
+const BooleanIcon: React.FC<{ value: boolean }> = ({ value }) => (
+  <svg
+    width={16}
+    height={16}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <circle
+      cx="12"
+      cy="12"
+      r="9"
+      stroke="var(--border-header)"
+      strokeWidth="1.5"
+    />
+    {value ? (
+      <path
+        d="M9 12.5L11 14.5L15 9.5"
+        stroke="var(--resize-handle-active)"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ) : (
+      <>
+        <path
+          d="M9 9L15 15"
+          stroke="var(--text-muted)"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+        <path
+          d="M15 9L9 15"
+          stroke="var(--text-muted)"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+      </>
+    )}
+  </svg>
+)
 
 // Distribution interpretation options for the dropdown
 enum DistributionViewType {
@@ -37,56 +134,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onContextMenu,
   isSelected = false,
 }) => {
-  
-  // Helper to detect ConfidenceIntervalNumber - defined early for use in initialization
-  const isConfidenceInterval = (val: unknown): boolean => {
-    if (val && typeof val === 'object' && 'lower' in val && 'upper' in val && 'confidenceLevel' in val) {
-      return true;
-    }
-    // Also support string representation
-    if (typeof val === 'string') {
-      // Support "X to Y" format or "CI[X, Y]"
-      return /^\d+\.?\d*\s+to\s+\d+\.?\d*$/.test(val) || 
-             (val.startsWith('CI[') && val.endsWith(']'));
-    }
-    return false;
-  }
-
-  // Helper to parse ConfidenceIntervalNumber - defined early for use in initialization
-  const parseConfidenceInterval = (val: unknown): { lower: number, upper: number, confidenceLevel: number, interpretation?: CIInterpretation } | null => {
-    if (val && typeof val === 'object' && 'lower' in val && 'upper' in val && 'confidenceLevel' in val) {
-      return {
-        lower: (val as any).lower,
-        upper: (val as any).upper,
-        confidenceLevel: (val as any).confidenceLevel,
-        interpretation: (val as any).interpretation || 'normal',
-      };
-    }
-    if (typeof val === 'string') {
-      // Support formats like "12 to 20" or "CI[12, 20]"
-      let match = val.match(/^(\d+\.?\d*)\s+to\s+(\d+\.?\d*)$/);
-      if (match) {
-        return {
-          lower: parseFloat(match[1]),
-          upper: parseFloat(match[2]),
-          confidenceLevel: 90, // Default to 90%
-          interpretation: 'normal',
-        };
-      }
-      
-      match = val.match(/^CI\[(\-?\d+\.?\d*),\s*(\-?\d+\.?\d*)\]$/);
-      if (match) {
-        return {
-          lower: parseFloat(match[1]),
-          upper: parseFloat(match[2]),
-          confidenceLevel: 90,
-          interpretation: 'normal',
-        };
-      }
-    }
-    return null;
-  }
-  
   const { getCellFormula, liveEditingState, setLiveEditingState } = useContext(SpreadsheetContext)
   const [editing, setEditing] = useState(false)
   const [tempValue, setTempValue] = useState('')
@@ -95,8 +142,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [showViewDropdown, setShowViewDropdown] = useState(false)
   const [viewOptions, setViewOptions] = useState<DistributionViewOptions>(() => {
     // Initialize with the detected interpretation if the value is a CI
-    if (isConfidenceInterval(value)) {
-      const ci = parseConfidenceInterval(value);
+    if (isConfidenceIntervalValue(value)) {
+      const ci = parseConfidenceIntervalValue(value);
       const interpretation = ci?.interpretation || 'normal';
       return {
         type: interpretation === 'normal' ? DistributionViewType.NORMAL :
@@ -148,16 +195,16 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       setEditing(true)
       return
     } 
-    if (isConfidenceInterval(value)) {
-      const ci = parseConfidenceInterval(value)
+    if (isConfidenceIntervalValue(value)) {
+      const ci = parseConfidenceIntervalValue(value)
       if (ci) {
         const ciDistRepresentation = `[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
         setTempValue(ciDistRepresentation)
       } else {
         setTempValue('')
       }
-    } else if (isSampledDistribution(value)) {
-      const sampled = parseSampledDistribution(value)
+    } else if (isSampledDistributionValue(value)) {
+      const sampled = parseSampledDistributionValue(value)
       if (sampled) {
         const sampledDistRepresentation = `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
         setTempValue(sampledDistRepresentation)
@@ -181,83 +228,52 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     // The useEffect above will automatically update the live editing state
   }
 
-
-  const isSampledDistribution = (val: unknown): boolean => {
-    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
-      return true;
-    }
-    return false;
-  }
-
-
-  const parseSampledDistribution = (val: unknown): { samples: number[], mean: number, std: number } | null => {
-    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
-      const samples = (val as any).samples;
-      const mean = samples.reduce((a: number, b: number) => a + b, 0) / samples.length;
-      const variance = samples.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / samples.length;
-      const std = Math.sqrt(variance);
-      return { samples, mean, std };
-    }
-    return null;
-  }
-
-  // Helper function to extract samples from distribution types (simplified for unified approach)
-  const getSamplesFromDistribution = (val: unknown): number[] | null => {
-    // Check if it's a SampledDistribution (output from calculations)
-    if (val && typeof val === 'object' && 'samples' in val && Array.isArray((val as any).samples)) {
-      return (val as any).samples;
-    }
-    
-    // Check if it has toSamples method (ConfidenceIntervalNumber - our only input type)
-    if (val && typeof val === 'object' && 'toSamples' in val && typeof (val as any).toSamples === 'function') {
-      try {
-        return (val as any).toSamples();
-      } catch (e) {
-        console.log('Error calling toSamples:', e);
-      }
-    }
-    
-    return null;
-  }
-
   const handleCustomContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     if (onContextMenu) {
       onContextMenu(e)
     }
-    
-    if (cellRef.current) {
-      const rect = cellRef.current.getBoundingClientRect();
+
+    if (typeof window !== 'undefined') {
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      const margin = 16
+      const clickX = e.clientX
+      const clickY = e.clientY
+
+      const panelWidth = Math.min(420, viewportWidth - margin * 2)
+      const panelHeight = Math.min(360, viewportHeight - margin * 2)
+
+      const desiredLeft = clickX + 12
+      const alternateLeft = clickX - panelWidth - 12
+      let left = desiredLeft + panelWidth + margin > viewportWidth
+        ? Math.max(margin, alternateLeft)
+        : desiredLeft
+      left = Math.max(margin, Math.min(left, viewportWidth - panelWidth - margin))
+
+      let top = clickY - panelHeight / 2
+      if (top < margin) {
+        top = margin
+      } else if (top + panelHeight > viewportHeight - margin) {
+        top = viewportHeight - panelHeight - margin
+      }
+
       setPlotPosition({
-        top: rect.top,
-        left: rect.right + 10 // Position 10px to the right of the cell
-      });
-      
-      if (isConfidenceInterval(value) || isSampledDistribution(value)) {
-        setShowPlot(true);
+        top,
+        left,
+      })
+
+      if (isConfidenceIntervalValue(value) || isSampledDistributionValue(value)) {
+        setShowPlot(true)
       }
     }
   }
 
   // Update isDistribution to only include the two types we support in unified approach
-  const isDistribution = isConfidenceInterval(value) || isSampledDistribution(value);
+  const isDistribution = isConfidenceIntervalValue(value) || isSampledDistributionValue(value);
   
   // Only show view options for confidence intervals, not sampled distributions
-  const showViewOptions = isConfidenceInterval(value);
-
-  // Helper to calculate median for confidence intervals
-  const getConfidenceIntervalMedian = (ci: { lower: number, upper: number, interpretation?: CIInterpretation }): number => {
-    switch (ci.interpretation) {
-      case 'lognormal':
-        // For log-normal: median = geometric mean
-        return Math.sqrt(ci.lower * ci.upper);
-      case 'uniform':
-      case 'normal':
-      default:
-        // For normal/uniform: median = arithmetic mean
-        return (ci.lower + ci.upper) / 2;
-    }
-  };
+  const showViewOptions = isConfidenceIntervalValue(value);
 
   // Update formatValue to handle confidence intervals
   const formatValue = (val: CellValue, options: DistributionViewOptions): string => {
@@ -274,8 +290,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
 
     // Format ConfidenceIntervalNumber
-    if (isConfidenceInterval(val)) {
-      const ci = parseConfidenceInterval(val);
+    if (isConfidenceIntervalValue(val)) {
+      const ci = parseConfidenceIntervalValue(val);
       if (ci) {
         const median = getConfidenceIntervalMedian(ci);
         
@@ -310,8 +326,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     // These distribution types no longer exist as input types in our unified approach
     // Format SampledDistribution objects (results from calculations)
     // Always show as samples with mean and std deviation
-    if (isSampledDistribution(val)) {
-      const sampled = parseSampledDistribution(val);
+    if (isSampledDistributionValue(val)) {
+      const sampled = parseSampledDistributionValue(val);
       if (sampled) {
         return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
       }
@@ -320,36 +336,52 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return String(val);
   }
 
+  const leadingIcon = useMemo(() => {
+    if (isConfidenceIntervalValue(value) || isSampledDistributionValue(value)) {
+      return <DistributionIcon />
+    }
+
+    if (typeof value === 'boolean') {
+      return <BooleanIcon value={value} />
+    }
+
+    return null
+  }, [value])
+
   const handleViewOptionChange = (newOptions: DistributionViewOptions) => {
     setViewOptions(newOptions);
     setShowViewDropdown(false);
   }
 
+  const displayValue = useMemo(() => formatValue(value, viewOptions), [value, viewOptions])
+
 
   return (
     <>
-      <div 
+      <div
         ref={cellRef}
         onClick={onClick}
         onContextMenu={handleCustomContextMenu}
         onDoubleClick={handleDoubleClick}
         style={{ 
-          padding: '2px 4px',
-          height: '20px',
-          backgroundColor: isSelected ? 'var(--resize-handle-bg)' : 'var(--bg-surface)',
+          padding: '10px 14px',
+          minHeight: '38px',
+          backgroundColor: isSelected ? 'var(--bg-hover)' : 'var(--bg-surface)',
           color: 'var(--text-primary)',
           cursor: 'pointer',
-          transition: 'background-color 0.2s',
+          transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
           position: 'relative',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           width: '100%',
           boxSizing: 'border-box',
-          fontSize: '12px',
-          borderRight:'1px solid var(--border-color)',
-          borderBottom:'1px solid var(--border-color)',
-          display: 'flex',
+          fontSize: '13px',
+          borderRight: '1px solid var(--border-color)',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'grid',
+          gridTemplateColumns: showViewOptions ? 'auto 1fr auto' : (leadingIcon ? 'auto 1fr' : '1fr'),
           alignItems: 'center',
-          justifyContent: 'space-between'
+          gap: '10px',
+          boxShadow: isSelected ? 'inset 0 0 0 1px var(--resize-handle-active)' : 'none'
         }}
       >
         {editing ? (
@@ -367,50 +399,60 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
               height: '100%',
               border: 'none',
               outline: 'none',
-              padding: '0',
+              padding: '0 2px',
               backgroundColor: 'transparent',
               position: 'absolute',
               top: 0,
               left: 0,
               color: 'var(--text-primary)',
               fontFamily: 'inherit',
-              fontSize: 'inherit'
+              fontSize: 'inherit',
+              letterSpacing: '0.01em'
             }}
             aria-label={`Cell ${String.fromCharCode(65 + col)}${row + 1}`}
           />
         ) : (
           <>
-            <span style={{
-              display: 'block',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              color: 'var(--text-primary)',
-              flex: 1
-            }}>
-              {formatValue(value, viewOptions)}
+            {leadingIcon}
+            <span
+              style={{
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                color: 'var(--text-primary)',
+                alignSelf: 'stretch',
+                letterSpacing: '0.01em'
+              }}
+              title={displayValue}
+            >
+              {displayValue}
             </span>
             {showViewOptions && !editing && (
-              <div style={{ position: 'relative', marginLeft: '4px' }} ref={dropdownRef}>
+              <div style={{ position: 'relative' }} ref={dropdownRef}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowViewDropdown(!showViewDropdown);
                   }}
                   style={{
-                    background: 'none',
-                    border: 'none',
+                    backgroundColor: showViewDropdown ? 'var(--bg-hover)' : 'var(--bg-surface)',
+                    border: `1px solid ${showViewDropdown ? 'var(--resize-handle-active)' : 'var(--border-color)'}`,
                     cursor: 'pointer',
-                    padding: '2px',
+                    padding: '6px',
                     color: 'var(--text-secondary)',
-                    fontSize: '10px',
-                    opacity: 0.7,
+                    fontSize: '12px',
                     display: 'flex',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '10px',
+                    minWidth: '34px',
+                    boxShadow: showViewDropdown ? '0 6px 18px rgba(15, 31, 31, 0.12)' : '0 2px 6px rgba(15, 31, 31, 0.06)',
+                    transition: 'all 0.2s ease'
                   }}
                   title="Change view"
                 >
-                  ▼
+                  <ChevronDownIcon size={14} />
                 </button>
                 {showViewDropdown && (
                   <div style={{
@@ -419,22 +461,25 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                     right: 0,
                     backgroundColor: 'var(--bg-surface)',
                     border: '1px solid var(--border-color)',
-                    borderRadius: '4px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    borderRadius: '12px',
+                    boxShadow: '0 18px 40px rgba(15, 31, 31, 0.16)',
                     zIndex: 1000,
-                    minWidth: '180px',
-                    fontSize: '12px'
+                    minWidth: '200px',
+                    fontSize: '12px',
+                    overflow: 'hidden'
                   }}>
-                    <div style={{ padding: '4px 0' }}>
+                    <div style={{ padding: '6px 0' }}>
                       {/* Only show interpretation options for confidence intervals */}
-                      {isConfidenceInterval(value) && (
+                      {isConfidenceIntervalValue(value) && (
                         <>
                           <div style={{ 
-                            padding: '6px 12px', 
+                            padding: '8px 14px', 
                             borderBottom: '1px solid var(--border-color)',
                             fontWeight: 'bold',
                             color: 'var(--text-secondary)',
-                            fontSize: '11px'
+                            fontSize: '11px',
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase'
                           }}>
                             View as:
                           </div>
@@ -442,45 +487,57 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                             onClick={() => handleViewOptionChange({ type: DistributionViewType.NORMAL })}
                             style={{
                               width: '100%',
-                              padding: '6px 12px',
+                              padding: '10px 14px',
                               border: 'none',
-                              background: viewOptions.type === DistributionViewType.NORMAL ? 'var(--resize-handle-active)' : 'transparent',
-                              color: 'var(--text-primary)',
+                              background: viewOptions.type === DistributionViewType.NORMAL ? 'var(--bg-hover)' : 'transparent',
+                              color: viewOptions.type === DistributionViewType.NORMAL ? 'var(--text-secondary)' : 'var(--text-primary)',
                               textAlign: 'left',
                               cursor: 'pointer',
-                              fontSize: 'inherit'
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px'
                             }}
                           >
+                            <DistributionIcon />
                             Normal Distribution
                           </button>
                           <button
                             onClick={() => handleViewOptionChange({ type: DistributionViewType.LOGNORMAL })}
                             style={{
                               width: '100%',
-                              padding: '6px 12px',
+                              padding: '10px 14px',
                               border: 'none',
-                              background: viewOptions.type === DistributionViewType.LOGNORMAL ? 'var(--resize-handle-active)' : 'transparent',
-                              color: 'var(--text-primary)',
+                              background: viewOptions.type === DistributionViewType.LOGNORMAL ? 'var(--bg-hover)' : 'transparent',
+                              color: viewOptions.type === DistributionViewType.LOGNORMAL ? 'var(--text-secondary)' : 'var(--text-primary)',
                               textAlign: 'left',
                               cursor: 'pointer',
-                              fontSize: 'inherit'
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px'
                             }}
                           >
+                            <DistributionIcon />
                             Log-Normal Distribution
                           </button>
                           <button
                             onClick={() => handleViewOptionChange({ type: DistributionViewType.UNIFORM })}
                             style={{
                               width: '100%',
-                              padding: '6px 12px',
+                              padding: '10px 14px',
                               border: 'none',
-                              background: viewOptions.type === DistributionViewType.UNIFORM ? 'var(--resize-handle-active)' : 'transparent',
-                              color: 'var(--text-primary)',
+                              background: viewOptions.type === DistributionViewType.UNIFORM ? 'var(--bg-hover)' : 'transparent',
+                              color: viewOptions.type === DistributionViewType.UNIFORM ? 'var(--text-secondary)' : 'var(--text-primary)',
                               textAlign: 'left',
                               cursor: 'pointer',
-                              fontSize: 'inherit'
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px'
                             }}
                           >
+                            <DistributionIcon />
                             Uniform Distribution
                           </button>
                         </>
@@ -498,11 +555,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         if (!samples) return null;
         
         // Get distribution type and confidence interval info
-        let distributionType: 'normal' | 'lognormal' | 'uniform' = 'normal';
+        let distributionType: 'normal' | 'lognormal' | 'uniform' | 'sampled' = 'sampled';
         let confidenceInterval: { lower: number; upper: number; confidenceLevel: number } | undefined;
         
-        if (isConfidenceInterval(value)) {
-          const ci = parseConfidenceInterval(value);
+        if (isConfidenceIntervalValue(value)) {
+          const ci = parseConfidenceIntervalValue(value);
           if (ci) {
             confidenceInterval = {
               lower: ci.lower,
@@ -523,6 +580,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                 break;
             }
           }
+        } else if (isSampledDistributionValue(value)) {
+          distributionType = 'sampled';
         }
         
         return (

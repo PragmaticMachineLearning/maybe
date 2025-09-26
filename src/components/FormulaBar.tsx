@@ -184,6 +184,9 @@ const formulaBarContainerStyle = {
   marginBottom: '8px',
   boxShadow: '0 1px 3px var(--shadow)',
   gap: '8px',
+  flexWrap: 'wrap' as const,
+  width: '100%',
+  boxSizing: 'border-box' as const,
 }
 
 const cellReferenceStyle = {
@@ -194,11 +197,13 @@ const cellReferenceStyle = {
   fontSize: '12px',
   textAlign: 'center' as const,
   color: 'var(--text-secondary)',
+  flex: '0 0 auto',
 }
 
 const formulaInputContainerStyle = {
   flex: 1,
   position: 'relative' as const,
+  minWidth: '180px',
 }
 
 const formulaInputStyle = {
@@ -213,6 +218,4 @@ const formulaInputStyle = {
   outline: 'none',
   transition: 'border-color 0.2s ease',
 } as const
-
-
 
