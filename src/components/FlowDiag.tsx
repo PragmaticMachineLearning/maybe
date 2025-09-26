@@ -17,9 +17,8 @@ import { DistributionPlot } from './DistributionPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext'
 import { getLayoutedNodes } from './useLayoutNodes'
 
-
 const nodeTypes = {
-  formula: ({ data }: { data: { address: string; value: any; type: string; formula: string, samples: any[] } }) => {
+  formula: ({ data }: { data: { address: string; value: any; type: string; formula: string, samples: number[] } }) => {
     const [showChart, setShowChart] = useState(false);
 
     const samples = data.samples
@@ -71,6 +70,7 @@ const nodeTypes = {
               samples={samples}
               onClose={() => setShowChart(false)}
               inline={true}
+              distributionType="sampled"
             />
           </div>
         )}
@@ -78,10 +78,9 @@ const nodeTypes = {
       </div>
     );
   },
-  value: ({ data }: { data: { address: string; value: any; type: string } }) => {
+  value: ({ data }: { data: { address: string; value: any; type: string; samples: number[] } }) => {
     const [showChart, setShowChart] = useState(false);
-
-    const valueSamples = getSamples({ cachedCellValue: data.value });
+    const valueSamples = data.samples;
     
     return (
       <div 
@@ -130,6 +129,7 @@ const nodeTypes = {
               samples={valueSamples}
               onClose={() => setShowChart(false)}
               inline={true}
+              distributionType="sampled"
             />
           </div>
         )}
@@ -293,6 +293,59 @@ const getSamples = (vertex: any): number[] => {
   return [];
 }
 
+const getUnderlyingValue = (vertex: any) => {
+  if (vertex.cachedCellValue !== undefined) {
+    return vertex.cachedCellValue;
+  }
+  if (vertex.parsedValue !== undefined) {
+    return vertex.parsedValue;
+  }
+  if (vertex.rawValue !== undefined) {
+    return vertex.rawValue;
+  }
+  return null;
+};
+
+const isNumericOrDistributionValue = (value: any): boolean => {
+  if (value === null || value === undefined) return false;
+
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0 && value.every((v) => typeof v === 'number' && !Number.isNaN(v));
+  }
+
+  if (typeof value === 'object') {
+    if ('samples' in value && Array.isArray(value.samples) && value.samples.length > 0) {
+      return true;
+    }
+    if ('mean' in value && 'variance' in value) {
+      return true;
+    }
+    if ('lower' in value && 'upper' in value) {
+      return true;
+    }
+    if ('mu' in value && 'sigma2' in value) {
+      return true;
+    }
+    if ('a' in value && 'b' in value) {
+      return true;
+    }
+    if (typeof value.getSamples === 'function' || typeof value.toSamples === 'function') {
+      try {
+        const samples = typeof value.getSamples === 'function' ? value.getSamples() : value.toSamples();
+        return Array.isArray(samples) && samples.length > 0;
+      } catch (error) {
+        console.error('Error sampling value for flow diagram filter', error);
+      }
+    }
+  }
+
+  return false;
+};
+
 export const FlowDiag: React.FC = () => {
   const { hfInstance } = useContext(SpreadsheetContext)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
@@ -304,13 +357,17 @@ export const FlowDiag: React.FC = () => {
     const graph = hfInstance.dependencyGraph.graph
     const graphNodes = graph.getNodes()
    
-    
+    const numericVertices = graphNodes.filter((node: any) => {
+      const value = getUnderlyingValue(node);
+      return isNumericOrDistributionValue(value);
+    })
+
     // Create nodes with temporary positions (will be overridden by ELK layout)
-    const newNodes: Node[] = graphNodes.map((node: any) => ({
+    const newNodes: Node[] = numericVertices.map((node: any) => ({
       id: getVertexId(node, hfInstance),
       type: getVertexType(node).toLowerCase(),
       position: { x: 0, y: 0 }, // Temporary position - ELK will set the actual position
-      data: { 
+      data: {
         address: getVertexAddress(node, hfInstance),
         value: getVertexValue(node),
         type: getVertexType(node),
@@ -320,33 +377,56 @@ export const FlowDiag: React.FC = () => {
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
     }))
-    console.log("newNodes", newNodes)
-    
-    // Create edges
+
+    const nodeIdSet = new Set(newNodes.map((node) => node.id))
+
+    // Create edges only between included vertices
     const newEdges: Edge[] = []
-    graphNodes.forEach((node: any) => {
+    numericVertices.forEach((node: any) => {
       const adjacentNodes = graph.adjacentNodes(node)
       adjacentNodes.forEach((adjNode: any) => {
-        const sourceId = getVertexId(node, hfInstance)
         const targetId = getVertexId(adjNode, hfInstance)
+        if (!nodeIdSet.has(targetId)) {
+          return
+        }
+
+        const sourceId = getVertexId(node, hfInstance)
+        if (!nodeIdSet.has(sourceId)) {
+          return
+        }
+
         const sourceAddress = getVertexAddress(node, hfInstance)
         const targetAddress = getVertexAddress(adjNode, hfInstance)
-        if (sourceId && targetId && sourceAddress && targetAddress) {
+
+        const edgeId = `${sourceAddress}-${targetAddress}`
+        if (!newEdges.some((edge) => edge.id === edgeId)) {
           newEdges.push({
-            id: `${sourceAddress}-${targetAddress}`,
+            id: edgeId,
             source: sourceId,
             target: targetId,
             animated: true,
-           
           })
         }
       })
     })
-    console.log("newEdges", newEdges)
-    
+
+    const nodesInEdges = new Set<string>()
+    newEdges.forEach((edge) => {
+      nodesInEdges.add(edge.source)
+      nodesInEdges.add(edge.target)
+    })
+
+    const filteredNodes = newNodes.filter((node) => nodesInEdges.has(node.id))
+
+    if (filteredNodes.length === 0 || newEdges.length === 0) {
+      setNodes([])
+      setEdges([])
+      return
+    }
+
     // Apply ELK layout to nodes
-    const layoutedNodes = await getLayoutedNodes(newNodes, newEdges)
-    
+    const layoutedNodes = await getLayoutedNodes(filteredNodes, newEdges)
+
     // Set nodes and edges with layout applied
     setNodes(layoutedNodes)
     setEdges(newEdges)
@@ -384,4 +464,3 @@ export const FlowDiag: React.FC = () => {
     </div>
   )
 }
-

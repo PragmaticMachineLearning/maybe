@@ -8,9 +8,11 @@ import { spreadsheetExamples } from '../examples/examples'
 interface ToolbarProps {
   useFlowDiag: boolean
   onToggleFlowDiag: () => void
+  analysisMode: boolean
+  onToggleAnalysisMode: () => void
 }
 
-export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag, analysisMode, onToggleAnalysisMode }) => {
   const { hfInstance } = useContext(SpreadsheetContext)
   const [showExamplesDropdown, setShowExamplesDropdown] = useState(false)
   const examplesDropdownRef = useRef<HTMLDivElement>(null)
@@ -75,6 +77,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag 
       gap: '12px',
       marginBottom: '4px',
       padding: '8px 0',
+      flexWrap: 'wrap',
+      rowGap: '8px',
     }}>
       <button
         onClick={onToggleFlowDiag}
@@ -143,6 +147,60 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag 
             </>
           )}
         </svg>
+      </button>
+
+      {/* Analysis Toggle */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleAnalysisMode()
+        }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          border: '1px solid var(--border-color)',
+          backgroundColor: analysisMode ? 'var(--resize-handle-active)' : 'var(--bg-surface)',
+          color: analysisMode ? 'white' : 'var(--text-primary)',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 500,
+          fontFamily: 'inherit',
+          boxShadow: '0 1px 3px var(--shadow)',
+          transition: 'all 0.2s ease',
+          outline: 'none',
+          height: '40px',
+          gap: '8px',
+        }}
+        onMouseEnter={(e) => {
+          if (!analysisMode) {
+            e.currentTarget.style.backgroundColor = 'var(--bg-hover)'
+            e.currentTarget.style.borderColor = 'var(--border-header)'
+          }
+          e.currentTarget.style.transform = 'translateY(-1px)'
+          e.currentTarget.style.boxShadow = '0 2px 6px var(--shadow-hover)'
+        }}
+        onMouseLeave={(e) => {
+          if (!analysisMode) {
+            e.currentTarget.style.backgroundColor = 'var(--bg-surface)'
+            e.currentTarget.style.borderColor = 'var(--border-color)'
+          }
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 1px 3px var(--shadow)'
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.outline = '2px solid var(--resize-handle-active)'
+          e.currentTarget.style.outlineOffset = '2px'
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.outline = 'none'
+        }}
+        title={analysisMode ? 'Hide analysis panel' : 'Show analysis panel'}
+      >
+        <span style={{ fontSize: '16px' }}>⚙️</span>
+        <span>Analysis</span>
       </button>
 
       {/* Examples Button */}
