@@ -12,6 +12,8 @@ interface LiveEditingState {
   value: string;
 }
 
+type DistributionViewType = 'normal' | 'lognormal' | 'uniform'
+
 interface SpreadsheetContextValue {
   hfInstance: HyperFormula | null;
   updateCell: (row: number, col: number, value: string) => void;
@@ -19,6 +21,9 @@ interface SpreadsheetContextValue {
   submitFormula: (row: number, col: number, formula: string) => void;
   liveEditingState: LiveEditingState | null;
   setLiveEditingState: (state: LiveEditingState | null) => void;
+  getDistributionView: (row: number, col: number) => DistributionViewType | null;
+  setDistributionView: (row: number, col: number, view: DistributionViewType) => void;
+  clearDistributionView: (row: number, col: number) => void;
 }
 
 const SpreadsheetContext = createContext<SpreadsheetContextValue>({
@@ -28,11 +33,15 @@ const SpreadsheetContext = createContext<SpreadsheetContextValue>({
   submitFormula: () => {},
   liveEditingState: null,
   setLiveEditingState: () => {},
+  getDistributionView: () => null,
+  setDistributionView: () => {},
+  clearDistributionView: () => {},
 })
 
 export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hfInstance, setHfInstance] = useState<HyperFormula | null>(null)
   const [liveEditingState, setLiveEditingState] = useState<LiveEditingState | null>(null)
+  const [distributionViews, setDistributionViews] = useState<Record<string, DistributionViewType>>({})
 
   useEffect(() => {
     const config = {
@@ -122,6 +131,32 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [hfInstance])
 
+  const getDistributionView = useCallback((row: number, col: number) => {
+    const key = `${row}:${col}`
+    return distributionViews[key] ?? null
+  }, [distributionViews])
+
+  const setDistributionView = useCallback((row: number, col: number, view: DistributionViewType) => {
+    const key = `${row}:${col}`
+    setDistributionViews((prev) => {
+      if (prev[key] === view) {
+        return prev
+      }
+      return { ...prev, [key]: view }
+    })
+  }, [])
+
+  const clearDistributionView = useCallback((row: number, col: number) => {
+    const key = `${row}:${col}`
+    setDistributionViews((prev) => {
+      if (!(key in prev)) {
+        return prev
+      }
+      const { [key]: _removed, ...rest } = prev
+      return rest
+    })
+  }, [])
+
   return (
     <SpreadsheetContext.Provider value={{ 
       hfInstance, 
@@ -129,7 +164,10 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       getCellFormula, 
       submitFormula, 
       liveEditingState, 
-      setLiveEditingState 
+      setLiveEditingState,
+      getDistributionView,
+      setDistributionView,
+      clearDistributionView,
     }}>
       {children}
     </SpreadsheetContext.Provider>

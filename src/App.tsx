@@ -33,7 +33,7 @@ const SpreadsheetWithWizard: React.FC = () => {
   const [viewportWidth, setViewportWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1280
   )
-  const { hfInstance } = useContext(SpreadsheetContext)
+  const { hfInstance, getDistributionView } = useContext(SpreadsheetContext)
 
   const handleCellSelect = (row: number, col: number) => {
     setSelectedCell({ row, col })
@@ -81,8 +81,12 @@ const SpreadsheetWithWizard: React.FC = () => {
     const confidenceInterval = parseConfidenceIntervalValue(value)
     const samples = getSamplesFromDistribution(value)
 
+    const viewOverride = getDistributionView(selectedCell.row, selectedCell.col)
+
     let distributionType: DistributionType = 'normal'
-    if (confidenceInterval?.interpretation === 'lognormal') {
+    if (viewOverride) {
+      distributionType = viewOverride
+    } else if (confidenceInterval?.interpretation === 'lognormal') {
       distributionType = 'lognormal'
     } else if (confidenceInterval?.interpretation === 'uniform') {
       distributionType = 'uniform'
@@ -107,7 +111,7 @@ const SpreadsheetWithWizard: React.FC = () => {
       distributionType,
       confidenceInterval,
     })
-  }, [analysisMode, hfInstance, selectedCell, columnName])
+  }, [analysisMode, hfInstance, selectedCell, columnName, getDistributionView])
 
   useEffect(() => {
     updateAnalysisState()
