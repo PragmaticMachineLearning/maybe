@@ -260,10 +260,6 @@ const headerStyle = {
 }
 
 const headerCellStyle = {
-  backgroundColor: 'var(--bg-header)',
-  border: '1px solid var(--border-color)',
-  borderRight:'1px solid var(--border-color)',
-  borderBottom:'1px solid var(--border-color)',
   padding: '2px 4px',
   textAlign: 'center' as const,
   fontWeight: 'normal' as const,
