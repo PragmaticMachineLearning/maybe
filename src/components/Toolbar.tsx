@@ -199,7 +199,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
         }}
         title={analysisMode ? 'Hide analysis panel' : 'Show analysis panel'}
       >
-        <span style={{ fontSize: '16px' }}>⚙️</span>
         <span>Analysis</span>
       </button>
 

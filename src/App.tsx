@@ -157,6 +157,20 @@ const SpreadsheetWithWizard: React.FC = () => {
     })
   }
 
+  // Handle ESC key to close flow diagram overlay
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && useflowDiag) {
+        setUseFlowDiag(false)
+      }
+    }
+
+    if (useflowDiag) {
+      document.addEventListener('keydown', handleEscapeKey)
+      return () => document.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [useflowDiag])
+
   const handleToggleAnalysisMode = () => {
     if (useflowDiag) {
       return
@@ -201,14 +215,11 @@ const SpreadsheetWithWizard: React.FC = () => {
           gap: isCompactLayout ? '12px' : '16px',
           alignItems: 'stretch',
           minHeight: '0',
+          position: 'relative',
         }}
       >
         <div style={{ flex: '1 1 auto', minWidth: 0, order: 1 }}>
-          {useflowDiag ? (
-            <FlowDiag/>
-          ) : (
-            <Spreadsheet rows={50} columns={26} onCellSelect={handleCellSelect} selectedCell={selectedCell} />
-          )}
+          <Spreadsheet rows={50} columns={26} onCellSelect={handleCellSelect} selectedCell={selectedCell} />
         </div>
         {analysisMode && !useflowDiag && analysisState && (
           <div style={{ flex: isCompactLayout ? '1 1 auto' : '0 0 auto', order: isCompactLayout ? 2 : 0 }}>
@@ -221,6 +232,85 @@ const SpreadsheetWithWizard: React.FC = () => {
               onClose={handleCloseAnalysis}
               compact={isCompactLayout}
             />
+          </div>
+        )}
+        
+        {/* Flow Diagram Overlay */}
+        {useflowDiag && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+            }}
+            onClick={(e) => {
+              // Close overlay when clicking on backdrop
+              if (e.target === e.currentTarget) {
+                setUseFlowDiag(false)
+              }
+            }}
+          >
+            <div
+              style={{
+                width: '90vw',
+                height: '80vh',
+                maxWidth: '1200px',
+                maxHeight: '800px',
+                backgroundColor: 'var(--bg-surface)',
+                borderRadius: '12px',
+                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+                border: '1px solid var(--border-color)',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setUseFlowDiag(false)}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  background: 'var(--bg-hover)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  width: '32px',
+                  height: '32px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-secondary)',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  zIndex: 1001,
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-surface)'
+                  e.currentTarget.style.color = 'var(--text-primary)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-hover)'
+                  e.currentTarget.style.color = 'var(--text-secondary)'
+                }}
+                title="Close Flow Diagram"
+              >
+                ×
+              </button>
+              
+              {/* Flow diagram content */}
+              <FlowDiag />
+            </div>
           </div>
         )}
       </div>
