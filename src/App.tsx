@@ -219,7 +219,7 @@ const SpreadsheetWithWizard: React.FC = () => {
         }}
       >
         <div style={{ flex: '1 1 auto', minWidth: 0, order: 1 }}>
-          <Spreadsheet rows={50} columns={26} onCellSelect={handleCellSelect} selectedCell={selectedCell} />
+          <Spreadsheet rows={50} columns={26} onCellSelect={handleCellSelect} selectedCell={selectedCell} onOpenAnalysis={handleToggleAnalysisMode} />
         </div>
         {analysisMode && !useflowDiag && analysisState && (
           <div style={{ flex: isCompactLayout ? '1 1 auto' : '0 0 auto', order: isCompactLayout ? 2 : 0 }}>

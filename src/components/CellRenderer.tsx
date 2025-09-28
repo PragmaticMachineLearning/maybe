@@ -117,6 +117,7 @@ interface CellRendererProps {
   onClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   isSelected?: boolean;
+  onOpenAnalysis?: () => void;
 }
 
 type CellValue =
@@ -136,6 +137,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onClick,
   onContextMenu,
   isSelected = false,
+  onOpenAnalysis,
 }) => {
   const {
     getCellFormula,
@@ -711,6 +713,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
               onClose={() => setShowPlot(false)}
               distributionType={distributionType}
               confidenceInterval={confidenceInterval}
+              onOpenAnalysis={onOpenAnalysis}
             />
           );
         })()}

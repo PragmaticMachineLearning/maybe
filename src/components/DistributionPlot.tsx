@@ -11,6 +11,7 @@ interface DistributionPlotProps {
   inline?: boolean;
   distributionType?: DistributionKind;
   confidenceInterval?: { lower: number; upper: number; confidenceLevel: number };
+  onOpenAnalysis?: () => void;
 }
 
 interface QueryState {
@@ -218,6 +219,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   inline = false,
   distributionType,
   confidenceInterval,
+  onOpenAnalysis,
 }) => {
   const accentColor = '#4e8376';
   const accentArea = 'rgba(78, 131, 118, 0.18)';
@@ -576,29 +578,55 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
           gap: "12px"
         }}
       >
-        <button
-          onClick={() => setShowSettings(prev => !prev)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            border: "1px solid var(--border-color)",
-            backgroundColor: showSettings ? "var(--bg-hover)" : "var(--bg-surface)",
-            color: "var(--text-secondary)",
-            padding: "8px 14px",
-            borderRadius: "999px",
-            cursor: "pointer",
-            boxShadow: showSettings ? "0 12px 28px rgba(15, 31, 31, 0.14)" : "0 4px 12px rgba(15, 31, 31, 0.08)",
-            transition: "all 0.2s ease",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontSize: "11px"
-          }}
-          aria-expanded={showSettings}
-        >
-          <SettingsIcon size={16} color="var(--text-secondary)" />
-          Analysis
-        </button>
+        {onOpenAnalysis && (
+          <button
+            onClick={onOpenAnalysis}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              border: "1px solid var(--border-color)",
+              backgroundColor: "var(--bg-surface)",
+              color: "var(--text-secondary)",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(15, 31, 31, 0.08)",
+              transition: "all 0.2s ease",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              fontSize: "11px"
+            }}
+          >
+            <SettingsIcon size={16} color="var(--text-secondary)" />
+            Analysis
+          </button>
+        )}
+        {!onOpenAnalysis && (
+          <button
+            onClick={() => setShowSettings(prev => !prev)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              border: "1px solid var(--border-color)",
+              backgroundColor: showSettings ? "var(--bg-hover)" : "var(--bg-surface)",
+              color: "var(--text-secondary)",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              cursor: "pointer",
+              boxShadow: showSettings ? "0 12px 28px rgba(15, 31, 31, 0.14)" : "0 4px 12px rgba(15, 31, 31, 0.08)",
+              transition: "all 0.2s ease",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              fontSize: "11px"
+            }}
+            aria-expanded={showSettings}
+          >
+            <SettingsIcon size={16} color="var(--text-secondary)" />
+            Settings
+          </button>
+        )}
         {!inline && (
           <button
             onClick={onClose}

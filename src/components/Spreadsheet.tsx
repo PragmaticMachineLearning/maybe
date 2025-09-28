@@ -24,6 +24,7 @@ interface SpreadsheetProps {
   columns: number;
   onCellSelect?: (row: number, col: number) => void;
   selectedCell?: { row: number; col: number } | null;
+  onOpenAnalysis?: () => void;
 }
 
 // Define the row data type
@@ -36,7 +37,8 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
   rows, 
   columns, 
   onCellSelect,
-  selectedCell 
+  selectedCell,
+  onOpenAnalysis
 }) => {
   const { hfInstance, updateCell } = useContext(SpreadsheetContext)
   const [cellData, setCellData] = useState<Array<Array<any>>>([])
@@ -135,6 +137,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
               }}
               onClick={() => table.options.meta?.onCellSelect?.(rowIndex, colIndex)}
               isSelected={table.options.meta?.selectedCell?.row === rowIndex && table.options.meta?.selectedCell?.col === colIndex}
+              onOpenAnalysis={onOpenAnalysis}
             />
           )
         },
