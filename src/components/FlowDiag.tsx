@@ -11,17 +11,13 @@ import  {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react'
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect } from 'react'
 
-import { DistributionPlot } from './DistributionPlot'
 import { SpreadsheetContext } from '../SpreadsheetContext'
 import { getLayoutedNodes } from './useLayoutNodes'
 
 const nodeTypes = {
-  formula: ({ data }: { data: { address: string; value: any; type: string; formula: string, samples: number[] } }) => {
-    const [showChart, setShowChart] = useState(false);
-
-    const samples = data.samples
+  formula: ({ data }: { data: { address: string; value: any; type: string; formula: string } }) => {
     return (
       <div 
         style={{
@@ -30,8 +26,6 @@ const nodeTypes = {
           backgroundColor: '#fff',
           border: '1px solid #ccc',
           minWidth: '150px',
-          width: showChart ? '400px' : 'auto',
-          transition: 'width 0.3s ease-in-out',
         }}
       >
         <Handle type="target" position={Position.Left}/>
@@ -39,49 +33,11 @@ const nodeTypes = {
         <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Formula: {data.formula}</div>
-        {samples.length > 0 && (
-          <button
-            onClick={() => setShowChart(!showChart)}
-            style={{
-              marginTop: '8px',
-              padding: '4px 8px',
-              backgroundColor: showChart ? '#1890ff' : '#f0f0f0',
-              color: showChart ? 'white' : '#333',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.8em'
-            }}
-          >
-            {showChart ? 'Hide Chart' : 'Show Chart'}
-          </button>
-        )}
-        {showChart && samples.length > 0 && (
-          <div style={{ 
-            marginTop: '10px',
-            height: '250px',
-            width: 'calc(100% - 20px)',
-            position: 'relative',
-            marginLeft: 'auto',
-            marginRight: 'auto'
-          }}>
-            <DistributionPlot
-              position={{ top: 0, left: 0 }}
-              samples={samples}
-              onClose={() => setShowChart(false)}
-              inline={true}
-              distributionType="sampled"
-            />
-          </div>
-        )}
         <Handle type="source" position={Position.Right}/>
       </div>
     );
   },
-  value: ({ data }: { data: { address: string; value: any; type: string; samples: number[] } }) => {
-    const [showChart, setShowChart] = useState(false);
-    const valueSamples = data.samples;
-    
+  value: ({ data }: { data: { address: string; value: any; type: string } }) => {
     return (
       <div 
         style={{
@@ -90,49 +46,12 @@ const nodeTypes = {
           backgroundColor: '#f0f8ff',
           border: '1px solid #ccc',
           minWidth: '150px',
-          width: showChart ? '400px' : 'auto',
-          transition: 'width 0.3s ease-in-out',
         }}
       >
         <Handle type="target" position={Position.Left}/>
         <div style={{ fontWeight: '0.8em', color: '#222' }}>Address: {data.address}</div>
         <div style={{ fontSize: '0.8em', color: '#666' }}>Value: {data.value}</div>
         <div style={{ fontSize: '0.8em', color: '#888' }}>Type: {data.type}</div>
-        {valueSamples.length > 0 && (
-          <button
-            onClick={() => setShowChart(!showChart)}
-            style={{
-              marginTop: '8px',
-              padding: '4px 8px',
-              backgroundColor: showChart ? '#1890ff' : '#f0f0f0',
-              color: showChart ? 'white' : '#333',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.8em'
-            }}
-          >
-            {showChart ? 'Hide Chart' : 'Show Chart'}
-          </button>
-        )}
-        {showChart && valueSamples.length > 0 && (
-          <div style={{ 
-            marginTop: '10px',
-            height: '250px',
-            width: 'calc(100% - 20px)',
-            position: 'relative',
-            marginLeft: 'auto',
-            marginRight: 'auto'
-          }}>
-            <DistributionPlot
-              position={{ top: 0, left: 0 }}
-              samples={valueSamples}
-              onClose={() => setShowChart(false)}
-              inline={true}
-              distributionType="sampled"
-            />
-          </div>
-        )}
         <Handle type="source" position={Position.Right}/>
       </div>
     );
@@ -262,36 +181,6 @@ const getFormula = (vertex: any, hfInstance: any): string => {
   return ''
 }
 
-// Helper function to extract samples from any distribution type
-const getSamples = (vertex: any): number[] => {
-  const value = vertex.cachedCellValue || vertex.parsedValue;
-  if (!value) return [];
-  
-  // Check if it's already a SampledDistribution
-  if (value && typeof value === 'object' && 'samples' in value && Array.isArray(value.samples)) {
-    return value.samples;
-  }
-  
-  // Check if it has getSamples method (GaussianNumber, LogNormalNumber, UniformNumber)
-  if (value && typeof value === 'object' && 'getSamples' in value && typeof value.getSamples === 'function') {
-    try {
-      return value.getSamples();
-    } catch (e) {
-      console.log('Error calling getSamples:', e);
-    }
-  }
-  
-  // Check if it has toSamples method (ConfidenceIntervalNumber)
-  if (value && typeof value === 'object' && 'toSamples' in value && typeof value.toSamples === 'function') {
-    try {
-      return value.toSamples();
-    } catch (e) {
-      console.log('Error calling toSamples:', e);
-    }
-  }
-  
-  return [];
-}
 
 const getUnderlyingValue = (vertex: any) => {
   if (vertex.cachedCellValue !== undefined) {
@@ -371,8 +260,7 @@ export const FlowDiag: React.FC = () => {
         address: getVertexAddress(node, hfInstance),
         value: getVertexValue(node),
         type: getVertexType(node),
-        formula: getFormula(node, hfInstance),
-        samples: getSamples(node)
+        formula: getFormula(node, hfInstance)
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
@@ -447,8 +335,35 @@ export const FlowDiag: React.FC = () => {
   }, [hfInstance, updateGraphData])
 
   return (
-    <div style={{ width: '100%', height: '100vh' }}>
-      <div style={{ height: '100vh', border: '1px solid #ccc' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ 
+        padding: '16px 20px', 
+        borderBottom: '1px solid var(--border-color)',
+        backgroundColor: 'var(--bg-surface)',
+        flexShrink: 0
+      }}>
+        <h2 style={{ 
+          margin: 0, 
+          fontSize: '18px', 
+          fontWeight: '600',
+          color: 'var(--text-primary)',
+          fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        }}>
+          Flow Diagram
+        </h2>
+        <p style={{ 
+          margin: '4px 0 0 0', 
+          fontSize: '13px', 
+          color: 'var(--text-secondary)',
+          fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        }}>
+          Dependency graph showing numeric cells and distributions
+        </p>
+      </div>
+      
+      {/* Flow diagram content */}
+      <div style={{ flex: '1 1 auto', minHeight: 0, position: 'relative' }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -456,6 +371,7 @@ export const FlowDiag: React.FC = () => {
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           fitView
+          style={{ width: '100%', height: '100%' }}
         >
           <Background />
           <Controls />

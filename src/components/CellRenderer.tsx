@@ -105,10 +105,8 @@ const BooleanIcon: React.FC<{ value: boolean }> = ({ value }) => (
 );
 
 // Distribution interpretation options for the dropdown
-type DistributionViewType = "normal" | "lognormal" | "uniform";
-
 interface DistributionViewOptions {
-  type: DistributionViewType;
+  type: "normal" | "lognormal" | "uniform";
 }
 
 interface CellRendererProps {
@@ -573,7 +571,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                           <button
                             onClick={() =>
                               handleViewOptionChange({
-                                type: DistributionViewType.NORMAL,
+                                type: "normal",
                               })
                             }
                             style={{
@@ -602,7 +600,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                           <button
                             onClick={() =>
                               handleViewOptionChange({
-                                type: DistributionViewType.LOGNORMAL,
+                                type: "lognormal",
                               })
                             }
                             style={{
@@ -631,7 +629,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                           <button
                             onClick={() =>
                               handleViewOptionChange({
-                                type: DistributionViewType.UNIFORM,
+                                type: "uniform",
                               })
                             }
                             style={{
