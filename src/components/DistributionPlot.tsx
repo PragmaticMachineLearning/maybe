@@ -21,6 +21,42 @@ interface QueryState {
   showCI: boolean;
 }
 
+const formatCompactNumber = (value: number) => {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+  if (value === 0) {
+    return '0';
+  }
+
+  const formatExponential = (num: number) =>
+    num
+      .toExponential(2)
+      .replace(/\.0+e/, 'e')
+      .replace(/\.([1-9])0+e/, '.$1e')
+      .replace('e+', 'e');
+
+  const absValue = Math.abs(value);
+
+  if (Number.isInteger(value)) {
+    if (absValue >= 100) {
+      return formatExponential(value);
+    }
+    return value.toString();
+  }
+
+  if (absValue >= 10000 || absValue < 0.01) {
+    return formatExponential(value);
+  }
+
+  const fixed = value
+    .toFixed(2)
+    .replace(/\.0+$/, '')
+    .replace(/(\.\d*[1-9])0+$/, '$1');
+
+  return fixed.startsWith('-0') ? fixed.replace('-0', '0') : fixed;
+};
+
 const SettingsIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = "currentColor" }) => (
   <svg
     width={size}
@@ -363,7 +399,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
         const datum = params[0].data;
         if (!Array.isArray(datum)) return '';
         const [x, y] = datum;
-        return `Value: ${Number(x).toFixed(3)}<br/>Density: ${Number(y).toPrecision(3)}`;
+        return `Value: ${formatCompactNumber(Number(x))}<br/>Density: ${formatCompactNumber(Number(y))}`;
       },
     },
     grid: {
@@ -383,7 +419,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       },
       axisLabel: {
         color: '#6a7a78',
-        formatter: (value: number) => Number(value).toPrecision(3),
+        formatter: (value: number) => formatCompactNumber(Number(value)),
       },
       splitLine: {
         lineStyle: { color: 'rgba(206, 218, 214, 0.4)' },
@@ -399,6 +435,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       },
       axisLabel: {
         color: '#6a7a78',
+        formatter: (value: number) => formatCompactNumber(Number(value)),
       },
       splitLine: {
         lineStyle: { color: 'rgba(206, 218, 214, 0.3)' },

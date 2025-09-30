@@ -1,7 +1,6 @@
-import React from 'react'
-
-import type { ParsedConfidenceInterval } from '../utils/distributionUtils'
 import { DistributionPlot } from './DistributionPlot'
+import type { ParsedConfidenceInterval } from '../utils/distributionUtils'
+import React from 'react'
 
 interface AnalysisPanelProps {
   cellLabel: string
@@ -17,10 +16,36 @@ const formatNumber = (value: number) => {
   if (!Number.isFinite(value)) {
     return '—'
   }
-  if (Math.abs(value) >= 1000 || Math.abs(value) < 0.01) {
-    return value.toExponential(2)
+  if (value === 0) {
+    return '0'
   }
-  return value.toFixed(2)
+
+  const formatExponential = (num: number) =>
+    num
+      .toExponential(2)
+      .replace(/\.0+e/, 'e')
+      .replace(/\.([1-9])0+e/, '.$1e')
+      .replace('e+', 'e')
+
+  const absValue = Math.abs(value)
+
+  if (Number.isInteger(value)) {
+    if (absValue >= 100) {
+      return formatExponential(value)
+    }
+    return value.toString()
+  }
+
+  if (absValue >= 10000 || absValue < 0.01) {
+    return formatExponential(value)
+  }
+
+  const fixed = value
+    .toFixed(2)
+    .replace(/\.0+$/, '')
+    .replace(/(\.\d*[1-9])0+$/, '$1')
+
+  return fixed.startsWith('-0') ? fixed.replace('-0', '0') : fixed
 }
 
 const percentile = (sorted: number[], p: number) => {

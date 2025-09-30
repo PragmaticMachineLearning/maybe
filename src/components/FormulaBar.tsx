@@ -207,7 +207,7 @@ const formulaInputContainerStyle = {
 }
 
 const formulaInputStyle = {
-  width: 'calc(100% - 20px)',
+  width: 'calc(100% - 30px)',
   padding: '6px 10px',
   border: '1px solid var(--border-color)',
   borderRadius: '4px',
