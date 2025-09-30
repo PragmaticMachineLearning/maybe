@@ -702,84 +702,91 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
           }}
         >
           <div style={{ display: "grid", gap: "10px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-secondary)", fontSize: "13px" }}>
-              Percentile
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={queryState.percentile}
-                onChange={(e) => handleQueryChange("percentile", Number(e.target.value))}
-                style={{
-                  width: "90%",
-                  padding: "10px 12px",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "12px",
-                  backgroundColor: "var(--bg-secondary)",
-                  color: "var(--text-primary)",
-                  fontSize: "13px"
-                }}
-              />
-            </label>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Marker</span>
-              <button
-                onClick={() => handleQueryChange("showPercentile", !queryState.showPercentile)}
-                style={{
-                  background: queryState.showPercentile ? "var(--resize-handle-active)" : "var(--bg-secondary)",
-                  color: queryState.showPercentile ? "var(--bg-surface)" : "var(--text-secondary)",
-                  border: "1px solid var(--border-color)",
-                  padding: "8px 16px",
-                  borderRadius: "999px",
-                  cursor: "pointer",
-                  fontSize: "11px",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  transition: "all 0.2s ease"
-                }}
-              >
-                {queryState.showPercentile ? "Hide" : "Show"}
-              </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
+                Percentile
+              </label>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={queryState.percentile}
+                  onChange={(e) => handleQueryChange("percentile", Number(e.target.value))}
+                  style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "12px",
+                    backgroundColor: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    fontSize: "13px"
+                  }}
+                />
+                <button
+                  onClick={() => handleQueryChange("showPercentile", !queryState.showPercentile)}
+                  style={{
+                    background: queryState.showPercentile ? "var(--resize-handle-active)" : "var(--bg-secondary)",
+                    color: queryState.showPercentile ? "var(--bg-surface)" : "var(--text-secondary)",
+                    border: "1px solid var(--border-color)",
+                    padding: "10px 16px",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    transition: "all 0.2s ease",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  {queryState.showPercentile ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
           </div>
 
           <div style={{ display: "grid", gap: "10px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px", color: "var(--text-secondary)", fontSize: "13px" }}>
-              Confidence Level
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={queryState.confidenceLevel}
-                onChange={(e) => handleQueryChange("confidenceLevel", Number(e.target.value))}
-                style={{
-                  width: "90%",
-                  padding: "10px 12px",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "12px",
-                  backgroundColor: "var(--bg-secondary)",
-                  color: "var(--text-primary)",
-                  fontSize: "13px"
-                }}
-              />
-            </label>
-            <button
-              onClick={() => handleQueryChange("showCI", !queryState.showCI)}
-              style={{
-                background: queryState.showCI ? "var(--resize-handle-active)" : "var(--bg-secondary)",
-                color: queryState.showCI ? "var(--bg-surface)" : "var(--text-secondary)",
-                border: "1px solid var(--border-color)",
-                padding: "8px 16px",
-                borderRadius: "999px",
-                cursor: "pointer",
-                fontSize: "11px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                transition: "all 0.2s ease"
-              }}
-            >
-              {queryState.showCI ? "Hide" : "Show"} Confidence Interval
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ color: "var(--text-secondary)", fontSize: "13px" }}>
+                Confidence Level
+              </label>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={queryState.confidenceLevel}
+                  onChange={(e) => handleQueryChange("confidenceLevel", Number(e.target.value))}
+                  style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "12px",
+                    backgroundColor: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    fontSize: "13px"
+                  }}
+                />
+                <button
+                  onClick={() => handleQueryChange("showCI", !queryState.showCI)}
+                  style={{
+                    background: queryState.showCI ? "var(--resize-handle-active)" : "var(--bg-secondary)",
+                    color: queryState.showCI ? "var(--bg-surface)" : "var(--text-secondary)",
+                    border: "1px solid var(--border-color)",
+                    padding: "10px 16px",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    transition: "all 0.2s ease",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  {queryState.showCI ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

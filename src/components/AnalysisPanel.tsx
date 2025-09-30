@@ -1,6 +1,6 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { DistributionPlot } from './DistributionPlot'
 import type { ParsedConfidenceInterval } from '../utils/distributionUtils'
-import React from 'react'
 
 interface AnalysisPanelProps {
   cellLabel: string
@@ -11,6 +11,13 @@ interface AnalysisPanelProps {
   message?: string
   compact?: boolean
 }
+
+const DEFAULT_PANEL_WIDTH = 320
+const MIN_PANEL_WIDTH = 260
+const MAX_PANEL_WIDTH = 640
+
+const clampPanelWidth = (value: number) =>
+  Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, value))
 
 const formatNumber = (value: number) => {
   if (!Number.isFinite(value)) {
@@ -91,13 +98,96 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
   compact = false,
 }) => {
   const summary = samples ? buildSummary(samples) : null
+  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH)
+  const [isResizing, setIsResizing] = useState(false)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const resizeStateRef = useRef<{ startX: number; startWidth: number } | null>(
+    null,
+  )
+
+  const handleResizeStart = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (compact) {
+        return
+      }
+      event.preventDefault()
+      event.stopPropagation()
+      const container = panelRef.current
+      const startWidth = container?.getBoundingClientRect().width ?? panelWidth
+      resizeStateRef.current = {
+        startX: event.clientX,
+        startWidth: clampPanelWidth(startWidth),
+      }
+      setIsResizing(true)
+    },
+    [compact, panelWidth],
+  )
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isResizing || compact) {
+      return
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!resizeStateRef.current) {
+        return
+      }
+      const { startX, startWidth } = resizeStateRef.current
+      const delta = startX - event.clientX
+      setPanelWidth(clampPanelWidth(startWidth + delta))
+    }
+
+    const handlePointerEnd = () => {
+      resizeStateRef.current = null
+      setIsResizing(false)
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerEnd)
+    window.addEventListener('pointercancel', handlePointerEnd)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerEnd)
+      window.removeEventListener('pointercancel', handlePointerEnd)
+    }
+  }, [compact, isResizing])
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !isResizing) {
+      return
+    }
+
+    const previousCursor = document.body.style.cursor
+    const previousUserSelect = document.body.style.userSelect
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+
+    return () => {
+      document.body.style.cursor = previousCursor
+      document.body.style.userSelect = previousUserSelect
+    }
+  }, [isResizing])
+
+  useEffect(() => {
+    if (!compact) {
+      return
+    }
+    resizeStateRef.current = null
+    setIsResizing(false)
+  }, [compact])
+
+  const effectiveWidth = compact ? '100%' : `${panelWidth}px`
+  const effectiveFlex = compact ? '1 1 auto' : `0 0 ${panelWidth}px`
 
   return (
     <aside
+      ref={panelRef}
       style={{
-        width: compact ? '100%' : '320px',
-        maxWidth: compact ? '100%' : '320px',
-        flex: compact ? '1 1 auto' : '0 0 320px',
+        width: effectiveWidth,
+        maxWidth: compact ? '100%' : `${MAX_PANEL_WIDTH}px`,
+        minWidth: compact ? '100%' : `${MIN_PANEL_WIDTH}px`,
+        flex: effectiveFlex,
         backgroundColor: 'var(--bg-surface)',
         border: '1px solid var(--border-color)',
         borderRadius: '12px',
@@ -109,8 +199,44 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
         maxHeight: compact ? 'none' : 'calc(100vh - 120px)',
         overflow: 'visible',
         boxSizing: 'border-box',
+        position: 'relative',
+        userSelect: isResizing ? 'none' : 'auto',
+        transition: isResizing ? 'none' : 'width 0.15s ease',
       }}
     >
+      {!compact && (
+        <div
+          onPointerDown={handleResizeStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize analysis panel"
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: '12px',
+            cursor: 'ew-resize',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: 'translateX(-6px)',
+            zIndex: 1,
+          }}
+        >
+          <div
+            style={{
+              width: '3px',
+              height: '32px',
+              borderRadius: '999px',
+              backgroundColor: isResizing
+                ? 'var(--resize-handle-active)'
+                : 'var(--resize-handle)',
+              transition: 'background-color 0.2s ease',
+            }}
+          />
+        </div>
+      )}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
         <div>
           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>

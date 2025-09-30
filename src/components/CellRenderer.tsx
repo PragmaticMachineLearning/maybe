@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   getConfidenceIntervalMedian,
   getSamplesFromDistribution,
@@ -430,6 +430,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     [value, viewOptions],
   );
 
+  const handleOpenAnalysis = useCallback(() => {
+    setShowPlot(false);
+    if (onOpenAnalysis) {
+      onOpenAnalysis();
+    }
+  }, [onOpenAnalysis]);
+
   return (
     <>
       <div
@@ -713,7 +720,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
               onClose={() => setShowPlot(false)}
               distributionType={distributionType}
               confidenceInterval={confidenceInterval}
-              onOpenAnalysis={onOpenAnalysis}
+              onOpenAnalysis={onOpenAnalysis ? handleOpenAnalysis : undefined}
             />
           );
         })()}
