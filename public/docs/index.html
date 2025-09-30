@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Alea Documentation</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg-primary: #0f172a;
+        --bg-surface: rgba(15, 23, 42, 0.92);
+        --bg-panel: rgba(30, 41, 59, 0.85);
+        --border: rgba(148, 163, 184, 0.25);
+        --accent: #5eead4;
+        --text-primary: #f8fafc;
+        --text-secondary: rgba(226, 232, 240, 0.9);
+        --text-muted: rgba(148, 163, 184, 0.8);
+        font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, rgba(94, 234, 212, 0.12), transparent 55%),
+          linear-gradient(180deg, rgba(15, 23, 42, 1) 0%, rgba(15, 23, 42, 0.94) 50%, rgba(15, 23, 42, 1) 100%);
+        color: var(--text-primary);
+        padding: 40px 20px 80px;
+        box-sizing: border-box;
+      }
+
+      .container {
+        max-width: 960px;
+        margin: 0 auto;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        box-shadow: 0 40px 90px rgba(15, 23, 42, 0.45);
+        overflow: hidden;
+      }
+
+      header {
+        padding: 48px 48px 24px;
+        background: var(--bg-panel);
+        border-bottom: 1px solid var(--border);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: clamp(2.4rem, 3.6vw, 3rem);
+        letter-spacing: -0.03em;
+      }
+
+      header p {
+        margin-top: 18px;
+        margin-bottom: 0;
+        max-width: 720px;
+        font-size: 1.1rem;
+        line-height: 1.7;
+        color: var(--text-secondary);
+      }
+
+      nav {
+        padding: 32px 48px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 18px;
+        background: rgba(15, 23, 42, 0.6);
+        border-bottom: 1px solid var(--border);
+      }
+
+      nav a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      nav a:hover {
+        text-decoration: underline;
+      }
+
+      main {
+        padding: 40px 48px 60px;
+        display: grid;
+        gap: 48px;
+      }
+
+      section h2 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.9rem;
+        letter-spacing: -0.02em;
+      }
+
+      section h3 {
+        margin-top: 32px;
+        margin-bottom: 12px;
+        font-size: 1.25rem;
+      }
+
+      p {
+        margin: 0 0 18px;
+        line-height: 1.75;
+        font-size: 1.05rem;
+        color: var(--text-secondary);
+      }
+
+      ul, ol {
+        margin: 0 0 18px 24px;
+        line-height: 1.7;
+        color: var(--text-secondary);
+      }
+
+      code, .code {
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        background: rgba(94, 234, 212, 0.08);
+        padding: 2px 6px;
+        border-radius: 6px;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+
+      .callout {
+        border-left: 3px solid var(--accent);
+        padding: 14px 18px;
+        background: rgba(94, 234, 212, 0.06);
+        border-radius: 12px;
+        margin-bottom: 18px;
+      }
+
+      footer {
+        padding: 28px 48px 40px;
+        background: rgba(15, 23, 42, 0.6);
+        border-top: 1px solid var(--border);
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      @media (max-width: 768px) {
+        header, nav, main, footer {
+          padding-left: 24px;
+          padding-right: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Alea User Documentation</h1>
+        <p>
+          This guide introduces Alea’s probabilistic spreadsheet workflow. It explains how uncertainty values are parsed, sampled, and visualised so you can build models that quantify risk without leaving the grid.
+        </p>
+      </header>
+
+      <nav>
+        <a href="#goals">Goals &amp; Audience</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#sampling">Sampling Technique</a>
+        <a href="#confidence-intervals">Confidence Intervals</a>
+        <a href="#uncertainty-cells">Uncertainty Cells</a>
+        <a href="#analysis-panel">Analysis Panel</a>
+        <a href="#flow-diagram">Flow Diagram</a>
+        <a href="#formula-bar">Formula Bar</a>
+      </nav>
+
+      <main>
+        <section id="goals">
+          <h2>Goals &amp; Audience</h2>
+          <p>
+            Alea targets analysts who already understand spreadsheets and want to add quantitative uncertainty without writing bespoke Monte Carlo scripts. The documentation focuses on:
+          </p>
+          <ul>
+            <li><strong>New users</strong> who need guided examples for entering confidence intervals and reading the charts.</li>
+            <li><strong>Advanced users</strong> who want to understand how HyperFormula powers sampling and how outputs can be chained through formulas.</li>
+          </ul>
+          <div class="callout">
+            Alea uses the open-source <span class="code">HyperFormula</span> engine. Any deterministic formula supported by HyperFormula works, and uncertainty-aware values fall back to deterministic behaviour when no ranges are present.
+          </div>
+        </section>
+
+        <section id="architecture">
+          <h2>Architecture Overview</h2>
+          <p>
+            Alea is a React application that wraps HyperFormula with a set of ergonomics tailored to uncertain inputs.
+          </p>
+          <h3>Client components</h3>
+          <ul>
+            <li><strong>Spreadsheet grid</strong> (<span class="code">src/components/Spreadsheet.tsx</span>) renders the table UI and delegates edits to the context.</li>
+            <li><strong>Cell renderer</strong> (<span class="code">src/components/CellRenderer.tsx</span>) formats deterministic values, confidence intervals, and sampled distributions with icons and context menus.</li>
+            <li><strong>Toolbar</strong> (<span class="code">src/components/Toolbar.tsx</span>) toggles the Analysis panel, Flow Diagram, Examples, Theme, and now provides a Docs shortcut.</li>
+            <li><strong>Analysis panel</strong> (<span class="code">src/components/AnalysisPanel.tsx</span>) is a resizable aside that surfaces statistics and the distribution plot for the selected cell.</li>
+            <li><strong>Flow diagram</strong> (<span class="code">src/components/FlowDiag.tsx</span>) overlays a dependency graph built from HyperFormula’s internal graph.</li>
+          </ul>
+          <h3>State &amp; engine integration</h3>
+          <p>
+            The <span class="code">SpreadsheetProvider</span> (<span class="code">src/SpreadsheetContext.tsx</span>) instantiates HyperFormula with a sample size of 10,000. It exposes helpers to update cells, read formulas, and store per-cell distribution view preferences. All dependent components subscribe to this context instead of reaching into HyperFormula directly.</p>
+          <p>
+            HyperFormula types such as <span class="code">ConfidenceIntervalNumber</span> and <span class="code">SampledDistribution</span> (see <span class="code">hyperformula/src/interpreter/InterpreterValue.ts</span>) encapsulate the uncertainty state and provide sampling utilities used throughout the UI.</p>
+        </section>
+
+        <section id="sampling">
+          <h2>Sampling Technique</h2>
+          <p>
+            Every uncertain value ultimately becomes a set of samples before arithmetic is performed. HyperFormula’s configuration sets <span class="code">sampleSize = 10000</span>, so each <em>CI</em> input or sampled distribution produces 10,000 draws when used in formulas.</p>
+          <ul>
+            <li><strong>Confidence intervals</strong> call <span class="code">ConfidenceIntervalNumber.toSamples()</span>, which selects a generator based on the interpretation (normal, lognormal, or uniform).</li>
+            <li><strong>Derived distributions</strong> (e.g., sums or products) exist as <span class="code">SampledDistribution</span> objects whose <span class="code">getSamples()</span> output flows into the Analysis panel or other cells.</li>
+            <li><strong>Helper generators</strong> (<span class="code">generateNormalSamples</span>, <span class="code">generateLogNormalSamples</span>, <span class="code">generateUniformSamples</span>) live in <span class="code">InterpreterValue.ts</span> and are reused consistently.</li>
+          </ul>
+          <p>
+            Sampling happens on demand: when a formula pulls in an uncertain operand, HyperFormula requests samples, performs the operation element-wise, and stores the result as another sampled distribution.</p>
+          <div class="callout">
+            Deterministic inputs bypass sampling entirely. A formula that references only classical numbers is evaluated once; the moment an uncertainty cell participates, the engine switches to Monte Carlo execution for that branch.
+          </div>
+        </section>
+
+        <section id="confidence-intervals">
+          <h2>Confidence Interval Input</h2>
+          <p>
+            Cells accept shorthand notations that the parser recognises and converts into <span class="code">ConfidenceIntervalNumber</span> instances (<span class="code">hyperformula/src/CellContentParser.ts</span>):</p>
+          <ul>
+            <li><span class="code">CI[20, 50]</span> &mdash; explicit prefix, defaults to a 95% CI.</li>
+            <li><span class="code">[20, 50]</span> &mdash; bracket-only shortcut.</li>
+            <li><span class="code">20 to 50</span> &mdash; natural-language range.</li>
+          </ul>
+          <p>
+            Bounds can be negative or positive. When both are positive and the ratio <span class="code">upper/lower</span> exceeds roughly 2×, Alea automatically interprets the range as lognormal; otherwise it defaults to a normal interpretation. You can override the interpretation later from the Analysis panel’s view menu.</p>
+        </section>
+
+        <section id="uncertainty-cells">
+          <h2>Creating Uncertainty Cells</h2>
+          <ol>
+            <li>Select a cell and type one of the supported notations (<span class="code">CI[10, 25]</span>, <span class="code">35 to 55</span>, etc.).</li>
+            <li>Confirm with Enter. The cell renderer shows a distribution icon and a formatted summary (<span class="code">N(μ=…)</span>, <span class="code">LN(μ=…)</span>, or <span class="code">U[…]</span>).</li>
+            <li>Use the cell’s dropdown to switch between normal, lognormal, and uniform interpretations if needed.</li>
+            <li>Reference the cell in formulas exactly as you would with deterministic numbers; downstream cells will inherit sampled distributions.</li>
+          </ol>
+          <p>
+            Advanced users can also paste sampled results in <span class="code">S(μ=..., σ²=...)</span> form, which the parser recognises as <span class="code">SampledDistribution</span> values ready for further computation.</p>
+        </section>
+
+        <section id="analysis-panel">
+          <h2>Using the Analysis Panel</h2>
+          <p>
+            Activate the panel with the toolbar’s <strong>Analysis</strong> button or by right-clicking a distribution cell and choosing “Analysis”. The panel docks to the right and can be resized horizontally.</p>
+          <h3>What you’ll see</h3>
+          <ul>
+            <li><strong>Summary table</strong> &mdash; mean, standard deviation, deciles, and range derived from the samples.</li>
+            <li><strong>Confidence interval card</strong> &mdash; reflects the parsed bounds and interpretation.</li>
+            <li><strong>Distribution plot</strong> (<span class="code">DistributionPlot</span>) &mdash; density estimate of the samples with optional percentile markers.</li>
+          </ul>
+          <p>
+            Use the dropdown in the top-right of a distribution cell to switch the interpretation; the panel updates immediately. The “Settings” controls inside the plot let you toggle percentile markers or adjust the confidence level overlay for visual exploration.</p>
+        </section>
+
+        <section id="flow-diagram">
+          <h2>Using the Flow Diagram</h2>
+          <p>
+            The Flow Diagram visualises dependencies between cells. Open it via the toolbar icon (the dotted graph). While active, the spreadsheet is dimmed and the overlay focuses on the graph.</p>
+          <ul>
+            <li>Nodes display the cell address, current value, type, and formula where applicable.</li>
+            <li>Uncertain values reveal their distribution summary (e.g., <span class="code">CI[a, b]</span> or <span class="code">S(μ, σ²)</span>).</li>
+            <li>Edges follow HyperFormula’s dependency graph, helping you trace how uncertainty flows through calculations.</li>
+          </ul>
+          <p>
+            Use it to answer questions such as “Which assumptions drive the variance in my output?”: follow edges backwards from a volatile node to inspect upstream intervals. Use the built-in pan/zoom controls from <span class="code">@xyflow/react</span>. Press Escape or click the spreadsheet icon to return to the grid.</p>
+        </section>
+
+        <section id="formula-bar">
+          <h2>Formula Bar &amp; Editing Tips</h2>
+          <p>
+            The formula bar mirrors the active cell’s formula/value and provides a larger editing surface. It routes submissions through <span class="code">SpreadsheetContext.submitFormula</span>, ensuring HyperFormula re-parses the content with uncertainty support.</p>
+          <ul>
+            <li>When editing an uncertainty cell, the Formula Bar shows the original notation (<span class="code">CI[...]</span>) so you can tweak bounds directly.</li>
+            <li>Deterministic formulas behave as in traditional spreadsheets; only the operands determine whether sampling is triggered.</li>
+          </ul>
+        </section>
+      </main>
+
+      <footer>
+        Updated March 2025. Share feedback via the project repository to help us expand this guide with tutorials and examples.
+      </footer>
+    </div>
+  </body>
+</html>
