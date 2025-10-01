@@ -6,142 +6,306 @@
     <title>Alea Documentation</title>
     <style>
       :root {
-        color-scheme: light dark;
-        --bg-primary: #0f172a;
-        --bg-surface: rgba(15, 23, 42, 0.92);
-        --bg-panel: rgba(30, 41, 59, 0.85);
-        --border: rgba(148, 163, 184, 0.25);
+        color-scheme: dark;
+        --bg-primary: #0a0f1e;
+        --bg-surface: #121828;
+        --bg-hover: rgba(94, 234, 212, 0.06);
+        --border-color: rgba(148, 163, 184, 0.12);
+        --text-primary: rgba(248, 250, 252, 0.95);
+        --text-secondary: rgba(203, 213, 225, 0.75);
+        --text-muted: rgba(148, 163, 184, 0.6);
         --accent: #5eead4;
-        --text-primary: #f8fafc;
-        --text-secondary: rgba(226, 232, 240, 0.9);
-        --text-muted: rgba(148, 163, 184, 0.8);
-        font-family: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+        --accent-subtle: rgba(94, 234, 212, 0.08);
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      * {
+        box-sizing: border-box;
       }
 
       body {
         margin: 0;
         min-height: 100vh;
-        background: radial-gradient(circle at top, rgba(94, 234, 212, 0.12), transparent 55%),
-          linear-gradient(180deg, rgba(15, 23, 42, 1) 0%, rgba(15, 23, 42, 0.94) 50%, rgba(15, 23, 42, 1) 100%);
+        background: var(--bg-primary);
         color: var(--text-primary);
-        padding: 40px 20px 80px;
-        box-sizing: border-box;
+        font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       .container {
-        max-width: 960px;
+        max-width: 1100px;
         margin: 0 auto;
-        background: var(--bg-surface);
-        border: 1px solid var(--border);
-        border-radius: 28px;
-        box-shadow: 0 40px 90px rgba(15, 23, 42, 0.45);
-        overflow: hidden;
+        padding: 80px 32px;
       }
 
       header {
-        padding: 48px 48px 24px;
-        background: var(--bg-panel);
-        border-bottom: 1px solid var(--border);
+        text-align: center;
+        margin-bottom: 80px;
       }
 
-      header h1 {
-        margin: 0;
-        font-size: clamp(2.4rem, 3.6vw, 3rem);
-        letter-spacing: -0.03em;
+      .logo {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        background: var(--accent-subtle);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        margin-bottom: 24px;
+        transition: transform 0.3s ease;
       }
 
-      header p {
-        margin-top: 18px;
-        margin-bottom: 0;
-        max-width: 720px;
-        font-size: 1.1rem;
-        line-height: 1.7;
+      .logo:hover {
+        transform: translateY(-2px);
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: clamp(2rem, 5vw, 2.75rem);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--text-primary);
+      }
+
+      .subtitle {
+        max-width: 600px;
+        margin: 0 auto 48px;
+        font-size: 1rem;
         color: var(--text-secondary);
+        line-height: 1.65;
       }
 
       nav {
-        padding: 32px 48px;
         display: flex;
         flex-wrap: wrap;
-        gap: 12px 18px;
-        background: rgba(15, 23, 42, 0.6);
-        border-bottom: 1px solid var(--border);
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 80px;
       }
 
       nav a {
-        color: var(--accent);
+        padding: 10px 20px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        color: var(--text-secondary);
         text-decoration: none;
-        font-weight: 600;
-        font-size: 0.95rem;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        letter-spacing: 0.01em;
       }
 
       nav a:hover {
-        text-decoration: underline;
+        background: var(--bg-hover);
+        border-color: var(--accent);
+        color: var(--accent);
+        transform: translateY(-1px);
       }
 
-      main {
-        padding: 40px 48px 60px;
-        display: grid;
-        gap: 48px;
+      .section {
+        margin-bottom: 64px;
+        padding: 40px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: var(--shadow-sm);
       }
 
-      section h2 {
-        margin-top: 0;
-        margin-bottom: 20px;
-        font-size: 1.9rem;
-        letter-spacing: -0.02em;
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
       }
 
-      section h3 {
-        margin-top: 32px;
-        margin-bottom: 12px;
-        font-size: 1.25rem;
+      .section-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: var(--accent-subtle);
+        border-radius: 10px;
+        flex-shrink: 0;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text-primary);
+      }
+
+      h3 {
+        margin: 32px 0 16px;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -0.01em;
       }
 
       p {
-        margin: 0 0 18px;
-        line-height: 1.75;
-        font-size: 1.05rem;
+        margin: 0 0 16px;
+        font-size: 0.9375rem;
         color: var(--text-secondary);
+        line-height: 1.7;
       }
 
       ul, ol {
-        margin: 0 0 18px 24px;
+        margin: 0 0 16px;
+        padding-left: 24px;
+        color: var(--text-secondary);
+        font-size: 0.9375rem;
+      }
+
+      li {
+        margin-bottom: 8px;
+        line-height: 1.7;
+      }
+
+      li strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      code {
+        font-family: "SF Mono", "JetBrains Mono", "Fira Code", Consolas, monospace;
+        background: var(--accent-subtle);
+        padding: 3px 8px;
+        border-radius: 6px;
+        color: var(--accent);
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+
+      .callout {
+        margin: 24px 0;
+        padding: 20px 24px;
+        background: var(--accent-subtle);
+        border: 1px solid rgba(94, 234, 212, 0.2);
+        border-radius: 12px;
+        font-size: 0.9375rem;
         line-height: 1.7;
         color: var(--text-secondary);
       }
 
-      code, .code {
-        font-family: "JetBrains Mono", "Fira Code", monospace;
-        background: rgba(94, 234, 212, 0.08);
-        padding: 2px 6px;
-        border-radius: 6px;
-        color: var(--accent);
-        font-size: 0.95rem;
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin: 24px 0;
       }
 
-      .callout {
-        border-left: 3px solid var(--accent);
-        padding: 14px 18px;
-        background: rgba(94, 234, 212, 0.06);
+      .feature-card {
+        padding: 24px;
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
-        margin-bottom: 18px;
+        transition: all 0.2s ease;
+      }
+
+      .feature-card:hover {
+        background: var(--bg-hover);
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+
+      .feature-card strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+
+      .feature-card p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+
+      .step-list {
+        counter-reset: step-counter;
+        list-style: none;
+        padding: 0;
+        margin: 24px 0;
+      }
+
+      .step-list li {
+        counter-increment: step-counter;
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+        position: relative;
+      }
+
+      .step-list li::before {
+        content: counter(step-counter);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: var(--accent-subtle);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--accent);
+        font-weight: 600;
+        font-size: 0.875rem;
+        flex-shrink: 0;
       }
 
       footer {
-        padding: 28px 48px 40px;
-        background: rgba(15, 23, 42, 0.6);
-        border-top: 1px solid var(--border);
+        margin-top: 80px;
+        padding-top: 32px;
+        border-top: 1px solid var(--border-color);
+        text-align: center;
         color: var(--text-muted);
-        font-size: 0.95rem;
+        font-size: 0.875rem;
       }
 
       @media (max-width: 768px) {
-        header, nav, main, footer {
-          padding-left: 24px;
-          padding-right: 24px;
+        .container {
+          padding: 48px 20px;
+        }
+
+        header {
+          margin-bottom: 48px;
+        }
+
+        nav {
+          margin-bottom: 48px;
+        }
+
+        .section {
+          padding: 28px 24px;
+          margin-bottom: 40px;
+        }
+
+        .section-header {
+          gap: 12px;
+        }
+
+        .section-icon {
+          width: 36px;
+          height: 36px;
+        }
+
+        h2 {
+          font-size: 1.25rem;
+        }
+
+        .feature-grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -149,139 +313,282 @@
   <body>
     <div class="container">
       <header>
-        <h1>Alea User Documentation</h1>
-        <p>
-          This guide introduces Alea’s probabilistic spreadsheet workflow. It explains how uncertainty values are parsed, sampled, and visualised so you can build models that quantify risk without leaving the grid.
+        <div class="logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 18C6 14 8.5 9 12 9C15.5 9 16.5 14 20 6" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="4" y1="18" x2="20" y2="18" stroke="#5eead4" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1>Alea Documentation</h1>
+        <p class="subtitle">
+          A probabilistic spreadsheet for quantifying uncertainty. Model risk without leaving the grid.
         </p>
       </header>
 
       <nav>
-        <a href="#goals">Goals &amp; Audience</a>
+        <a href="#overview">Overview</a>
         <a href="#architecture">Architecture</a>
-        <a href="#sampling">Sampling Technique</a>
-        <a href="#confidence-intervals">Confidence Intervals</a>
-        <a href="#uncertainty-cells">Uncertainty Cells</a>
-        <a href="#analysis-panel">Analysis Panel</a>
-        <a href="#flow-diagram">Flow Diagram</a>
-        <a href="#formula-bar">Formula Bar</a>
+        <a href="#sampling">Sampling</a>
+        <a href="#intervals">Intervals</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#analysis">Analysis</a>
+        <a href="#flow">Flow Diagram</a>
       </nav>
 
       <main>
-        <section id="goals">
-          <h2>Goals &amp; Audience</h2>
+        <section id="overview" class="section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="9" stroke="#5eead4" stroke-width="2"/>
+                <circle cx="12" cy="12" r="3" fill="#5eead4"/>
+              </svg>
+            </div>
+            <h2>Overview</h2>
+          </div>
           <p>
-            Alea targets analysts who already understand spreadsheets and want to add quantitative uncertainty without writing bespoke Monte Carlo scripts. The documentation focuses on:
+            Alea combines spreadsheet familiarity with Monte Carlo simulation. Enter uncertainty as confidence intervals, reference them in formulas, and visualize the resulting distributions—all without custom scripts.
           </p>
-          <ul>
-            <li><strong>New users</strong> who need guided examples for entering confidence intervals and reading the charts.</li>
-            <li><strong>Advanced users</strong> who want to understand how HyperFormula powers sampling and how outputs can be chained through formulas.</li>
-          </ul>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <strong>For New Users</strong>
+              <p>Guided examples for entering confidence intervals and interpreting distribution plots.</p>
+            </div>
+            <div class="feature-card">
+              <strong>For Advanced Users</strong>
+              <p>Understand how GaussFormula powers sampling and chains uncertain values through formulas.</p>
+            </div>
+          </div>
           <div class="callout">
-            Alea uses the open-source <span class="code">HyperFormula</span> engine. Any deterministic formula supported by HyperFormula works, and uncertainty-aware values fall back to deterministic behaviour when no ranges are present.
+            Built on <code>GaussFormula</code>, a fork of HyperFormula with native support for uncertainty. Alea adds an intuitive confidence interval interface on top of the engine's probabilistic capabilities.
           </div>
         </section>
 
-        <section id="architecture">
-          <h2>Architecture Overview</h2>
+        <section id="architecture" class="section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="7" height="7" rx="1" stroke="#5eead4" stroke-width="2"/>
+                <rect x="14" y="3" width="7" height="7" rx="1" stroke="#5eead4" stroke-width="2"/>
+                <rect x="3" y="14" width="7" height="7" rx="1" stroke="#5eead4" stroke-width="2"/>
+                <rect x="14" y="14" width="7" height="7" rx="1" stroke="#5eead4" stroke-width="2"/>
+              </svg>
+            </div>
+            <h2>Architecture</h2>
+          </div>
           <p>
-            Alea is a React application that wraps HyperFormula with a set of ergonomics tailored to uncertain inputs.
+            Alea is a React application wrapping <a href="https://github.com/Tobiadefami/gaussformula" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent);">GaussFormula</a> with ergonomics for uncertain inputs.
           </p>
-          <h3>Client components</h3>
-          <ul>
-            <li><strong>Spreadsheet grid</strong> (<span class="code">src/components/Spreadsheet.tsx</span>) renders the table UI and delegates edits to the context.</li>
-            <li><strong>Cell renderer</strong> (<span class="code">src/components/CellRenderer.tsx</span>) formats deterministic values, confidence intervals, and sampled distributions with icons and context menus.</li>
-            <li><strong>Toolbar</strong> (<span class="code">src/components/Toolbar.tsx</span>) toggles the Analysis panel, Flow Diagram, Examples, Theme, and now provides a Docs shortcut.</li>
-            <li><strong>Analysis panel</strong> (<span class="code">src/components/AnalysisPanel.tsx</span>) is a resizable aside that surfaces statistics and the distribution plot for the selected cell.</li>
-            <li><strong>Flow diagram</strong> (<span class="code">src/components/FlowDiag.tsx</span>) overlays a dependency graph built from HyperFormula’s internal graph.</li>
-          </ul>
-          <h3>State &amp; engine integration</h3>
+          
+          <h3>Core Components</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <strong>Spreadsheet Grid</strong>
+              <p><code>Spreadsheet.tsx</code> — Renders the table interface and manages cell interactions.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Cell Renderer</strong>
+              <p><code>CellRenderer.tsx</code> — Formats values, distributions, and context menus.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Analysis Panel</strong>
+              <p><code>AnalysisPanel.tsx</code> — Statistics and distribution plots for selected cells.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Flow Diagram</strong>
+              <p><code>FlowDiag.tsx</code> — Dependency graph visualization for tracing uncertainty.</p>
+            </div>
+          </div>
+
+          <h3>State Management</h3>
           <p>
-            The <span class="code">SpreadsheetProvider</span> (<span class="code">src/SpreadsheetContext.tsx</span>) instantiates HyperFormula with a sample size of 10,000. It exposes helpers to update cells, read formulas, and store per-cell distribution view preferences. All dependent components subscribe to this context instead of reaching into HyperFormula directly.</p>
+            <code>SpreadsheetProvider</code> instantiates GaussFormula with 10,000 samples per distribution. It exposes helpers to update cells, read formulas, and manage distribution view preferences.
+          </p>
           <p>
-            HyperFormula types such as <span class="code">ConfidenceIntervalNumber</span> and <span class="code">SampledDistribution</span> (see <span class="code">hyperformula/src/interpreter/InterpreterValue.ts</span>) encapsulate the uncertainty state and provide sampling utilities used throughout the UI.</p>
+            Types like <code>ConfidenceIntervalNumber</code> and <code>SampledDistribution</code> encapsulate uncertainty state and provide sampling utilities.
+          </p>
         </section>
 
-        <section id="sampling">
-          <h2>Sampling Technique</h2>
+        <section id="sampling" class="section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 12L7 8L11 14L15 6L21 10" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="7" cy="8" r="1.5" fill="#5eead4"/>
+                <circle cx="11" cy="14" r="1.5" fill="#5eead4"/>
+                <circle cx="15" cy="6" r="1.5" fill="#5eead4"/>
+              </svg>
+            </div>
+            <h2>Sampling Technique</h2>
+          </div>
           <p>
-            Every uncertain value ultimately becomes a set of samples before arithmetic is performed. HyperFormula’s configuration sets <span class="code">sampleSize = 10000</span>, so each <em>CI</em> input or sampled distribution produces 10,000 draws when used in formulas.</p>
-          <ul>
-            <li><strong>Confidence intervals</strong> call <span class="code">ConfidenceIntervalNumber.toSamples()</span>, which selects a generator based on the interpretation (normal, lognormal, or uniform).</li>
-            <li><strong>Derived distributions</strong> (e.g., sums or products) exist as <span class="code">SampledDistribution</span> objects whose <span class="code">getSamples()</span> output flows into the Analysis panel or other cells.</li>
-            <li><strong>Helper generators</strong> (<span class="code">generateNormalSamples</span>, <span class="code">generateLogNormalSamples</span>, <span class="code">generateUniformSamples</span>) live in <span class="code">InterpreterValue.ts</span> and are reused consistently.</li>
-          </ul>
-          <p>
-            Sampling happens on demand: when a formula pulls in an uncertain operand, HyperFormula requests samples, performs the operation element-wise, and stores the result as another sampled distribution.</p>
+            Every uncertain value becomes 10,000 samples before arithmetic. GaussFormula performs operations element-wise and returns a new sampled distribution.
+          </p>
+          
+          <div class="feature-grid">
+            <div class="feature-card">
+              <strong>Confidence Intervals</strong>
+              <p>Call <code>toSamples()</code> with generators for normal, lognormal, or uniform distributions.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Derived Distributions</strong>
+              <p>Sums, products, and other operations create <code>SampledDistribution</code> objects.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Helper Generators</strong>
+              <p>Reusable sampling functions in <code>InterpreterValue.ts</code>.</p>
+            </div>
+          </div>
+
           <div class="callout">
-            Deterministic inputs bypass sampling entirely. A formula that references only classical numbers is evaluated once; the moment an uncertainty cell participates, the engine switches to Monte Carlo execution for that branch.
+            Deterministic inputs bypass sampling. A formula referencing only numbers evaluates once. Mix in an uncertain cell, and GaussFormula switches to Monte Carlo mode.
           </div>
         </section>
 
-        <section id="confidence-intervals">
-          <h2>Confidence Interval Input</h2>
+        <section id="intervals" class="section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="10" width="16" height="4" rx="1" stroke="#5eead4" stroke-width="2"/>
+                <line x1="4" y1="12" x2="20" y2="12" stroke="#5eead4" stroke-width="2"/>
+                <circle cx="7" cy="12" r="2" fill="#5eead4"/>
+                <circle cx="17" cy="12" r="2" fill="#5eead4"/>
+              </svg>
+            </div>
+            <h2>Confidence Intervals</h2>
+          </div>
           <p>
-            Cells accept shorthand notations that the parser recognises and converts into <span class="code">ConfidenceIntervalNumber</span> instances (<span class="code">hyperformula/src/CellContentParser.ts</span>):</p>
-          <ul>
-            <li><span class="code">CI[20, 50]</span> &mdash; explicit prefix, defaults to a 95% CI.</li>
-            <li><span class="code">[20, 50]</span> &mdash; bracket-only shortcut.</li>
-            <li><span class="code">20 to 50</span> &mdash; natural-language range.</li>
-          </ul>
+            Cells accept shorthand notations converted to <code>ConfidenceIntervalNumber</code> instances:
+          </p>
+          
+          <div class="feature-grid">
+            <div class="feature-card">
+              <strong><code>CI[20, 50]</code></strong>
+              <p>Explicit prefix, defaults to 95% confidence.</p>
+            </div>
+            <div class="feature-card">
+              <strong><code>[20, 50]</code></strong>
+              <p>Bracket-only shorthand.</p>
+            </div>
+            <div class="feature-card">
+              <strong><code>20 to 50</code></strong>
+              <p>Natural language range.</p>
+            </div>
+          </div>
+
           <p>
-            Bounds can be negative or positive. When both are positive and the ratio <span class="code">upper/lower</span> exceeds roughly 2×, Alea automatically interprets the range as lognormal; otherwise it defaults to a normal interpretation. You can override the interpretation later from the Analysis panel’s view menu.</p>
+            When bounds are positive and <code>upper/lower &gt; 2</code>, Alea defaults to lognormal. Otherwise, it uses normal. Override via the cell's dropdown menu.
+          </p>
         </section>
 
-        <section id="uncertainty-cells">
-          <h2>Creating Uncertainty Cells</h2>
-          <ol>
-            <li>Select a cell and type one of the supported notations (<span class="code">CI[10, 25]</span>, <span class="code">35 to 55</span>, etc.).</li>
-            <li>Confirm with Enter. The cell renderer shows a distribution icon and a formatted summary (<span class="code">N(μ=…)</span>, <span class="code">LN(μ=…)</span>, or <span class="code">U[…]</span>).</li>
-            <li>Use the cell’s dropdown to switch between normal, lognormal, and uniform interpretations if needed.</li>
-            <li>Reference the cell in formulas exactly as you would with deterministic numbers; downstream cells will inherit sampled distributions.</li>
+        <section id="workflow" class="section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19M19 12L15 8M19 12L15 16" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h2>Creating Uncertainty Cells</h2>
+          </div>
+          
+          <ol class="step-list">
+            <li>
+              <div>
+                <strong>Enter a confidence interval</strong>
+                <p>Type <code>CI[10, 25]</code>, <code>[35, 55]</code>, or <code>20 to 50</code> in any cell.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Confirm with Enter</strong>
+                <p>The cell displays a distribution icon and formatted summary like <code>N(μ=…, σ=…)</code>.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Choose interpretation</strong>
+                <p>Use the dropdown to switch between normal, lognormal, or uniform distributions.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Reference in formulas</strong>
+                <p>Use the cell like any number. Downstream cells inherit sampled distributions automatically.</p>
+              </div>
+            </li>
           </ol>
+
           <p>
-            Advanced users can also paste sampled results in <span class="code">S(μ=..., σ²=...)</span> form, which the parser recognises as <span class="code">SampledDistribution</span> values ready for further computation.</p>
+            Advanced: Paste sampled results as <code>S(μ=…, σ²=…)</code> for direct <code>SampledDistribution</code> values.
+          </p>
         </section>
 
-        <section id="analysis-panel">
-          <h2>Using the Analysis Panel</h2>
+        <section id="analysis" class="section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="7" height="18" rx="1" stroke="#5eead4" stroke-width="2"/>
+                <rect x="14" y="8" width="7" height="13" rx="1" stroke="#5eead4" stroke-width="2"/>
+              </svg>
+            </div>
+            <h2>Analysis Panel</h2>
+          </div>
           <p>
-            Activate the panel with the toolbar’s <strong>Analysis</strong> button or by right-clicking a distribution cell and choosing “Analysis”. The panel docks to the right and can be resized horizontally.</p>
-          <h3>What you’ll see</h3>
-          <ul>
-            <li><strong>Summary table</strong> &mdash; mean, standard deviation, deciles, and range derived from the samples.</li>
-            <li><strong>Confidence interval card</strong> &mdash; reflects the parsed bounds and interpretation.</li>
-            <li><strong>Distribution plot</strong> (<span class="code">DistributionPlot</span>) &mdash; density estimate of the samples with optional percentile markers.</li>
-          </ul>
+            Open via the toolbar or by right-clicking a distribution cell. The panel docks to the right and resizes horizontally.
+          </p>
+
+          <h3>Features</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <strong>Summary Statistics</strong>
+              <p>Mean, standard deviation, deciles, and full range.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Confidence Bounds</strong>
+              <p>Original interval and interpretation settings.</p>
+            </div>
+            <div class="feature-card">
+              <strong>Distribution Plot</strong>
+              <p>Density estimate with optional percentile markers and confidence overlays.</p>
+            </div>
+          </div>
+
           <p>
-            Use the dropdown in the top-right of a distribution cell to switch the interpretation; the panel updates immediately. The “Settings” controls inside the plot let you toggle percentile markers or adjust the confidence level overlay for visual exploration.</p>
+            Switch interpretations via the cell dropdown; the panel updates instantly. Use plot settings to toggle markers and adjust confidence levels.
+          </p>
         </section>
 
-        <section id="flow-diagram">
-          <h2>Using the Flow Diagram</h2>
+        <section id="flow" class="section">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="6" cy="6" r="3" stroke="#5eead4" stroke-width="2"/>
+                <circle cx="18" cy="6" r="3" stroke="#5eead4" stroke-width="2"/>
+                <circle cx="12" cy="18" r="3" stroke="#5eead4" stroke-width="2"/>
+                <path d="M8.5 8L10.5 16M15.5 8L13.5 16" stroke="#5eead4" stroke-width="2"/>
+              </svg>
+            </div>
+            <h2>Flow Diagram</h2>
+          </div>
           <p>
-            The Flow Diagram visualises dependencies between cells. Open it via the toolbar icon (the dotted graph). While active, the spreadsheet is dimmed and the overlay focuses on the graph.</p>
-          <ul>
-            <li>Nodes display the cell address, current value, type, and formula where applicable.</li>
-            <li>Uncertain values reveal their distribution summary (e.g., <span class="code">CI[a, b]</span> or <span class="code">S(μ, σ²)</span>).</li>
-            <li>Edges follow HyperFormula’s dependency graph, helping you trace how uncertainty flows through calculations.</li>
-          </ul>
-          <p>
-            Use it to answer questions such as “Which assumptions drive the variance in my output?”: follow edges backwards from a volatile node to inspect upstream intervals. Use the built-in pan/zoom controls from <span class="code">@xyflow/react</span>. Press Escape or click the spreadsheet icon to return to the grid.</p>
-        </section>
+            Visualize dependencies between cells. Open via the toolbar's graph icon. The spreadsheet dims to focus on the dependency overlay.
+          </p>
 
-        <section id="formula-bar">
-          <h2>Formula Bar &amp; Editing Tips</h2>
-          <p>
-            The formula bar mirrors the active cell’s formula/value and provides a larger editing surface. It routes submissions through <span class="code">SpreadsheetContext.submitFormula</span>, ensuring HyperFormula re-parses the content with uncertainty support.</p>
+          <h3>What It Shows</h3>
           <ul>
-            <li>When editing an uncertainty cell, the Formula Bar shows the original notation (<span class="code">CI[...]</span>) so you can tweak bounds directly.</li>
-            <li>Deterministic formulas behave as in traditional spreadsheets; only the operands determine whether sampling is triggered.</li>
+            <li><strong>Nodes</strong> — Cell addresses, values, types, and formulas.</li>
+            <li><strong>Uncertain values</strong> — Distribution summaries like <code>CI[a, b]</code> or <code>S(μ, σ²)</code>.</li>
+            <li><strong>Edges</strong> — GaussFormula's dependency graph showing how uncertainty propagates.</li>
           </ul>
+
+          <p>
+            Trace variance sources by following edges backward from volatile outputs. Pan, zoom, and navigate with <code>@xyflow/react</code> controls. Press Escape to return.
+          </p>
         </section>
       </main>
 
       <footer>
-        Updated March 2025. Share feedback via the project repository to help us expand this guide with tutorials and examples.
+        <p>Updated October 2025 · Share feedback to help expand this guide</p>
       </footer>
     </div>
   </body>
