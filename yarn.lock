@@ -3036,7 +3036,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/babel__core@npm:^7.0.0, @types/babel__core@npm:^7.1.7, @types/babel__core@npm:^7.20.5":
+"@types/babel__core@npm:*, @types/babel__core@npm:^7.0.0, @types/babel__core@npm:^7.1.7, @types/babel__core@npm:^7.20.5":
   version: 7.20.5
   resolution: "@types/babel__core@npm:7.20.5"
   dependencies:
@@ -3055,6 +3055,15 @@ __metadata:
   dependencies:
     "@babel/types": "npm:^7.0.0"
   checksum: 10c0/f0ba105e7d2296bf367d6e055bb22996886c114261e2cb70bf9359556d0076c7a57239d019dee42bb063f565bade5ccb46009bce2044b2952d964bf9a454d6d2
+  languageName: node
+  linkType: hard
+
+"@types/babel__helper-plugin-utils@npm:^7":
+  version: 7.10.3
+  resolution: "@types/babel__helper-plugin-utils@npm:7.10.3"
+  dependencies:
+    "@types/babel__core": "npm:*"
+  checksum: 10c0/c22f68e8019c1e75e42fccc6eaca94a269fa177c4544599aa084b216b879b626f63f89755a4ac2dc9054b6e9ed4e0fab1e3460d36ce20767c99aef4a3c81fce3
   languageName: node
   linkType: hard
 
@@ -9857,6 +9866,7 @@ __metadata:
   dependencies:
     "@babel/cli": "npm:^7.25.9"
     "@babel/core": "npm:^7.26.0"
+    "@babel/helper-plugin-utils": "npm:^7.27.1"
     "@babel/plugin-proposal-class-properties": "npm:^7.18.6"
     "@babel/plugin-proposal-decorators": "npm:^7.25.9"
     "@babel/plugin-proposal-private-methods": "npm:^7.18.6"
@@ -9869,6 +9879,7 @@ __metadata:
     "@babel/preset-typescript": "npm:^7.26.0"
     "@babel/register": "npm:^7.25.9"
     "@babel/runtime": "npm:^7.26.0"
+    "@types/babel__helper-plugin-utils": "npm:^7"
     "@types/jasmine": "npm:^5.1.4"
     "@types/jest": "npm:^26.0.24"
     "@types/jsdom": "npm:^21.1.7"
@@ -9906,6 +9917,7 @@ __metadata:
     moment: "npm:^2.30.1"
     npm-run-all: "npm:^4.1.5"
     on-build-webpack: "npm:^0.1.0"
+    pnp-webpack-plugin: "npm:^1.7.0"
     rimraf: "npm:^6.0.1"
     string-replace-loader: "npm:^2.3.0"
     tar: "npm:^7.4.3"
@@ -14858,6 +14870,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pnp-webpack-plugin@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "pnp-webpack-plugin@npm:1.7.0"
+  dependencies:
+    ts-pnp: "npm:^1.1.6"
+  checksum: 10c0/79d1973ec0b04be6d44f15d5625991701a010dae28f2798d974d3aa164e8c60dc7fa22fd01a47fb6af369c4ba6585c3030d4deb775ccfecd7156594bc223d086
+  languageName: node
+  linkType: hard
+
 "portfinder@npm:^1.0.13, portfinder@npm:^1.0.26":
   version: 1.0.37
   resolution: "portfinder@npm:1.0.37"
@@ -15427,6 +15448,7 @@ __metadata:
     reactflow: "npm:^11.11.4"
     tailwindcss: "npm:^4.1.10"
     ts-node: "npm:^10.9.2"
+    tslib: "npm:^2.8.1"
     typescript: "npm:^5.8.3"
     vite: "npm:^5.0.8"
   languageName: unknown
@@ -18256,6 +18278,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ts-pnp@npm:^1.1.6":
+  version: 1.2.0
+  resolution: "ts-pnp@npm:1.2.0"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/ff32b4f810f9d99f676d70fe2c0e327cb6c812214bd4fc7135870b039f9e85a85b2c20f8fe030d9bd36e9598a12faa391f10aecb95df624b92f1af6bd47dc397
+  languageName: node
+  linkType: hard
+
 "tslib@npm:2.3.0":
   version: 2.3.0
   resolution: "tslib@npm:2.3.0"
@@ -18270,7 +18302,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.4.0, tslib@npm:^2.8.0":
+"tslib@npm:^2.4.0, tslib@npm:^2.8.0, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ReactECharts from "echarts-for-react";
+import { zScoreForConfidence } from "../utils/distributionUtils";
 
 type DistributionKind = 'normal' | 'lognormal' | 'uniform' | 'sampled';
 
@@ -190,16 +191,6 @@ const kernelDensityEstimate = (values: number[], points = 200) => {
   });
 };
 
-const zScoreForConfidence = (confidenceLevel: number) => {
-  if (confidenceLevel >= 99.9) return 3.29;
-  if (confidenceLevel >= 99) return 2.576;
-  if (confidenceLevel >= 98) return 2.326;
-  if (confidenceLevel >= 95) return 1.96;
-  if (confidenceLevel >= 90) return 1.645;
-  if (confidenceLevel >= 80) return 1.282;
-  if (confidenceLevel >= 70) return 1.036;
-  return 1.0;
-};
 
 const createNormalData = (mean: number, std: number, points = 200) => {
   if (!Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
