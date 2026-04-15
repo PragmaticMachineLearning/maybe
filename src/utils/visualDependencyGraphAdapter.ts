@@ -4,7 +4,7 @@ import type { Edge, Node } from '@xyflow/react'
 import type { VisualDependencyGraph } from '../types/visualDependencyGraph'
 import { formatVisualDependencyValue } from './visualDependencyGraphFormatter'
 
-export interface FlowDiagramNodeData {
+export interface FlowDiagramNodeData extends Record<string, unknown> {
   address: string
   valueLabel: string
   formula: string

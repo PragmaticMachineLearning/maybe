@@ -1,5 +1,3 @@
-import type { VisualDependencyGraph } from './visualDependencyGraph'
-
 declare module "gaussformula" {
   export class HyperFormula {
     static buildEmpty(config?: any): HyperFormula;
@@ -24,7 +22,7 @@ declare module "gaussformula" {
     validateFormula(formula: string): { isValid: boolean; [key: string]: any };
     on(event: string, callback: () => void): void;
     off(event: string, callback: () => void): void;
-    getVisualDependencyGraph(): VisualDependencyGraph;
+    getVisualDependencyGraph(): import('./visualDependencyGraph').VisualDependencyGraph;
 
     // Dependency graph properties
     dependencyGraph: {

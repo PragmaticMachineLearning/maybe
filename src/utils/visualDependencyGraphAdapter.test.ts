@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
+import type { VisualDependencyGraph } from '../types/visualDependencyGraph'
 import { toFlowDiagramElements } from './visualDependencyGraphAdapter'
 
 describe('toFlowDiagramElements', () => {
   it('maps graph payload into React Flow nodes and edges', () => {
-    const graph = {
+    const graph: VisualDependencyGraph = {
       nodes: [
         {
           id: '0:0:0',
