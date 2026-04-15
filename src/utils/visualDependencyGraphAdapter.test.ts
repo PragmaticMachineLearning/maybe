@@ -35,6 +35,7 @@ describe('toFlowDiagramElements', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: '0:0:0',
+          type: 'value',
           data: expect.objectContaining({
             address: 'A1',
             value: '1',
@@ -44,6 +45,7 @@ describe('toFlowDiagramElements', () => {
         }),
         expect.objectContaining({
           id: '0:0:2',
+          type: 'formula',
           data: expect.objectContaining({
             address: 'C1',
             value: '2',

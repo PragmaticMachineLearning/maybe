@@ -7,7 +7,7 @@ import { formatVisualDependencyValue } from './visualDependencyGraphFormatter'
 export interface FlowDiagramNodeData extends Record<string, unknown> {
   address: string
   value: string
-  type: string
+  type: 'formula' | 'value'
   formula: string
 }
 
