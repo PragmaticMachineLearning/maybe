@@ -6,7 +6,8 @@ import { formatVisualDependencyValue } from './visualDependencyGraphFormatter'
 
 export interface FlowDiagramNodeData extends Record<string, unknown> {
   address: string
-  valueLabel: string
+  value: string
+  type: string
   formula: string
 }
 
@@ -22,7 +23,8 @@ export const toFlowDiagramElements = (graph: VisualDependencyGraph): FlowDiagram
     position: { x: 0, y: 0 },
     data: {
       address: node.address,
-      valueLabel: formatVisualDependencyValue(node.value),
+      value: formatVisualDependencyValue(node.value),
+      type: node.formula ? 'formula' : 'value',
       formula: node.formula ?? '',
     },
     sourcePosition: Position.Right,

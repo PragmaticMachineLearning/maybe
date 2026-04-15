@@ -37,7 +37,8 @@ describe('toFlowDiagramElements', () => {
           id: '0:0:0',
           data: expect.objectContaining({
             address: 'A1',
-            valueLabel: '1',
+            value: '1',
+            type: 'value',
             formula: '',
           }),
         }),
@@ -45,7 +46,8 @@ describe('toFlowDiagramElements', () => {
           id: '0:0:2',
           data: expect.objectContaining({
             address: 'C1',
-            valueLabel: '2',
+            value: '2',
+            type: 'formula',
             formula: '=A1+1',
           }),
         }),
