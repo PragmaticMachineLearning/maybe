@@ -31,6 +31,9 @@ describe('toFlowDiagramElements', () => {
 
     const result = toFlowDiagramElements(graph)
 
+    expect(result.nodes).toHaveLength(2)
+    expect(result.nodes.map((node) => node.type)).toEqual(['value', 'formula'])
+
     expect(result.nodes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

@@ -1,4 +1,4 @@
-import type { CIInterpretation } from '../../hyperformula/src/interpreter/InterpreterValue'
+export type CIInterpretation = 'normal' | 'uniform' | 'lognormal' | 'auto'
 
 export interface ParsedConfidenceInterval {
   lower: number
@@ -111,4 +111,3 @@ export const zScoreForConfidence = (confidenceLevel: number): number => {
   if (confidenceLevel >= 70) return 1.036;
   return 1.0;
 }
-
