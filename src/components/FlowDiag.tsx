@@ -84,20 +84,66 @@ export const FlowDiag: React.FC = () => {
   }, [hfInstance, setEdges, setNodes])
 
   useEffect(() => {
+    if (!hfInstance) return
+
     updateGraphData()
-  }, [updateGraphData])
+
+    hfInstance.on('valuesUpdated', updateGraphData)
+
+    return () => {
+      hfInstance.off('valuesUpdated', updateGraphData)
+    }
+  }, [hfInstance, updateGraphData])
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      nodeTypes={nodeTypes}
-      fitView
-    >
-      <Background />
-      <Controls />
-    </ReactFlow>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div
+        style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-surface)',
+          flexShrink: 0,
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            fontSize: '18px',
+            fontWeight: '600',
+            color: 'var(--text-primary)',
+            fontFamily:
+              '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          }}
+        >
+          Flow Diagram
+        </h2>
+        <p
+          style={{
+            margin: '4px 0 0 0',
+            fontSize: '13px',
+            color: 'var(--text-secondary)',
+            fontFamily:
+              '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          }}
+        >
+          Dependency graph showing numeric cells and distributions
+        </p>
+      </div>
+
+      <div style={{ flex: '1 1 auto', minHeight: 0, position: 'relative' }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={nodeTypes}
+          fitView
+          style={{ width: '100%', height: '100%' }}
+        >
+          <Background />
+          <Controls />
+        </ReactFlow>
+      </div>
+    </div>
   )
 }
