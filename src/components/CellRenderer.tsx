@@ -10,7 +10,7 @@ import {
 } from "../utils/distributionUtils";
 
 import { DistributionPlot } from "./DistributionPlot";
-import { SpreadsheetContext } from "../SpreadsheetContext";
+import { SpreadsheetContext, type DistributionViewType } from "../SpreadsheetContext";
 
 const ChevronDownIcon: React.FC<{ size?: number; color?: string }> = ({
   size = 14,

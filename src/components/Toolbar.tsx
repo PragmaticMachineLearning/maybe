@@ -57,7 +57,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
     const targetHeight = Math.max(height, example.data.length)
 
     const nextSheet: ExampleCell[][] = Array.from({ length: targetHeight }, () =>
-      Array.from<ExampleCell>({ length: targetWidth }, () => null)
+      Array.from({ length: targetWidth }, (): ExampleCell => null)
     )
 
     example.data.forEach((rowData, rowIndex) => {
@@ -373,7 +373,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
         onBlur={(e) => {
           e.currentTarget.style.outline = 'none'
         }}
-        title="Open Alea documentation in a new tab"
+        title="Open Maybe documentation in a new tab"
       >
         Docs
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

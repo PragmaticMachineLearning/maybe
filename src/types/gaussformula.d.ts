@@ -19,6 +19,7 @@ declare module "gaussformula" {
       row: number;
       col: number;
     }): string | null;
+    getSheetDimensions(sheetId: number): { width: number; height: number };
     validateFormula(formula: string): { isValid: boolean; [key: string]: any };
     on(event: string, callback: () => void): void;
     off(event: string, callback: () => void): void;
