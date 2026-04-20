@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { HyperFormula } from 'gaussformula'
+import { GaussFormulaEngine } from '../formulaEngine'
 
 const packageJson = JSON.parse(
   readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
@@ -15,7 +15,7 @@ const viteConfig = readFileSync(resolve(process.cwd(), 'vite.config.ts'), 'utf8'
 
 describe('gaussformula package boundary', () => {
   it('exposes getVisualDependencyGraph on built instances', () => {
-    const engine = HyperFormula.buildEmpty({ licenseKey: 'gpl-v3' })
+    const engine = GaussFormulaEngine.buildEmpty({ licenseKey: 'gpl-v3' })
 
     expect(typeof engine.getVisualDependencyGraph).toBe('function')
 

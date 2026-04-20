@@ -1,45 +1,34 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react'
 
-import { HyperFormula } from 'gaussformula'
+import { GaussFormulaEngine, type FormulaEngine } from './formulaEngine'
 
 type CellContent = string | number | null;
 type SheetData = CellContent[][];
 
-interface LiveEditingState {
-  row: number;
-  col: number;
-  value: string;
-}
-
 export type DistributionViewType = 'normal' | 'lognormal' | 'uniform'
 
 interface SpreadsheetContextValue {
-  hfInstance: HyperFormula | null;
+  formulaEngine: FormulaEngine | null;
   updateCell: (row: number, col: number, value: string) => void;
   getCellFormula: (row: number, col: number) => string|null;
   submitFormula: (row: number, col: number, formula: string) => void;
-  liveEditingState: LiveEditingState | null;
-  setLiveEditingState: (state: LiveEditingState | null) => void;
   getDistributionView: (row: number, col: number) => DistributionViewType | null;
   setDistributionView: (row: number, col: number, view: DistributionViewType) => void;
   clearDistributionView: (row: number, col: number) => void;
 }
 
 const SpreadsheetContext = createContext<SpreadsheetContextValue>({
-  hfInstance: null,
+  formulaEngine: null,
   updateCell: () => {},
   getCellFormula: () => null,
   submitFormula: () => {},
-  liveEditingState: null,
-  setLiveEditingState: () => {},
   getDistributionView: () => null,
   setDistributionView: () => {},
   clearDistributionView: () => {},
 })
 
 export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [hfInstance, setHfInstance] = useState<HyperFormula | null>(null)
-  const [liveEditingState, setLiveEditingState] = useState<LiveEditingState | null>(null)
+  const [formulaEngine, setFormulaEngine] = useState<FormulaEngine | null>(null)
   const [distributionViews, setDistributionViews] = useState<Record<string, DistributionViewType>>({})
 
   useEffect(() => {
@@ -51,55 +40,54 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       
     }
 
-    // Build an empty instance
-    const instance = HyperFormula.buildEmpty(config)
+    const engine = GaussFormulaEngine.buildEmpty(config)
     
 
     // Initialize sheet
-    instance.addSheet('Sheet1')
+    engine.addSheet('Sheet1')
     const initialRows = 50
     const initialCols = 26
     const initialData: SheetData = Array(initialRows).fill(null)
       .map(() => Array(initialCols).fill(null))
     
-    instance.setSheetContent(0, initialData)
-    setHfInstance(instance)
+    engine.setSheetContent(0, initialData)
+    setFormulaEngine(engine)
 
     return () => {
-      instance.destroy()
+      engine.destroy()
     }
   }, [])
 
   const updateCell = useCallback((row: number, col: number, value: string) => {
-    if (!hfInstance) return
+    if (!formulaEngine) return
 
     try {
       console.log(`Updating cell (${row}, ${col}) with value: ${value}`)
-      hfInstance.setCellContents({ sheet: 0, row, col }, value)
-      console.log('Cell value after update:', hfInstance.getCellValue({ sheet: 0, row, col }))
-      console.log('Cell formula after update:', hfInstance.getCellFormula({ sheet: 0, row, col }))
+      formulaEngine.setCellContents({ sheet: 0, row, col }, value)
+      console.log('Cell value after update:', formulaEngine.getCellValue({ sheet: 0, row, col }))
+      console.log('Cell formula after update:', formulaEngine.getCellFormula({ sheet: 0, row, col }))
       if (value.startsWith('=')) {
-        console.log('Parse result:', hfInstance.validateFormula(value))
+        console.log('Parse result:', formulaEngine.validateFormula(value))
       }
     } catch (error) {
       console.error('Error updating cell:', error)
     }
-  }, [hfInstance])
+  }, [formulaEngine])
 
   const getCellFormula = useCallback((row: number, col: number) => {
-    if (!hfInstance) return null
+    if (!formulaEngine) return null
     try {
-      const formula = hfInstance.getCellFormula({ sheet: 0, row, col })
+      const formula = formulaEngine.getCellFormula({ sheet: 0, row, col })
       console.log('Cell formula:', formula)
       return formula
     } catch (error) {
       console.error('Error getting cell formula:', error)
       return null
     }
-  }, [hfInstance])
+  }, [formulaEngine])
 
   const submitFormula = useCallback((row: number, col: number, formula: string) => {
-    if (!hfInstance) return
+    if (!formulaEngine) return
 
     try {
       console.log(`Submitting formula to cell (${row}, ${col}): ${formula}`)
@@ -108,10 +96,10 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       // Otherwise, treat it as a raw value
       const cellContent = formula.trim()
       
-      hfInstance.setCellContents({ sheet: 0, row, col }, cellContent)
+      formulaEngine.setCellContents({ sheet: 0, row, col }, cellContent)
       
-      const resultValue = hfInstance.getCellValue({ sheet: 0, row, col })
-      const resultFormula = hfInstance.getCellFormula({ sheet: 0, row, col })
+      const resultValue = formulaEngine.getCellValue({ sheet: 0, row, col })
+      const resultFormula = formulaEngine.getCellFormula({ sheet: 0, row, col })
       
       console.log('Formula submitted successfully')
       console.log('Result value:', resultValue)
@@ -119,7 +107,7 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       
       // Check for formula validation errors
       if (cellContent.startsWith('=')) {
-        const validation = hfInstance.validateFormula(cellContent)
+        const validation = formulaEngine.validateFormula(cellContent)
         if (!validation.isValid) {
           console.warn('Formula validation warning:', validation)
         }
@@ -128,7 +116,7 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } catch (error) {
       console.error('Error submitting formula:', error)
     }
-  }, [hfInstance])
+  }, [formulaEngine])
 
   const getDistributionView = useCallback((row: number, col: number) => {
     const key = `${row}:${col}`
@@ -159,12 +147,10 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   return (
     <SpreadsheetContext.Provider value={{ 
-      hfInstance, 
+      formulaEngine, 
       updateCell, 
       getCellFormula, 
       submitFormula, 
-      liveEditingState, 
-      setLiveEditingState,
       getDistributionView,
       setDistributionView,
       clearDistributionView,

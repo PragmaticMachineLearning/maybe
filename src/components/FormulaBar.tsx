@@ -8,6 +8,15 @@ interface FormulaBarProps {
 }
 
 // Helper function to format distribution objects for display
+const setFormulaInputIfChanged = (
+  setFormulaInput: React.Dispatch<React.SetStateAction<string>>,
+  nextValue: string,
+) => {
+  setFormulaInput((currentValue) =>
+    currentValue === nextValue ? currentValue : nextValue,
+  )
+}
+
 const formatCellValue = (value: unknown): string => {
   if (value === null || value === undefined) {
     return ''
@@ -51,38 +60,32 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
   selectedCell, 
   onFormulaSubmit 
 }) => {
-  const { hfInstance, submitFormula, liveEditingState } = useContext(SpreadsheetContext)
+  const { formulaEngine, submitFormula } = useContext(SpreadsheetContext)
   const [formulaInput, setFormulaInput] = useState('')
   const [isEditing, setIsEditing] = useState(false)
 
   // Function to update the formula input based on the current selected cell
   const updateFormulaInput = React.useCallback(() => {
-    if (!selectedCell || !hfInstance) {
-      setFormulaInput('')
+    if (!selectedCell || !formulaEngine) {
+      setFormulaInputIfChanged(setFormulaInput, '')
       return
     }
 
     const { row, col } = selectedCell
     
-    // Check if this cell is currently being edited live
-    if (liveEditingState && liveEditingState.row === row && liveEditingState.col === col) {
-      setFormulaInput(liveEditingState.value)
-      return
-    }
-    
     // Get the formula if it exists, otherwise get the value
-    const formula = hfInstance.getCellFormula({ sheet: 0, row, col })
-    const value = hfInstance.getCellValue({ sheet: 0, row, col })
+    const formula = formulaEngine.getCellFormula({ sheet: 0, row, col })
+    const value = formulaEngine.getCellValue({ sheet: 0, row, col })
     
     if (formula) {
-      setFormulaInput(formula)
+      setFormulaInputIfChanged(setFormulaInput, formula)
     } else if (value !== null && value !== undefined) {
       // Use our custom formatter for better distribution display
-      setFormulaInput(formatCellValue(value))
+      setFormulaInputIfChanged(setFormulaInput, formatCellValue(value))
     } else {
-      setFormulaInput('')
+      setFormulaInputIfChanged(setFormulaInput, '')
     }
-  }, [selectedCell, hfInstance, liveEditingState])
+  }, [selectedCell, formulaEngine])
 
   // Update formula input when selected cell changes
   useEffect(() => {
@@ -91,7 +94,7 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
 
   // Listen for cell value changes and update formula bar if the selected cell content changed
   useEffect(() => {
-    if (!hfInstance) return
+    if (!formulaEngine) return
 
     const handleValuesUpdated = () => {
       // Only update if we're not currently editing (to avoid overwriting user input)
@@ -100,13 +103,12 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
       }
     }
 
-    // Subscribe to HyperFormula value updates
-    hfInstance.on('valuesUpdated', handleValuesUpdated)
+    formulaEngine.on('valuesUpdated', handleValuesUpdated)
 
     return () => {
-      hfInstance.off('valuesUpdated', handleValuesUpdated)
+      formulaEngine.off('valuesUpdated', handleValuesUpdated)
     }
-  }, [hfInstance, isEditing, updateFormulaInput])
+  }, [formulaEngine, isEditing, updateFormulaInput])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormulaInput(e.target.value)

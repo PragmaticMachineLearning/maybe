@@ -60,14 +60,14 @@ const nodeTypes = {
 }
 
 export const FlowDiag: React.FC = () => {
-  const { hfInstance } = useContext(SpreadsheetContext)
+  const { formulaEngine } = useContext(SpreadsheetContext)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowDiagramNodeData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
   const updateGraphData = useCallback(async () => {
-    if (!hfInstance) return
+    if (!formulaEngine) return
 
-    const visualGraph = hfInstance.getVisualDependencyGraph()
+    const visualGraph = formulaEngine.getVisualDependencyGraph()
     const flowElements = toFlowDiagramElements(visualGraph)
 
     if (flowElements.nodes.length === 0 || flowElements.edges.length === 0) {
@@ -81,19 +81,19 @@ export const FlowDiag: React.FC = () => {
     >[]
     setNodes(layoutedNodes)
     setEdges(flowElements.edges)
-  }, [hfInstance, setEdges, setNodes])
+  }, [formulaEngine, setEdges, setNodes])
 
   useEffect(() => {
-    if (!hfInstance) return
+    if (!formulaEngine) return
 
     updateGraphData()
 
-    hfInstance.on('valuesUpdated', updateGraphData)
+    formulaEngine.on('valuesUpdated', updateGraphData)
 
     return () => {
-      hfInstance.off('valuesUpdated', updateGraphData)
+      formulaEngine.off('valuesUpdated', updateGraphData)
     }
-  }, [hfInstance, updateGraphData])
+  }, [formulaEngine, updateGraphData])
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>

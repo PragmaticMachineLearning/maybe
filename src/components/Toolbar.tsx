@@ -13,7 +13,7 @@ interface ToolbarProps {
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag, analysisMode, onToggleAnalysisMode }) => {
-  const { hfInstance } = useContext(SpreadsheetContext)
+  const { formulaEngine } = useContext(SpreadsheetContext)
   const [showExamplesDropdown, setShowExamplesDropdown] = useState(false)
   const examplesDropdownRef = useRef<HTMLDivElement>(null)
   const examplesButtonRef = useRef<HTMLButtonElement>(null)
@@ -41,11 +41,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
   }, [showExamplesDropdown])
 
   const handleExampleSelect = (example: ExampleDefinition) => {
-    if (!hfInstance) {
+    if (!formulaEngine) {
       return
     }
 
-    const { width, height } = hfInstance.getSheetDimensions(0)
+    const { width, height } = formulaEngine.getSheetDimensions(0)
     const requiredWidth = example.data.reduce((max, row) => Math.max(max, row.length), 0)
     const targetWidth = Math.max(width, requiredWidth)
     const targetHeight = Math.max(height, example.data.length)
@@ -66,7 +66,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
       })
     })
 
-    hfInstance.setSheetContent(0, nextSheet)
+    formulaEngine.setSheetContent(0, nextSheet)
     setShowExamplesDropdown(false)
   }
 

@@ -1,6 +1,6 @@
 declare module "gaussformula" {
-  export class HyperFormula {
-    static buildEmpty(config?: Record<string, unknown>): HyperFormula;
+  export class GaussFormula {
+    static buildEmpty(config?: Record<string, unknown>): GaussFormula;
     static version: string;
     static buildDate: string;
     static releaseDate: string;
@@ -36,4 +36,6 @@ declare module "gaussformula" {
     // Address mapping for dependency visualization
     addressMapping: Map<unknown, unknown>;
   }
+
+  export const HyperFormula: typeof GaussFormula;
 }

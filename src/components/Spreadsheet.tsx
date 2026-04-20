@@ -33,6 +33,11 @@ type SpreadsheetRow = {
   [key: string]: unknown; // Dynamic columns for A, B, C, etc.
 }
 
+interface EditingCell {
+  row: number;
+  col: number;
+}
+
 export const Spreadsheet: React.FC<SpreadsheetProps> = ({ 
   rows, 
   columns, 
@@ -40,11 +45,12 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
   selectedCell,
   onOpenAnalysis
 }) => {
-  const { hfInstance, updateCell } = useContext(SpreadsheetContext)
+  const { formulaEngine, updateCell } = useContext(SpreadsheetContext)
   const [cellData, setCellData] = useState<unknown[][]>([])
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
 
   useEffect(() => {
-    if (!hfInstance) return
+    if (!formulaEngine) return
 
     const updateCellData = () => {
       const updated: unknown[][] = []
@@ -52,7 +58,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
         updated[r] = []
         for (let c = 0; c < columns; c++) {
           const addr = { sheet: 0, row: r, col: c }
-          updated[r][c] = hfInstance.getCellValue(addr)
+          updated[r][c] = formulaEngine.getCellValue(addr)
         }
       }
       setCellData(updated)
@@ -62,15 +68,12 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     updateCellData()
 
     // Subscribe to changes
-    hfInstance.on('valuesUpdated', updateCellData)
-
-    // Register custom functions
-    // registerCustomFunctions(hfInstance);
+    formulaEngine.on('valuesUpdated', updateCellData)
 
     return () => {
-      hfInstance.off('valuesUpdated', updateCellData)
+      formulaEngine.off('valuesUpdated', updateCellData)
     }
-  }, [hfInstance, rows, columns])
+  }, [formulaEngine, rows, columns])
   
   const getColumnName = (index: number): string => {
     let result = '';
@@ -137,6 +140,9 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
               }}
               onClick={() => table.options.meta?.onCellSelect?.(rowIndex, colIndex)}
               isSelected={table.options.meta?.selectedCell?.row === rowIndex && table.options.meta?.selectedCell?.col === colIndex}
+              isEditing={editingCell?.row === rowIndex && editingCell?.col === colIndex}
+              onRequestEdit={(row, col) => setEditingCell({ row, col })}
+              onStopEdit={() => setEditingCell(null)}
               onOpenAnalysis={onOpenAnalysis}
             />
           )
@@ -151,7 +157,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     }
 
     return cols
-  }, [columns, onOpenAnalysis])
+  }, [columns, editingCell, onOpenAnalysis])
 
   const handleCellValueChange = (rowIndex: number, columnId: string, value: string) => {
     const colIndex = columnId.charCodeAt(0) - 65

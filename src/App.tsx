@@ -33,7 +33,7 @@ const SpreadsheetWithWizard: React.FC = () => {
   const [viewportWidth, setViewportWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1280
   )
-  const { hfInstance, getDistributionView } = useContext(SpreadsheetContext)
+  const { formulaEngine, getDistributionView } = useContext(SpreadsheetContext)
 
   const handleCellSelect = (row: number, col: number) => {
     setSelectedCell({ row, col })
@@ -56,14 +56,14 @@ const SpreadsheetWithWizard: React.FC = () => {
   }, [])
 
   const updateAnalysisState = useCallback(() => {
-    if (!analysisMode || !hfInstance || !selectedCell) {
+    if (!analysisMode || !formulaEngine || !selectedCell) {
       setAnalysisState(null)
       return
     }
 
     const columnLabel = columnName(selectedCell.col)
     const cellLabel = `${columnLabel}${selectedCell.row + 1}`
-    const value = hfInstance.getCellValue({ sheet: 0, row: selectedCell.row, col: selectedCell.col })
+    const value = formulaEngine.getCellValue({ sheet: 0, row: selectedCell.row, col: selectedCell.col })
 
     const hasDistribution = isConfidenceIntervalValue(value) || isSampledDistributionValue(value)
 
@@ -111,14 +111,14 @@ const SpreadsheetWithWizard: React.FC = () => {
       distributionType,
       confidenceInterval,
     })
-  }, [analysisMode, hfInstance, selectedCell, columnName, getDistributionView])
+  }, [analysisMode, formulaEngine, selectedCell, columnName, getDistributionView])
 
   useEffect(() => {
     updateAnalysisState()
   }, [updateAnalysisState])
 
   useEffect(() => {
-    if (!hfInstance) {
+    if (!formulaEngine) {
       return
     }
     const handleValuesUpdated = () => {
@@ -127,11 +127,11 @@ const SpreadsheetWithWizard: React.FC = () => {
       }
     }
 
-    hfInstance.on('valuesUpdated', handleValuesUpdated)
+    formulaEngine.on('valuesUpdated', handleValuesUpdated)
     return () => {
-      hfInstance.off('valuesUpdated', handleValuesUpdated)
+      formulaEngine.off('valuesUpdated', handleValuesUpdated)
     }
-  }, [hfInstance, analysisMode, updateAnalysisState])
+  }, [formulaEngine, analysisMode, updateAnalysisState])
 
   useEffect(() => {
     if (typeof window === 'undefined') {

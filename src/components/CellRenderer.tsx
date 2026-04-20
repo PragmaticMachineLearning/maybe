@@ -118,6 +118,9 @@ interface CellRendererProps {
   onClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   isSelected?: boolean;
+  isEditing?: boolean;
+  onRequestEdit?: (row: number, col: number) => void;
+  onStopEdit?: () => void;
   onOpenAnalysis?: () => void;
 }
 
@@ -138,17 +141,17 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onClick,
   onContextMenu,
   isSelected = false,
+  isEditing = false,
+  onRequestEdit,
+  onStopEdit,
   onOpenAnalysis,
 }) => {
   const {
     getCellFormula,
-    liveEditingState,
-    setLiveEditingState,
     getDistributionView,
     setDistributionView,
     clearDistributionView,
   } = useContext(SpreadsheetContext);
-  const [editing, setEditing] = useState(false);
   const [tempValue, setTempValue] = useState("");
   const [showPlot, setShowPlot] = useState(false);
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 });
@@ -177,24 +180,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   );
   const cellRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Update live editing state whenever tempValue changes
-  useEffect(() => {
-    if (editing) {
-      setLiveEditingState({ row, col, value: tempValue });
-    }
-  }, [editing, tempValue, row, col, setLiveEditingState]);
-
-  // Clear live editing state when cell stops editing
-  useEffect(() => {
-    if (
-      !editing &&
-      liveEditingState?.row === row &&
-      liveEditingState?.col === col
-    ) {
-      setLiveEditingState(null);
-    }
-  }, [editing, row, col, liveEditingState, setLiveEditingState]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -250,11 +235,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     viewOptions.type,
   ]);
 
-  const handleDoubleClick = () => {
+  const startEditing = () => {
     const formula = getCellFormula(row, col);
     if (formula) {
       setTempValue(formula);
-      setEditing(true);
+      onRequestEdit?.(row, col);
       return;
     }
     if (isConfidenceIntervalValue(value)) {
@@ -276,17 +261,20 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     } else {
       setTempValue(value ? String(value) : "");
     }
-    setEditing(true);
+    onRequestEdit?.(row, col);
+  };
+
+  const handleCellClick = (event: React.MouseEvent) => {
+    onClick?.();
+
+    if (event.detail === 2) {
+      startEditing();
+    }
   };
 
   const handleBlur = () => {
     onEdit(row, col, tempValue);
-    setEditing(false);
-  };
-
-  const handleTempValueChange = (newValue: string) => {
-    setTempValue(newValue);
-    // The useEffect above will automatically update the live editing state
+    onStopEdit?.();
   };
 
   const handleCustomContextMenu = (e: React.MouseEvent) => {
@@ -443,9 +431,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     <>
       <div
         ref={cellRef}
-        onClick={onClick}
+        onClick={handleCellClick}
         onContextMenu={handleCustomContextMenu}
-        onDoubleClick={handleDoubleClick}
+        onDoubleClick={startEditing}
         style={{
           padding: "10px 14px",
           minHeight: "38px",
@@ -472,15 +460,15 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             : "none",
         }}
       >
-        {editing ? (
+        {isEditing ? (
           <input
             autoFocus
             value={tempValue}
-            onChange={(e) => handleTempValueChange(e.target.value)}
+            onChange={(e) => setTempValue(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleBlur();
-              if (e.key === "Escape") setEditing(false);
+              if (e.key === "Escape") onStopEdit?.();
             }}
             style={{
               width: "100%",
@@ -516,7 +504,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             >
               {displayValue}
             </span>
-            {showViewOptions && !editing && (
+            {showViewOptions && !isEditing && (
               <div style={{ position: "relative" }} ref={dropdownRef}>
                 <button
                   onClick={(e) => {
