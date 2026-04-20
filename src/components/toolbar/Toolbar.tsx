@@ -8,16 +8,46 @@ import styles from "./Toolbar.module.css";
 
 interface ToolbarProps {
   useFlowDiag: boolean;
+  insightsOpen: boolean;
+  aiPanelOpen: boolean;
   onToggleFlowDiag: () => void;
-  analysisMode: boolean;
-  onToggleAnalysisMode: () => void;
+  onToggleInsights: () => void;
+  onToggleAiPanel: () => void;
 }
+
+const InsightsIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M4 18V6M9 18v-8M14 18V4M19 18v-5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="1.8"
+    />
+  </svg>
+);
+
+const AiIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M12 3l1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3z"
+      fill="currentColor"
+    />
+    <path
+      d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14z"
+      fill="currentColor"
+      opacity="0.72"
+    />
+  </svg>
+);
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   useFlowDiag,
+  insightsOpen,
+  aiPanelOpen,
   onToggleFlowDiag,
-  analysisMode,
-  onToggleAnalysisMode,
+  onToggleInsights,
+  onToggleAiPanel,
 }) => {
   const { formulaEngine } = useContext(SpreadsheetContext);
   const [showExamplesDropdown, setShowExamplesDropdown] = useState(false);
@@ -121,18 +151,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         </svg>
       </button>
 
-      {/* Analysis Toggle */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleAnalysisMode();
-        }}
-        className={`${styles.toolbarBtnWide} ${analysisMode ? styles.toolbarBtnWideActive : ""}`}
-        title={analysisMode ? "Hide analysis panel" : "Show analysis panel"}
-      >
-        <span>Analysis</span>
-      </button>
-
       {/* Examples Button */}
       <div className={styles.examplesWrapper}>
         <button
@@ -171,9 +189,35 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         )}
       </div>
 
-      {/* Theme Toggle */}
-      <div className={styles.themeToggleWrapper}>
-        <ThemeToggle showLabel={false} />
+      {/* Panel Toggles + Theme Toggle */}
+      <div className={styles.panelToggles}>
+        <button
+          type="button"
+          className={`${styles.panelToggle} ${insightsOpen ? styles.panelToggleActive : ""}`}
+          onClick={onToggleInsights}
+          aria-pressed={insightsOpen}
+          aria-controls="insights-panel"
+          title="Toggle Insights panel"
+        >
+          <InsightsIcon />
+          <span>Insights</span>
+        </button>
+
+        <button
+          type="button"
+          className={`${styles.panelToggle} ${aiPanelOpen ? styles.panelToggleActive : ""}`}
+          onClick={onToggleAiPanel}
+          aria-pressed={aiPanelOpen}
+          aria-controls="ai-copilot-panel"
+          title="Toggle AI panel"
+        >
+          <AiIcon />
+          <span>AI</span>
+        </button>
+
+        <div className={styles.themeToggleWrapper}>
+          <ThemeToggle showLabel={false} />
+        </div>
       </div>
     </div>
   );

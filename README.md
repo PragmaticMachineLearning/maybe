@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/maybe-logo.png" alt="Maybe logo" width="420" />
+</p>
+
 # Maybe Spreadsheet
 
 Maybe is a React-based spreadsheet application with built-in support for uncertainty through Gaussian distributions and sampled distributions.

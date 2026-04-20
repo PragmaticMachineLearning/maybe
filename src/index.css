@@ -48,33 +48,33 @@
 
 /* Dark theme variables */
 :root.dark {
-    --bg-primary: #101818;
-    --bg-secondary: #0c1212;
-    --bg-surface: #141f1f;
-    --bg-header: #1b2929;
-    --bg-hover: #1f2e2e;
-    --text-primary: #f2f6f4;
-    --text-secondary: #d4e0db;
-    --text-muted: #8fa19d;
-    --border-color: rgba(207, 222, 216, 0.18);
-    --border-header: rgba(207, 222, 216, 0.26);
-    --shadow: rgba(4, 12, 12, 0.4);
-    --shadow-hover: rgba(4, 12, 12, 0.52);
-    --resize-handle: #375757;
-    --resize-handle-active: #6fb6a3;
-    --resize-handle-bg: rgba(111, 182, 163, 0.2);
-    --text-tertiary: #6a8a84;
-    --bg-muted: #1a2828;
-    --dist-normal-bg: rgba(111, 182, 163, 0.12);
-    --dist-normal-border: rgba(111, 182, 163, 0.5);
-    --dist-normal-accent: #6fb6a3;
-    --dist-lognormal-bg: rgba(182, 124, 104, 0.12);
-    --dist-lognormal-border: rgba(182, 124, 104, 0.5);
-    --dist-lognormal-accent: #c99480;
-    --dist-uniform-bg: rgba(129, 132, 255, 0.12);
-    --dist-uniform-border: rgba(129, 132, 255, 0.5);
-    --dist-uniform-accent: #8184ff;
-    --dist-sampled-bg: rgba(167, 130, 255, 0.12);
+    --bg-primary: #111716;
+    --bg-secondary: #0f1414;
+    --bg-surface: #141c1b;
+    --bg-header: #192321;
+    --bg-hover: #1c2927;
+    --text-primary: #edf5f2;
+    --text-secondary: #cbd8d4;
+    --text-muted: #8da09c;
+    --border-color: rgba(203, 216, 212, 0.16);
+    --border-header: rgba(203, 216, 212, 0.24);
+    --shadow: rgba(0, 0, 0, 0.32);
+    --shadow-hover: rgba(0, 0, 0, 0.42);
+    --resize-handle: #34524d;
+    --resize-handle-active: #78d2c0;
+    --resize-handle-bg: rgba(120, 210, 192, 0.15);
+    --text-tertiary: #647a75;
+    --bg-muted: #182220;
+    --dist-normal-bg: rgba(120, 210, 192, 0.12);
+    --dist-normal-border: rgba(120, 210, 192, 0.46);
+    --dist-normal-accent: #78d2c0;
+    --dist-lognormal-bg: rgba(240, 141, 141, 0.1);
+    --dist-lognormal-border: rgba(240, 141, 141, 0.42);
+    --dist-lognormal-accent: #f08d8d;
+    --dist-uniform-bg: rgba(116, 213, 196, 0.1);
+    --dist-uniform-border: rgba(116, 213, 196, 0.42);
+    --dist-uniform-accent: #74d5c4;
+    --dist-sampled-bg: rgba(167, 130, 255, 0.15);
     --dist-sampled-border: rgba(167, 130, 255, 0.5);
     --dist-sampled-accent: #a782ff;
 
@@ -111,7 +111,7 @@ button {
     background-color: var(--bg-surface);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: 7px;
     padding: 0.5rem 0.9rem;
     letter-spacing: 0.01em;
     transition:

@@ -264,6 +264,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({
 
       {/* ── Zone A: Distribution Header Card ──────────────────────── */}
       <header className={styles.header}>
+        <div className={styles.panelEyebrow}>Insights</div>
         <div className={styles.headerRow}>
           <div className={styles.headerLeft}>
             {/* Distribution badge pill */}

@@ -26,7 +26,10 @@
         }
         
         function resolveTheme(theme) {
-          if (theme === THEME_SYSTEM || !theme) {
+          if (!theme) {
+            return THEME_DARK;
+          }
+          if (theme === THEME_SYSTEM) {
             return getSystemTheme();
           }
           return theme === THEME_DARK ? THEME_DARK : THEME_LIGHT;
@@ -60,7 +63,7 @@
         // Expose theme utilities to window for React hook
         window.__theme = {
           get: function() {
-            return getStoredTheme() || THEME_SYSTEM;
+            return getStoredTheme() || THEME_DARK;
           },
           set: function(theme) {
             try {

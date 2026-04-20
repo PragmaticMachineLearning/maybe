@@ -11,7 +11,8 @@ import {
 const SpreadsheetWithWizard: React.FC = () => {
   const [selectedCell, setSelectedCell] = useState<SelectedCell | null>({ row: 0, col: 0 })
   const [useflowDiag, setUseFlowDiag] = useState<boolean>(false)
-  const [analysisMode, setAnalysisMode] = useState<boolean>(false)
+  const [insightsOpen, setInsightsOpen] = useState(false)
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
   const [analysisState, setAnalysisState] = useState<AnalysisState | null>(null)
   const [viewportWidth, setViewportWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1280
@@ -25,13 +26,13 @@ const SpreadsheetWithWizard: React.FC = () => {
   const updateAnalysisState = useCallback(() => {
     setAnalysisState(
       deriveAnalysisState({
-        analysisMode,
+        analysisMode: insightsOpen,
         formulaEngine,
         selectedCell,
         getDistributionView,
       }),
     )
-  }, [analysisMode, formulaEngine, selectedCell, getDistributionView])
+  }, [insightsOpen, formulaEngine, selectedCell, getDistributionView])
 
   useEffect(() => {
     updateAnalysisState()
@@ -42,7 +43,7 @@ const SpreadsheetWithWizard: React.FC = () => {
       return
     }
     const handleValuesUpdated = () => {
-      if (analysisMode) {
+      if (insightsOpen) {
         updateAnalysisState()
       }
     }
@@ -51,7 +52,7 @@ const SpreadsheetWithWizard: React.FC = () => {
     return () => {
       formulaEngine.off('valuesUpdated', handleValuesUpdated)
     }
-  }, [formulaEngine, analysisMode, updateAnalysisState])
+  }, [formulaEngine, insightsOpen, updateAnalysisState])
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -70,7 +71,8 @@ const SpreadsheetWithWizard: React.FC = () => {
   const handleToggleFlowDiag = () => {
     setUseFlowDiag((prev) => {
       if (!prev) {
-        setAnalysisMode(false)
+        setInsightsOpen(false)
+        setAiPanelOpen(false)
         setAnalysisState(null)
       }
       return !prev
@@ -91,16 +93,27 @@ const SpreadsheetWithWizard: React.FC = () => {
     }
   }, [useflowDiag])
 
-  const handleToggleAnalysisMode = () => {
+  const handleToggleInsights = () => {
     if (useflowDiag) {
       return
     }
-    setAnalysisMode((prev) => !prev)
+    setInsightsOpen((isOpen) => !isOpen)
   }
 
-  const handleCloseAnalysis = () => {
-    setAnalysisMode(false)
+  const handleCloseInsights = () => {
+    setInsightsOpen(false)
     setAnalysisState(null)
+  }
+
+  const handleToggleAiPanel = () => {
+    if (useflowDiag) {
+      return
+    }
+    setAiPanelOpen((isOpen) => !isOpen)
+  }
+
+  const handleCloseAiPanel = () => {
+    setAiPanelOpen(false)
   }
 
   const handleFormulaSubmit = (row: number, col: number, formula: string) => {
@@ -111,13 +124,16 @@ const SpreadsheetWithWizard: React.FC = () => {
     <AppLayout
       selectedCell={selectedCell}
       useFlowDiag={useflowDiag}
-      analysisMode={analysisMode}
+      insightsOpen={insightsOpen}
+      aiPanelOpen={aiPanelOpen}
       analysisState={analysisState}
       isCompactLayout={isCompactLayout}
       onCellSelect={handleCellSelect}
       onToggleFlowDiag={handleToggleFlowDiag}
-      onToggleAnalysisMode={handleToggleAnalysisMode}
-      onCloseAnalysis={handleCloseAnalysis}
+      onToggleInsights={handleToggleInsights}
+      onToggleAiPanel={handleToggleAiPanel}
+      onCloseInsights={handleCloseInsights}
+      onCloseAiPanel={handleCloseAiPanel}
       onCloseFlowDiag={() => setUseFlowDiag(false)}
       onFormulaSubmit={handleFormulaSubmit}
     />

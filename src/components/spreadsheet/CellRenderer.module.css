@@ -18,7 +18,17 @@
 
 .cellSelected {
   background-color: var(--bg-hover);
-  box-shadow: inset 0 0 0 1px var(--resize-handle-active);
+  box-shadow:
+    inset 0 0 0 1px var(--resize-handle-active),
+    inset 0 0 24px rgba(120, 210, 192, 0.08);
+}
+
+.cellSelected.cellDistSampled,
+.cellSelected.cellDistLognormal,
+.cellSelected.cellDistUniform {
+  box-shadow:
+    inset 0 0 0 1px var(--dist-sampled-accent),
+    inset 0 0 28px rgba(167, 130, 255, 0.14);
 }
 
 .cellDistNormal {

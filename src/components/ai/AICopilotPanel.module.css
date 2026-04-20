@@ -1,0 +1,177 @@
+.panel {
+  width: 320px;
+  max-width: 360px;
+  min-width: 300px;
+  max-height: calc(100vh - 126px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  box-shadow: 0 18px 42px var(--shadow);
+}
+
+.panelCompact {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+}
+
+.header {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.statusDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--resize-handle-active);
+  box-shadow: 0 0 18px var(--resize-handle-active);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.closeButton {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 7px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.promptForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.promptInput {
+  min-height: 74px;
+  resize: vertical;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: inherit;
+  line-height: 1.4;
+}
+
+.submitButton {
+  align-self: flex-end;
+  border-color: var(--dist-normal-border);
+  background: var(--resize-handle-bg);
+  color: var(--text-primary);
+}
+
+.message {
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 10px 12px;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.preview {
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--dist-normal-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.previewTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.previewTable th,
+.previewTable td {
+  border-bottom: 1px solid var(--border-color);
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.previewTable th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.rowAdd {
+  background: color-mix(in srgb, var(--dist-normal-bg) 65%, transparent);
+}
+
+.rowChange {
+  background: color-mix(in srgb, var(--dist-sampled-bg) 52%, transparent);
+}
+
+.cellCode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.confirmButton,
+.cancelButton {
+  flex: 1;
+  border-radius: 7px;
+}
+
+.confirmButton {
+  border-color: var(--dist-normal-border);
+  background: var(--resize-handle-bg);
+}
+
+.cancelButton {
+  background: var(--bg-hover);
+}
+
+.notice {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}

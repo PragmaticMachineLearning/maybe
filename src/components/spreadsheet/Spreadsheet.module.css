@@ -1,16 +1,18 @@
 .tableContainer {
-  overflow-x: auto;
-  overflow-y: auto;
+  overflow: auto;
+  height: calc(100vh - 132px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  box-shadow: 0 18px 42px var(--shadow);
 }
 
 .table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 600px;
+  min-width: 720px;
   background-color: var(--bg-surface);
-  box-shadow: 0 1px 3px var(--shadow);
   table-layout: fixed;
-  border: 1px solid var(--border-color);
 }
 
 .header {
