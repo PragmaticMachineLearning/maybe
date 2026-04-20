@@ -1,10 +1,14 @@
+<p align="center">
+  <img src="docs/assets/maybe-logo.png" alt="Maybe logo" width="420" />
+</p>
+
 # Maybe Spreadsheet
 
 Maybe is a React-based spreadsheet application with built-in support for uncertainty through Gaussian distributions and sampled distributions.
 
 ## Features
 
-- Full spreadsheet functionality powered by HyperFormula
+- Full spreadsheet functionality powered by GaussFormula
 - Support for formulas and calculations
 - Built-in support for Gaussian distributions
 - Interactive visualizations for distributions
@@ -17,8 +21,8 @@ Maybe is a React-based spreadsheet application with built-in support for uncerta
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm
+- Node.js 24
+- pnpm
 
 ### Installation
 
@@ -30,19 +34,19 @@ cd maybe
 
 2. Install dependencies
 ```bash
-npm install
+pnpm install
 ```
 
 3. Start the development server
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ## Usage
 
 ### Working with Distributions
 
-The spreadsheet supports Gaussian distributions that can be created and manipulated using the HyperFormula engine. 
+The spreadsheet supports Gaussian distributions that can be created and manipulated using the GaussFormula engine. 
 
 - Use the spreadsheet interface to input data and formulas
 - Visualize distributions with the interactive plotting tool
@@ -54,7 +58,7 @@ This project is built with:
 
 - React + TypeScript
 - Vite for fast development
-- HyperFormula as the calculation engine
+- GaussFormula as the calculation engine
 - ECharts for data visualization
 
 ## Contributing

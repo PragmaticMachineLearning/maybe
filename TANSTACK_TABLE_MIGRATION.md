@@ -74,8 +74,8 @@ cell: ({ row, table }) => {
 
 ## Files Modified
 
-- `src/components/Spreadsheet.tsx` - Main migration and meta implementation
-- `src/components/CellRenderer.tsx` - Updated to work without `<td>` wrapper
+- `src/components/spreadsheet/Spreadsheet.tsx` - Main migration and meta implementation
+- `src/components/spreadsheet/CellRenderer.tsx` - Updated to work without `<td>` wrapper
 
 ## Testing
 

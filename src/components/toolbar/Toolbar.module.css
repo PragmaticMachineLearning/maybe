@@ -1,0 +1,197 @@
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    padding: 0;
+    flex-wrap: wrap;
+    row-gap: 8px;
+}
+
+.toolbarBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    box-shadow: 0 1px 3px var(--shadow);
+    transition: all 0.2s ease;
+    outline: none;
+    width: 40px;
+    height: 40px;
+}
+
+.toolbarBtn:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-header);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px var(--shadow-hover);
+}
+
+.toolbarBtn:focus-visible {
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: 2px;
+}
+
+.toolbarBtnActive {
+    background-color: var(--resize-handle-active);
+    color: white;
+}
+
+.toolbarBtnActive:hover {
+    background-color: var(--resize-handle-active);
+    border-color: var(--resize-handle-active);
+}
+
+.examplesWrapper {
+    position: relative;
+}
+
+.examplesBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    box-shadow: 0 1px 3px var(--shadow);
+    transition: all 0.2s ease;
+    outline: none;
+    height: 40px;
+}
+
+.examplesBtn:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-header);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px var(--shadow-hover);
+}
+
+.examplesBtn:focus-visible {
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: 2px;
+}
+
+.dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1200;
+    min-width: 240px;
+    padding: 6px 0;
+}
+
+.dropdownHeader {
+    padding: 6px 12px;
+    font-weight: bold;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.dropdownItem {
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.dropdownItem:hover {
+    background-color: var(--bg-hover);
+}
+
+.dropdownItemName {
+    font-weight: 500;
+}
+
+.dropdownItemDesc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.dropdownFooter {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.panelToggles {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.panelToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    box-shadow: 0 1px 3px var(--shadow);
+    transition: all 0.2s ease;
+    outline: none;
+    height: 40px;
+    letter-spacing: 0.01em;
+}
+
+.panelToggle:hover,
+.panelToggle:focus-visible {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+    border-color: var(--border-header);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px var(--shadow-hover);
+}
+
+.panelToggle:focus-visible {
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: 2px;
+}
+
+.panelToggleActive {
+    color: var(--resize-handle-active);
+    background-color: var(--resize-handle-bg);
+    border-color: var(--dist-normal-border);
+}
+
+.panelToggleActive:hover {
+    color: var(--resize-handle-active);
+    background-color: var(--resize-handle-bg);
+    border-color: var(--dist-normal-border);
+    box-shadow: 0 2px 6px var(--shadow-hover);
+}
+
+.themeToggleWrapper {
+    display: flex;
+    align-items: center;
+}

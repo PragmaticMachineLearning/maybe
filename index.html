@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Maybe</title>
     <script>
       // Bullet-proof theme script - runs before first paint to prevent flash
       (function() {
@@ -26,7 +26,10 @@
         }
         
         function resolveTheme(theme) {
-          if (theme === THEME_SYSTEM || !theme) {
+          if (!theme) {
+            return THEME_DARK;
+          }
+          if (theme === THEME_SYSTEM) {
             return getSystemTheme();
           }
           return theme === THEME_DARK ? THEME_DARK : THEME_LIGHT;
@@ -60,7 +63,7 @@
         // Expose theme utilities to window for React hook
         window.__theme = {
           get: function() {
-            return getStoredTheme() || THEME_SYSTEM;
+            return getStoredTheme() || THEME_DARK;
           },
           set: function(theme) {
             try {

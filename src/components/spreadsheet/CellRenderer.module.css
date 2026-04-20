@@ -1,0 +1,167 @@
+.cell {
+  padding: 10px 14px;
+  min-height: 38px;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.01em;
+}
+
+.cellSelected {
+  background-color: var(--bg-hover);
+  box-shadow:
+    inset 0 0 0 1px var(--resize-handle-active),
+    inset 0 0 24px rgba(120, 210, 192, 0.08);
+}
+
+.cellSelected.cellDistSampled,
+.cellSelected.cellDistLognormal,
+.cellSelected.cellDistUniform {
+  box-shadow:
+    inset 0 0 0 1px var(--dist-sampled-accent),
+    inset 0 0 28px rgba(167, 130, 255, 0.14);
+}
+
+.cellDistNormal {
+  background-color: var(--dist-normal-bg);
+  border-left: 3px solid var(--dist-normal-border);
+}
+.cellDistNormal:not(.cellSelected) {
+  box-shadow: inset 0 0 0 1px var(--dist-normal-bg);
+}
+
+.cellDistLognormal {
+  background-color: var(--dist-lognormal-bg);
+  border-left: 3px solid var(--dist-lognormal-border);
+}
+.cellDistLognormal:not(.cellSelected) {
+  box-shadow: inset 0 0 0 1px var(--dist-lognormal-bg);
+}
+
+.cellDistUniform {
+  background-color: var(--dist-uniform-bg);
+  border-left: 3px solid var(--dist-uniform-border);
+}
+.cellDistUniform:not(.cellSelected) {
+  box-shadow: inset 0 0 0 1px var(--dist-uniform-bg);
+}
+
+.cellDistSampled {
+  background-color: var(--dist-sampled-bg);
+  border-left: 3px solid var(--dist-sampled-border);
+}
+.cellDistSampled:not(.cellSelected) {
+  box-shadow: inset 0 0 0 1px var(--dist-sampled-bg);
+}
+
+.editInput {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  padding: 0 2px;
+  background-color: transparent;
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: 0.01em;
+}
+
+.cellText {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  align-self: stretch;
+  letter-spacing: 0.01em;
+}
+
+.dropdownWrapper {
+  position: relative;
+}
+
+.dropdownBtn {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  padding: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  min-width: 34px;
+  box-shadow: 0 2px 6px rgba(15, 31, 31, 0.06);
+  transition: all 0.2s ease;
+}
+
+.dropdownBtnOpen {
+  background-color: var(--bg-hover);
+  border-color: var(--resize-handle-active);
+  box-shadow: 0 6px 18px rgba(15, 31, 31, 0.12);
+}
+
+.dropdownPanel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(15, 31, 31, 0.16);
+  z-index: 1000;
+  min-width: 200px;
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.dropdownInner {
+  padding: 6px 0;
+}
+
+.dropdownHeader {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: bold;
+  color: var(--text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dropdownOption {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dropdownOption:hover {
+  background-color: var(--bg-hover);
+}
+
+.dropdownOptionActive {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
