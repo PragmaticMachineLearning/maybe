@@ -1,4 +1,4 @@
-import type { VisualDependencyNodeValue } from '../types/visualDependencyGraph'
+import type { VisualDependencyNodeValue } from '../../types/visualDependencyGraph'
 
 const formatNumber = (value: number): string => value.toFixed(2)
 

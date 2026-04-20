@@ -1,7 +1,7 @@
 import { Position } from '@xyflow/react'
 import type { Edge, Node } from '@xyflow/react'
 
-import type { VisualDependencyGraph } from '../types/visualDependencyGraph'
+import type { VisualDependencyGraph } from '../../types/visualDependencyGraph'
 import { formatVisualDependencyValue } from './visualDependencyGraphFormatter'
 
 export interface FlowDiagramNodeData extends Record<string, unknown> {

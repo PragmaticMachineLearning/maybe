@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { VisualDependencyGraph } from '../types/visualDependencyGraph'
+import type { VisualDependencyGraph } from '../../types/visualDependencyGraph'
 import { toFlowDiagramElements } from './visualDependencyGraphAdapter'
 
 describe('toFlowDiagramElements', () => {

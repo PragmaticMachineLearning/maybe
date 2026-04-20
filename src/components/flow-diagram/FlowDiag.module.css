@@ -1,0 +1,72 @@
+/* ── Container ───────────────────────────────────────────────────────── */
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+}
+
+.subtitle {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+}
+
+/* ── Flow content wrapper ────────────────────────────────────────────── */
+.flowContent {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+/* ── Node types ──────────────────────────────────────────────────────── */
+.nodeBase {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  min-width: 150px;
+}
+
+.formulaNode {
+  composes: nodeBase;
+  background-color: var(--bg-surface);
+}
+
+.valueNode {
+  composes: nodeBase;
+  background-color: var(--bg-hover);
+}
+
+.nodeAddress {
+  font-weight: 0.8em;
+  color: var(--text-primary);
+}
+
+.nodeValue {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+
+.nodeMuted {
+  font-size: 0.8em;
+  color: var(--text-muted);
+}

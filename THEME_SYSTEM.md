@@ -43,7 +43,7 @@ function MyComponent() {
 ### Theme Toggle Component
 
 ```tsx
-import { ThemeToggle } from './components/ThemeToggle';
+import { ThemeToggle } from './components/theme/ThemeToggle';
 
 function App() {
   return (
