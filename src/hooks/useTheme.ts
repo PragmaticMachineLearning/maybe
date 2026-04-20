@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type Theme = 'light' | 'dark' | 'system';
-export type ResolvedTheme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'system';
+type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeState {
   theme: Theme;

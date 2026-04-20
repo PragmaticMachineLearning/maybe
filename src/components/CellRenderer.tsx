@@ -368,12 +368,13 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         const median = getConfidenceIntervalMedian(ci);
 
         switch (options.type) {
-          case "normal":
+          case "normal": {
             // Show as normal distribution approximation
             const mean = (ci.lower + ci.upper) / 2;
             const zScore = zScoreForConfidence(ci.confidenceLevel);
             const std = (ci.upper - ci.lower) / (2 * zScore);
             return `N(μ=${mean.toFixed(2)}, σ=${std.toFixed(2)})`;
+          }
 
           case "lognormal":
             // Show as log-normal parameters

@@ -41,7 +41,7 @@ export const parseConfidenceIntervalValue = (val: unknown): ParsedConfidenceInte
       }
     }
 
-    match = val.match(/^CI\[(\-?\d+\.?\d*),\s*(\-?\d+\.?\d*)\]$/)
+    match = val.match(/^CI\[(-?\d+\.?\d*),\s*(-?\d+\.?\d*)\]$/)
     if (match) {
       return {
         lower: parseFloat(match[1]),

@@ -11,7 +11,7 @@ export interface FlowDiagramNodeData extends Record<string, unknown> {
   formula: string
 }
 
-export interface FlowDiagramElements {
+interface FlowDiagramElements {
   nodes: Node<FlowDiagramNodeData>[]
   edges: Edge[]
 }

@@ -8,7 +8,7 @@ interface FormulaBarProps {
 }
 
 // Helper function to format distribution objects for display
-const formatCellValue = (value: any): string => {
+const formatCellValue = (value: unknown): string => {
   if (value === null || value === undefined) {
     return ''
   }
@@ -20,24 +20,26 @@ const formatCellValue = (value: any): string => {
 
   // Check if it's a distribution object
   if (typeof value === 'object' && value !== null) {
+    const cellValue = value as Record<string, unknown>
+
     // Check for GaussianNumber pattern
-    if (typeof value.mean === 'number' && typeof value.variance === 'number') {
-      return `N(μ=${value.mean.toFixed(2)}, σ²=${value.variance.toFixed(2)})`
+    if (typeof cellValue.mean === 'number' && typeof cellValue.variance === 'number') {
+      return `N(μ=${cellValue.mean.toFixed(2)}, σ²=${cellValue.variance.toFixed(2)})`
     }
 
     // Check for LogNormalNumber pattern
-    if (typeof value.mu === 'number' && typeof value.sigma2 === 'number') {
-      return `LN(μ=${value.mu.toFixed(2)}, σ²=${value.sigma2.toFixed(2)})`
+    if (typeof cellValue.mu === 'number' && typeof cellValue.sigma2 === 'number') {
+      return `LN(μ=${cellValue.mu.toFixed(2)}, σ²=${cellValue.sigma2.toFixed(2)})`
     }
 
     // Check for UniformNumber pattern
-    if (typeof value.a === 'number' && typeof value.b === 'number') {
-      return `U[${value.a.toFixed(2)}, ${value.b.toFixed(2)}]`
+    if (typeof cellValue.a === 'number' && typeof cellValue.b === 'number') {
+      return `U[${cellValue.a.toFixed(2)}, ${cellValue.b.toFixed(2)}]`
     }
     
     // Check for ConfidenceIntervalNumber pattern
-    if (typeof value.lower === 'number' && typeof value.upper === 'number' && typeof value.confidenceLevel === 'number') {
-      return `CI[${value.lower.toFixed(2)}, ${value.upper.toFixed(2)}]`
+    if (typeof cellValue.lower === 'number' && typeof cellValue.upper === 'number' && typeof cellValue.confidenceLevel === 'number') {
+      return `CI[${cellValue.lower.toFixed(2)}, ${cellValue.upper.toFixed(2)}]`
     }
   }
 
@@ -218,4 +220,3 @@ const formulaInputStyle = {
   outline: 'none',
   transition: 'border-color 0.2s ease',
 } as const
-

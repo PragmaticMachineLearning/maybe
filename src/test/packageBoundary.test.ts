@@ -11,6 +11,7 @@ const packageJson = JSON.parse(
   dependencies?: Record<string, string>
   workspaces?: string[]
 }
+const viteConfig = readFileSync(resolve(process.cwd(), 'vite.config.ts'), 'utf8')
 
 describe('gaussformula package boundary', () => {
   it('exposes getVisualDependencyGraph on built instances', () => {
@@ -26,5 +27,6 @@ describe('gaussformula package boundary', () => {
     expect(packageJson.dependencies?.gaussformula).not.toMatch(/^workspace:/)
     expect(packageJson.dependencies?.gaussformula).not.toMatch(/^file:/)
     expect(packageJson.workspaces ?? []).not.toContain('hyperformula')
+    expect(viteConfig).not.toContain('hyperformula')
   })
 })

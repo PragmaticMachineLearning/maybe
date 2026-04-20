@@ -2,16 +2,18 @@ import ELK from "elkjs/lib/elk.bundled.js";
 import { type Edge, type Node } from "@xyflow/react";
 
 // Type definitions for ELK
+type ElkProperties = Record<string, unknown>;
+
 interface ElkNode {
   id: string;
   width?: number;
   height?: number;
   x?: number;
   y?: number;
-  properties?: Record<string, any>;
+  properties?: ElkProperties;
   ports?: Array<{
     id: string;
-    properties?: Record<string, any>;
+    properties?: ElkProperties;
   }>;
 }
 
@@ -23,7 +25,7 @@ interface ElkEdge {
 
 interface ElkGraph {
   id: string;
-  layoutOptions: Record<string, any>;
+  layoutOptions: Record<string, string>;
   children: ElkNode[];
   edges: ElkEdge[];
 }

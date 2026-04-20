@@ -13,7 +13,7 @@ import { SpreadsheetContext } from '../SpreadsheetContext'
 // Extend TableMeta to include our update function
 declare module '@tanstack/react-table' {
   interface TableMeta<TData extends RowData> {
-    updateData: (rowIndex: number, columnId: string, value: string) => void
+    updateData: (rowIndex: number, columnId: string, value: string, rowData?: TData) => void
     onCellSelect?: (row: number, col: number) => void
     selectedCell?: { row: number; col: number } | null
   }
@@ -30,7 +30,7 @@ interface SpreadsheetProps {
 // Define the row data type
 type SpreadsheetRow = {
   rowIndex: number;
-  [key: string]: any; // Dynamic columns for A, B, C, etc.
+  [key: string]: unknown; // Dynamic columns for A, B, C, etc.
 }
 
 export const Spreadsheet: React.FC<SpreadsheetProps> = ({ 
@@ -41,13 +41,13 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
   onOpenAnalysis
 }) => {
   const { hfInstance, updateCell } = useContext(SpreadsheetContext)
-  const [cellData, setCellData] = useState<Array<Array<any>>>([])
+  const [cellData, setCellData] = useState<unknown[][]>([])
 
   useEffect(() => {
     if (!hfInstance) return
 
     const updateCellData = () => {
-      const updated: Array<Array<any>> = []
+      const updated: unknown[][] = []
       for (let r = 0; r < rows; r++) {
         updated[r] = []
         for (let c = 0; c < columns; c++) {
@@ -131,7 +131,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
             <CellRenderer
               row={rowIndex}
               col={colIndex}
-              value={value}
+              value={value as React.ComponentProps<typeof CellRenderer>['value']}
               onEdit={(row, _col, value) => {
                 table.options.meta?.updateData(row, columnKey, value)
               }}
@@ -151,7 +151,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     }
 
     return cols
-  }, [columns])
+  }, [columns, onOpenAnalysis])
 
   const handleCellValueChange = (rowIndex: number, columnId: string, value: string) => {
     const colIndex = columnId.charCodeAt(0) - 65

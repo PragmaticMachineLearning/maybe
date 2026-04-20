@@ -151,8 +151,9 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!(key in prev)) {
         return prev
       }
-      const { [key]: _removed, ...rest } = prev
-      return rest
+      const nextViews = { ...prev }
+      delete nextViews[key]
+      return nextViews
     })
   }, [])
 

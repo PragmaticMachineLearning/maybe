@@ -8,6 +8,7 @@ type DistributionParams =
   | { type: 'uniform'; a: number; b: number }
   | { type: 'lognormal'; mu: number; sigma: number }
   | { type: 'normal'; mean: number; std: number };
+type TooltipParam = { data?: unknown };
 
 interface DistributionPlotProps {
   samples: number[];
@@ -60,6 +61,16 @@ const formatCompactNumber = (value: number) => {
     .replace(/(\.\d*[1-9])0+$/, '$1');
 
   return fixed.startsWith('-0') ? fixed.replace('-0', '0') : fixed;
+};
+
+const getTooltipParams = (params: unknown): TooltipParam[] => {
+  if (!Array.isArray(params)) {
+    return [];
+  }
+
+  return params.filter((param): param is TooltipParam => (
+    Boolean(param) && typeof param === 'object' && 'data' in param
+  ));
 };
 
 const SettingsIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = "currentColor" }) => (
@@ -331,12 +342,13 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
           return createUniformData(distributionParams.a, distributionParams.b);
         }
         return kernelDensityEstimate(samples);
-      case 'lognormal':
+      case 'lognormal': {
         if (distributionParams?.type === 'lognormal') {
           return createLogNormalData(distributionParams.mu, distributionParams.sigma);
         }
         const positive = samples.filter((value) => value > 0);
         return positive.length ? kernelDensityEstimate(positive) : kernelDensityEstimate(samples);
+      }
       case 'normal':
         if (distributionParams?.type === 'normal') {
           return createNormalData(distributionParams.mean, distributionParams.std);
@@ -348,11 +360,17 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     }
   }, [distributionKind, distributionParams, samples]);
 
-  const densitySeriesData = pdfData.length
-    ? pdfData
-    : sortedSamples.length
-      ? sortedSamples.map((value) => [value, 0])
-      : [[0, 0]];
+  const densitySeriesData = useMemo(() => {
+    if (pdfData.length) {
+      return pdfData;
+    }
+
+    if (sortedSamples.length) {
+      return sortedSamples.map((value) => [value, 0]);
+    }
+
+    return [[0, 0]];
+  }, [pdfData, sortedSamples]);
 
   const percentileEnabled = queryState.showPercentile && Number.isFinite(percentileValue);
   const ciEnabled = queryState.showCI && Number.isFinite(ciBounds.lower) && Number.isFinite(ciBounds.upper) && ciBounds.lower <= ciBounds.upper;
@@ -389,9 +407,10 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       borderColor: '#cedad6',
       borderWidth: 1,
       textStyle: { color: '#2f3a3a' },
-      formatter: (params: any) => {
-        if (!params || !params.length) return '';
-        const datum = params[0].data;
+      formatter: (params: unknown) => {
+        const tooltipParams = getTooltipParams(params);
+        if (!tooltipParams.length) return '';
+        const datum = tooltipParams[0].data;
         if (!Array.isArray(datum)) return '';
         const [x, y] = datum;
         return `Value: ${formatCompactNumber(Number(x))}<br/>Density: ${formatCompactNumber(Number(y))}`;
