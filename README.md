@@ -1,6 +1,6 @@
-# Alea Spreadsheet
+# Maybe Spreadsheet
 
-Alea is a React-based spreadsheet application with built-in support for uncertainty through Gaussian distributions and sampled distributions.
+Maybe is a React-based spreadsheet application with built-in support for uncertainty through Gaussian distributions and sampled distributions.
 
 ## Features
 
@@ -18,28 +18,24 @@ Alea is a React-based spreadsheet application with built-in support for uncertai
 ### Prerequisites
 
 - Node.js (v14 or higher)
-- npm or yarn
+- npm
 
 ### Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/alea.git
-cd alea
+git clone git@github.com:PragmaticMachineLearning/maybe.git
+cd maybe
 ```
 
 2. Install dependencies
 ```bash
 npm install
-# or
-yarn
 ```
 
 3. Start the development server
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
 ## Usage

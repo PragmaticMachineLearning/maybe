@@ -6,10 +6,11 @@ import {
   isSampledDistributionValue,
   parseConfidenceIntervalValue,
   parseSampledDistributionValue,
+  zScoreForConfidence,
 } from "../utils/distributionUtils";
 
 import { DistributionPlot } from "./DistributionPlot";
-import { SpreadsheetContext } from "../SpreadsheetContext";
+import { SpreadsheetContext, type DistributionViewType } from "../SpreadsheetContext";
 
 const ChevronDownIcon: React.FC<{ size?: number; color?: string }> = ({
   size = 14,
@@ -370,7 +371,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           case "normal":
             // Show as normal distribution approximation
             const mean = (ci.lower + ci.upper) / 2;
-            const zScore = ci.confidenceLevel === 90 ? 1.645 : 1.96;
+            const zScore = zScoreForConfidence(ci.confidenceLevel);
             const std = (ci.upper - ci.lower) / (2 * zScore);
             return `N(μ=${mean.toFixed(2)}, σ=${std.toFixed(2)})`;
 

@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ReactECharts from "echarts-for-react";
+import { zScoreForConfidence } from "../utils/distributionUtils";
 
 type DistributionKind = 'normal' | 'lognormal' | 'uniform' | 'sampled';
+type DistributionParams =
+  | { type: 'uniform'; a: number; b: number }
+  | { type: 'lognormal'; mu: number; sigma: number }
+  | { type: 'normal'; mean: number; std: number };
 
 interface DistributionPlotProps {
   samples: number[];
@@ -190,16 +195,6 @@ const kernelDensityEstimate = (values: number[], points = 200) => {
   });
 };
 
-const zScoreForConfidence = (confidenceLevel: number) => {
-  if (confidenceLevel >= 99.9) return 3.29;
-  if (confidenceLevel >= 99) return 2.576;
-  if (confidenceLevel >= 98) return 2.326;
-  if (confidenceLevel >= 95) return 1.96;
-  if (confidenceLevel >= 90) return 1.645;
-  if (confidenceLevel >= 80) return 1.282;
-  if (confidenceLevel >= 70) return 1.036;
-  return 1.0;
-};
 
 const createNormalData = (mean: number, std: number, points = 200) => {
   if (!Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
@@ -291,7 +286,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
     };
   }, [sortedSamples, queryState.confidenceLevel]);
 
-  const distributionParams = useMemo(() => {
+  const distributionParams = useMemo<DistributionParams | null>(() => {
     switch (distributionKind) {
       case 'uniform': {
         if (confidenceInterval) {
@@ -332,18 +327,18 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   const pdfData = useMemo(() => {
     switch (distributionKind) {
       case 'uniform':
-        if (distributionParams && 'a' in distributionParams) {
+        if (distributionParams?.type === 'uniform') {
           return createUniformData(distributionParams.a, distributionParams.b);
         }
         return kernelDensityEstimate(samples);
       case 'lognormal':
-        if (distributionParams && 'mu' in distributionParams) {
+        if (distributionParams?.type === 'lognormal') {
           return createLogNormalData(distributionParams.mu, distributionParams.sigma);
         }
         const positive = samples.filter((value) => value > 0);
         return positive.length ? kernelDensityEstimate(positive) : kernelDensityEstimate(samples);
       case 'normal':
-        if (distributionParams && 'mean' in distributionParams) {
+        if (distributionParams?.type === 'normal') {
           return createNormalData(distributionParams.mean, distributionParams.std);
         }
         return kernelDensityEstimate(samples);

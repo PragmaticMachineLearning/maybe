@@ -18,6 +18,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
   const examplesDropdownRef = useRef<HTMLDivElement>(null)
   const examplesButtonRef = useRef<HTMLButtonElement>(null)
 
+  const handleOpenDocs = () => {
+    if (typeof window !== 'undefined') {
+      window.open('/docs/index.html', '_blank', 'noopener')
+    }
+  }
+
   // Close dropdown when clicking outside
   useEffect(() => {
     if (!showExamplesDropdown) {
@@ -51,7 +57,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
     const targetHeight = Math.max(height, example.data.length)
 
     const nextSheet: ExampleCell[][] = Array.from({ length: targetHeight }, () =>
-      Array.from<ExampleCell>({ length: targetWidth }, () => null)
+      Array.from({ length: targetWidth }, (): ExampleCell => null)
     )
 
     example.data.forEach((rowData, rowIndex) => {
@@ -322,6 +328,61 @@ export const Toolbar: React.FC<ToolbarProps> = ({ useFlowDiag, onToggleFlowDiag,
           </div>
         )}
       </div>
+
+      {/* Docs Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          handleOpenDocs()
+        }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          border: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-surface)',
+          color: 'var(--text-primary)',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 500,
+          fontFamily: 'inherit',
+          boxShadow: '0 1px 3px var(--shadow)',
+          transition: 'all 0.2s ease',
+          outline: 'none',
+          height: '40px',
+          gap: '8px',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--bg-hover)'
+          e.currentTarget.style.borderColor = 'var(--border-header)'
+          e.currentTarget.style.transform = 'translateY(-1px)'
+          e.currentTarget.style.boxShadow = '0 2px 6px var(--shadow-hover)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--bg-surface)'
+          e.currentTarget.style.borderColor = 'var(--border-color)'
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 1px 3px var(--shadow)'
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.outline = '2px solid var(--resize-handle-active)'
+          e.currentTarget.style.outlineOffset = '2px'
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.outline = 'none'
+        }}
+        title="Open Maybe documentation in a new tab"
+      >
+        Docs
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M6 4H14L18 8V20H6Z" />
+          <line x1="10" y1="12" x2="14" y2="12" />
+          <line x1="10" y1="16" x2="14" y2="16" />
+          <line x1="10" y1="8" x2="11" y2="8" />
+        </svg>
+      </button>
 
       {/* Theme Toggle */}
       <div style={{ 

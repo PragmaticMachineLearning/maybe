@@ -1,4 +1,4 @@
-import type { CIInterpretation } from '../../hyperformula/src/interpreter/InterpreterValue'
+export type CIInterpretation = 'normal' | 'uniform' | 'lognormal' | 'auto'
 
 export interface ParsedConfidenceInterval {
   lower: number
@@ -36,7 +36,7 @@ export const parseConfidenceIntervalValue = (val: unknown): ParsedConfidenceInte
       return {
         lower: parseFloat(match[1]),
         upper: parseFloat(match[2]),
-        confidenceLevel: 90,
+        confidenceLevel: 95,
         interpretation: 'normal',
       }
     }
@@ -46,7 +46,7 @@ export const parseConfidenceIntervalValue = (val: unknown): ParsedConfidenceInte
       return {
         lower: parseFloat(match[1]),
         upper: parseFloat(match[2]),
-        confidenceLevel: 90,
+        confidenceLevel: 95,
         interpretation: 'normal',
       }
     }
@@ -101,3 +101,13 @@ export const getConfidenceIntervalMedian = (ci: Pick<ParsedConfidenceInterval, '
   }
 }
 
+export const zScoreForConfidence = (confidenceLevel: number): number => {
+  if (confidenceLevel >= 99.9) return 3.29;
+  if (confidenceLevel >= 99) return 2.576;
+  if (confidenceLevel >= 98) return 2.326;
+  if (confidenceLevel >= 95) return 1.96;
+  if (confidenceLevel >= 90) return 1.645;
+  if (confidenceLevel >= 80) return 1.282;
+  if (confidenceLevel >= 70) return 1.036;
+  return 1.0;
+}

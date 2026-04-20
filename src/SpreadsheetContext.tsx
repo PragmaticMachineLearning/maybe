@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useEffect, useState } from 'react'
 
-// Import from the local workspace package
 import { HyperFormula } from 'gaussformula'
 
 type CellContent = string | number | null;
@@ -12,7 +11,7 @@ interface LiveEditingState {
   value: string;
 }
 
-type DistributionViewType = 'normal' | 'lognormal' | 'uniform'
+export type DistributionViewType = 'normal' | 'lognormal' | 'uniform'
 
 interface SpreadsheetContextValue {
   hfInstance: HyperFormula | null;

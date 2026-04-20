@@ -222,7 +222,7 @@ const SpreadsheetWithWizard: React.FC = () => {
           <Spreadsheet rows={50} columns={26} onCellSelect={handleCellSelect} selectedCell={selectedCell} onOpenAnalysis={handleToggleAnalysisMode} />
         </div>
         {analysisMode && !useflowDiag && analysisState && (
-          <div style={{ flex: isCompactLayout ? '1 1 auto' : '0 0 auto', order: isCompactLayout ? 2 : 0 }}>
+          <div style={{ flex: isCompactLayout ? '1 1 auto' : '0 0 auto', order: 2 }}>
             <AnalysisPanel
               cellLabel={analysisState.cellLabel}
               samples={analysisState.samples}
