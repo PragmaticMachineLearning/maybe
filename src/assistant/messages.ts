@@ -82,9 +82,11 @@ const workbookSnapshotSchema = z.object({
 export const assistantRequestSchema = z.object({
   messages: z.array(maybeAssistantMessageSchema),
   workbookSnapshot: workbookSnapshotSchema,
+  allowDirectCellChanges: z.boolean().optional().default(false),
 });
 
 export interface AssistantRequestBody {
   messages: MaybeAssistantMessage[];
   workbookSnapshot: WorkbookSnapshot;
+  allowDirectCellChanges: boolean;
 }

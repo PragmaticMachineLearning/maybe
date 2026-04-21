@@ -29,7 +29,10 @@ const getErrorMessage = (error: unknown): string => {
   return "Assistant provider error.";
 };
 
-const buildSystemPrompt = (workbookSnapshot: WorkbookSnapshot): string =>
+const buildSystemPrompt = (
+  workbookSnapshot: WorkbookSnapshot,
+  allowDirectCellChanges: boolean,
+): string =>
   [
     "You are Sage, the assistant inside Maybe, a spreadsheet for probabilistic modeling powered by GaussFormula.",
     "Help users understand and edit the current workbook while preserving uncertainty instead of collapsing it to false precision.",
@@ -39,6 +42,9 @@ const buildSystemPrompt = (workbookSnapshot: WorkbookSnapshot): string =>
     "Use getWorkbookContext when you need to inspect the workbook state, selected cell, formulas, or distribution summaries.",
     "Use validateFormula before proposing any formula you invent or revise.",
     "Use proposeCellChanges when the user asks you to add, update, or set up worksheet content. The tool returns a typed proposal for the UI to review; it does not mutate the workbook.",
+    allowDirectCellChanges
+      ? "Always allow is enabled for this request. You may use applyCellChanges when the requested edit is clear, validated, and safe to apply directly."
+      : "Always allow is disabled for this request. Do not apply changes directly; use proposeCellChanges for workbook edits.",
     "Each proposed change must use before fields that exactly match the current formula when a formula exists, otherwise the current display value.",
     "Do not say that you will implement changes, have implemented changes, or that the user should look for a hidden proposal. The user must click Apply before any proposed edit changes the workbook.",
     "If the workbook snapshot is truncated, say that the recommendation is based on partial context and ask for confirmation before relying on omitted cells.",
@@ -79,6 +85,7 @@ const parseAssistantRequest = async (
   return {
     messages: result.data.messages as MaybeAssistantMessage[],
     workbookSnapshot: result.data.workbookSnapshot,
+    allowDirectCellChanges: result.data.allowDirectCellChanges,
   };
 };
 
@@ -112,9 +119,14 @@ export const createAssistantHandler = ({
     const openaiProvider = createOpenAI({ apiKey });
     const result = streamTextFn({
       model: openaiProvider(process.env.OPENAI_MODEL ?? "gpt-4o-mini"),
-      system: buildSystemPrompt(body.workbookSnapshot),
+      system: buildSystemPrompt(
+        body.workbookSnapshot,
+        body.allowDirectCellChanges,
+      ),
       messages: await convertToModelMessages(body.messages),
-      tools: createAssistantTools(body.workbookSnapshot),
+      tools: createAssistantTools(body.workbookSnapshot, {
+        allowDirectCellChanges: body.allowDirectCellChanges,
+      }),
       stopWhen: stepCountIs(4),
     });
 

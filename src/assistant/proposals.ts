@@ -40,6 +40,16 @@ interface AssistantToolProposalPart {
   input?: unknown;
 }
 
+export type AssistantProposalSource =
+  | "text"
+  | "tool-proposeCellChanges"
+  | "tool-applyCellChanges";
+
+export interface AssistantProposalResult {
+  proposal: AssistantProposal;
+  source: AssistantProposalSource;
+}
+
 const normalizeCellAddress = (cell: string): string => cell.trim().toUpperCase();
 
 const getCellTextFromSnapshot = (
@@ -134,20 +144,27 @@ export const stripAssistantProposalFromText = (text: string): string =>
     })
     .trim();
 
-export const extractAssistantProposalFromParts = (
+export const extractAssistantProposalResultFromParts = (
   parts: readonly AssistantToolProposalPart[],
-): AssistantProposal | null => {
+): AssistantProposalResult | null => {
   for (const part of parts) {
     if (
-      part.type !== "tool-proposeCellChanges" ||
-      part.state !== "output-available"
+      part.type !== "tool-proposeCellChanges" &&
+      part.type !== "tool-applyCellChanges"
     ) {
+      continue;
+    }
+
+    if (part.state !== "output-available") {
       continue;
     }
 
     const proposal = parseProposalValue(part.output);
     if (proposal !== null) {
-      return proposal;
+      return {
+        proposal,
+        source: part.type,
+      };
     }
   }
 

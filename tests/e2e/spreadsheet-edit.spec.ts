@@ -163,7 +163,7 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
     "=A1*2",
   );
-  await expect(page.getByText("Applied")).toBeVisible();
+  await expect(page.getByText("Applied", { exact: true })).toBeVisible();
 });
 
 test("resized Sage panel fills its allocated slot", async ({ page }) => {
@@ -323,8 +323,81 @@ test("renders and applies proposals produced by Sage tools", async ({ page }) =>
   ).toBeVisible();
   await expect(page.getByText("CI[100, 200]")).toBeVisible();
   await page.getByRole("button", { name: "Apply 1 change" }).click();
-  await expect(page.getByText("Applied")).toBeVisible();
+  await expect(page.getByText("Applied", { exact: true })).toBeVisible();
 
+  await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
+  await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
+    "CI[100.00, 200.00]",
+  );
+});
+
+test("auto-applies direct apply tool results after Always allow is enabled", async ({
+  page,
+}) => {
+  const proposal = {
+    title: "Apply tool output",
+    summary: "Applies a starter confidence interval through the apply tool.",
+    changes: [
+      {
+        cell: "A1",
+        before: "",
+        after: "CI[100, 200]",
+        reason: "Capture the uncertain source estimate as a distribution.",
+        kind: "add",
+      },
+    ],
+  };
+
+  await page.route("**/api/assistant", async (route) => {
+    const requestBody = route.request().postDataJSON() as {
+      allowDirectCellChanges?: boolean;
+    };
+
+    expect(requestBody.allowDirectCellChanges).toBe(true);
+
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: [
+        { type: "start", messageId: "sage-apply-tool" },
+        { type: "start-step" },
+        { type: "text-start", id: "text-1" },
+        {
+          type: "text-delta",
+          id: "text-1",
+          delta: "I applied one workbook change.",
+        },
+        { type: "text-end", id: "text-1" },
+        {
+          type: "tool-input-available",
+          toolCallId: "apply-tool-call",
+          toolName: "applyCellChanges",
+          input: proposal,
+        },
+        {
+          type: "tool-output-available",
+          toolCallId: "apply-tool-call",
+          output: proposal,
+        },
+        { type: "finish-step" },
+        { type: "finish", finishReason: "stop" },
+      ]
+        .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+        .join(""),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("checkbox", { name: "Always allow Sage to apply changes" })
+    .check();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("Apply the setup directly");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("Applied", { exact: true })).toBeVisible();
   await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
     "CI[100.00, 200.00]",

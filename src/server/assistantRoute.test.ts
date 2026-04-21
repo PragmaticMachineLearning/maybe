@@ -337,6 +337,65 @@ describe("assistant route", () => {
     });
   });
 
+  it("only exposes the direct apply tool when Always allow is enabled", async () => {
+    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+      options,
+      toUIMessageStreamResponse: () => new Response("ok"),
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => "sk-test",
+      streamTextFn,
+    });
+
+    await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        body: JSON.stringify({
+          ...requestBodyWithWorkbookContext,
+          allowDirectCellChanges: true,
+        }),
+      }),
+    );
+
+    const options = streamTextFn.mock.calls[0]?.[0];
+    expect(Object.keys(options?.tools ?? {})).toEqual([
+      "getWorkbookContext",
+      "validateFormula",
+      "proposeCellChanges",
+      "applyCellChanges",
+    ]);
+    expect(options?.system).toContain("Always allow");
+    expect(options?.system).toContain("applyCellChanges");
+
+    const tools = options?.tools as unknown as Record<
+      string,
+      { execute: (...args: unknown[]) => Promise<unknown> | unknown }
+    >;
+    await expect(
+      tools.applyCellChanges.execute({
+        title: "Apply output",
+        summary: "Applies one uncertainty-preserving output.",
+        changes: [
+          {
+            cell: " b1 ",
+            before: "",
+            after: "=A1*2",
+            reason: "Double the uncertain input.",
+            kind: "add",
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({
+      title: "Apply output",
+      changes: [
+        expect.objectContaining({
+          cell: "B1",
+          after: "=A1*2",
+        }),
+      ],
+    });
+  });
+
   it("accepts assistant history containing step-start parts", async () => {
     const toUIMessageStreamResponse = vi.fn(() => new Response("ok"));
     const streamTextFn = vi.fn((options: StreamTextOptions) => ({

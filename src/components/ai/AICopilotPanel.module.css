@@ -36,6 +36,80 @@
     gap: 8px;
 }
 
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.allowToggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+
+.allowToggle input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.allowToggleTrack {
+    width: 26px;
+    height: 14px;
+    border-radius: var(--radius-full, 999px);
+    background: var(--bg-muted);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 1px;
+    transition:
+        background-color 0.12s ease,
+        border-color 0.12s ease;
+    pointer-events: none;
+}
+
+.allowToggleThumb {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full, 999px);
+    background: var(--text-muted);
+    transition:
+        background-color 0.12s ease,
+        transform 0.12s ease;
+    pointer-events: none;
+}
+
+.allowToggle input:checked + .allowToggleTrack {
+    background: var(--resize-handle-bg);
+    border-color: var(--resize-handle-active);
+}
+
+.allowToggle input:checked + .allowToggleTrack .allowToggleThumb {
+    background: var(--resize-handle-active);
+    transform: translateX(12px);
+}
+
+.allowToggle input:focus-visible + .allowToggleTrack {
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: 2px;
+}
+
+.allowToggleText {
+    white-space: nowrap;
+}
+
 .sageAvatar {
     width: 26px;
     height: 26px;

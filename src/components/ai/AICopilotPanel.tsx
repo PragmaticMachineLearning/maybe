@@ -9,12 +9,12 @@ import React, {
 } from "react";
 
 import {
-  extractAssistantProposalFromParts,
+  extractAssistantProposalResultFromParts,
   extractAssistantProposalFromText,
   stripAssistantProposalFromText,
   validateAssistantProposal,
   type AssistantCellChange,
-  type AssistantProposal,
+  type AssistantProposalResult,
 } from "../../assistant/proposals";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./AICopilotPanel.module.css";
@@ -57,9 +57,19 @@ const getMessageText = (message: UIMessage): string =>
     .map((part) => part.text)
     .join("");
 
-const getMessageProposal = (message: UIMessage): AssistantProposal | null =>
-  extractAssistantProposalFromParts(message.parts) ??
-  extractAssistantProposalFromText(getMessageText(message));
+const getMessageProposalResult = (
+  message: UIMessage,
+): AssistantProposalResult | null => {
+  const toolProposal = extractAssistantProposalResultFromParts(message.parts);
+  if (toolProposal !== null) {
+    return toolProposal;
+  }
+
+  const textProposal = extractAssistantProposalFromText(getMessageText(message));
+  return textProposal === null
+    ? null
+    : { proposal: textProposal, source: "text" };
+};
 
 const proposalFencePattern = /```(?:maybe-proposal|json)/g;
 
@@ -266,6 +276,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const [dismissedProposalKey, setDismissedProposalKey] = useState<
     string | null
   >(null);
+  const [allowDirectCellChanges, setAllowDirectCellChanges] = useState(false);
   const [appliedProposalKey, setAppliedProposalKey] = useState<string | null>(
     null,
   );
@@ -302,7 +313,10 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     clearError();
     const workbookSnapshot = getWorkbookSnapshot(selectedCell ?? null);
     try {
-      await sendMessage({ text }, { body: { workbookSnapshot } });
+      await sendMessage(
+        { text },
+        { body: { workbookSnapshot, allowDirectCellChanges } },
+      );
     } catch (caughtError) {
       setRequestError(getUnknownErrorMessage(caughtError));
     }
@@ -321,11 +335,12 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const latestAssistantWithProposal = assistantMessages
     .slice()
     .reverse()
-    .map((message) => ({ message, proposal: getMessageProposal(message) }))
-    .find(({ proposal }) => proposal !== null);
+    .map((message) => ({ message, result: getMessageProposalResult(message) }))
+    .find(({ result }) => result !== null);
   const latestProposal = latestAssistantWithProposal
-    ? latestAssistantWithProposal.proposal
+    ? (latestAssistantWithProposal.result?.proposal ?? null)
     : null;
+  const latestProposalSource = latestAssistantWithProposal?.result?.source ?? null;
   const latestProposalKey =
     latestAssistantWithProposal && latestProposal
       ? `${latestAssistantWithProposal.message.id}:${JSON.stringify(latestProposal)}`
@@ -387,6 +402,40 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     }
   }, [messages, status, showProposal, applyError, transportError]);
 
+  useEffect(() => {
+    if (
+      !allowDirectCellChanges ||
+      latestProposalSource !== "tool-applyCellChanges" ||
+      proposalIsApplied ||
+      !canApplyProposal ||
+      !proposalValidation ||
+      !latestProposalKey
+    ) {
+      return;
+    }
+
+    setApplyError(null);
+
+    try {
+      applyAssistantChanges(proposalValidation.applyableChanges);
+      setAppliedProposalKey(latestProposalKey);
+    } catch (caughtError) {
+      setApplyError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to apply Sage's proposal.",
+      );
+    }
+  }, [
+    allowDirectCellChanges,
+    applyAssistantChanges,
+    canApplyProposal,
+    latestProposalKey,
+    latestProposalSource,
+    proposalIsApplied,
+    proposalValidation,
+  ]);
+
   return (
     <aside
       className={`${styles.panel} ${compact ? styles.panelCompact : ""}`}
@@ -400,26 +449,42 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
           </div>
           <span className={styles.title}>Sage</span>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className={styles.closeButton}
-          title="Close Sage"
-          aria-label="Close Sage"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
+        <div className={styles.headerActions}>
+          <label className={styles.allowToggle}>
+            <input
+              type="checkbox"
+              checked={allowDirectCellChanges}
+              onChange={(event) =>
+                setAllowDirectCellChanges(event.target.checked)
+              }
+              aria-label="Always allow Sage to apply changes"
+            />
+            <span className={styles.allowToggleTrack} aria-hidden="true">
+              <span className={styles.allowToggleThumb} />
+            </span>
+            <span className={styles.allowToggleText}>Always allow</span>
+          </label>
+          <button
+            type="button"
+            onClick={onClose}
+            className={styles.closeButton}
+            title="Close Sage"
+            aria-label="Close Sage"
           >
-            <path d="M18 6L6 18" />
-            <path d="M6 6l12 12" />
-          </svg>
-        </button>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <path d="M18 6L6 18" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       {/* ── Scrollable content area ────────────────────────────────── */}
