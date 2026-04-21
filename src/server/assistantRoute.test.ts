@@ -1,6 +1,9 @@
+import type { streamText } from "ai";
 import { describe, expect, it, vi } from "vitest";
 
 import { createAssistantHandler } from "./assistantRoute";
+
+type StreamTextOptions = Parameters<typeof streamText>[0];
 
 const validAssistantRequestBody = {
   messages: [],
@@ -12,6 +15,37 @@ const validAssistantRequestBody = {
     includedCellCount: 0,
     totalNonEmptyCellCount: 0,
     truncated: false,
+  },
+};
+
+const requestBodyWithWorkbookContext = {
+  ...validAssistantRequestBody,
+  messages: [
+    {
+      role: "user",
+      parts: [{ type: "text", text: "Summarize the uncertainty." }],
+    },
+  ],
+  workbookSnapshot: {
+    ...validAssistantRequestBody.workbookSnapshot,
+    cells: [
+      {
+        address: "A1",
+        row: 0,
+        col: 0,
+        formula: null,
+        displayValue: "CI[10, 20]",
+        kind: "confidence_interval",
+        confidenceInterval: {
+          lower: 10,
+          upper: 20,
+          confidenceLevel: 95,
+          interpretation: "normal",
+        },
+      },
+    ],
+    includedCellCount: 1,
+    totalNonEmptyCellCount: 1,
   },
 };
 
@@ -169,5 +203,39 @@ describe("assistant route", () => {
     });
     expect(response.status).toBe(500);
     expect(streamTextFn).not.toHaveBeenCalled();
+  });
+
+  it("streams a response with converted messages and workbook context", async () => {
+    const toUIMessageStreamResponse = vi.fn(() => new Response("ok"));
+    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+      options,
+      toUIMessageStreamResponse,
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => "sk-test",
+      streamTextFn,
+    });
+
+    const response = await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        body: JSON.stringify(requestBodyWithWorkbookContext),
+      }),
+    );
+
+    await expect(response.text()).resolves.toBe("ok");
+    expect(response.status).toBe(200);
+    expect(streamTextFn).toHaveBeenCalledOnce();
+    expect(toUIMessageStreamResponse).toHaveBeenCalledOnce();
+
+    const options = streamTextFn.mock.calls[0]?.[0];
+    expect(options).toBeDefined();
+    if (!options) {
+      throw new Error("streamTextFn was not called with options.");
+    }
+
+    expect(options.system).toContain("Current workbook snapshot");
+    expect(options.system).toContain("CI[10, 20]");
+    expect(Array.isArray(options.messages)).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import {
   convertToModelMessages,
   streamText,
@@ -9,6 +9,7 @@ import {
 import {
   assistantRequestSchema,
   type AssistantRequestBody,
+  type MaybeAssistantMessage,
 } from "../assistant/messages";
 import type { WorkbookSnapshot } from "../assistant/workbookSnapshot";
 
@@ -71,9 +72,8 @@ const parseAssistantRequest = async (
   }
 
   return {
-    messages: result.data.messages as AssistantRequestBody["messages"],
-    workbookSnapshot: result.data
-      .workbookSnapshot as unknown as AssistantRequestBody["workbookSnapshot"],
+    messages: result.data.messages as MaybeAssistantMessage[],
+    workbookSnapshot: result.data.workbookSnapshot,
   };
 };
 
@@ -94,7 +94,8 @@ export const createAssistantHandler = ({
       return invalidRequestResponse();
     }
 
-    if (!getApiKey()) {
+    const apiKey = getApiKey();
+    if (!apiKey) {
       return jsonResponse(
         {
           error: "OPENAI_API_KEY is not configured for the assistant server.",
@@ -103,8 +104,9 @@ export const createAssistantHandler = ({
       );
     }
 
+    const openaiProvider = createOpenAI({ apiKey });
     const result = streamTextFn({
-      model: openai(process.env.OPENAI_MODEL ?? "gpt-4o-mini"),
+      model: openaiProvider(process.env.OPENAI_MODEL ?? "gpt-4o-mini"),
       system: buildSystemPrompt(body.workbookSnapshot),
       messages: await convertToModelMessages(body.messages),
     });

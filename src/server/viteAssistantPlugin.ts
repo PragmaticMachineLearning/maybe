@@ -1,5 +1,9 @@
 import { Readable } from "node:stream";
-import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from "node:http";
+import type {
+  IncomingHttpHeaders,
+  IncomingMessage,
+  ServerResponse,
+} from "node:http";
 import type { Plugin } from "vite";
 
 import { handleAssistantRequest } from "./assistantRoute";
@@ -81,22 +85,64 @@ const writeWebResponse = async (
 
   try {
     while (true) {
+      if (serverResponse.destroyed || serverResponse.writableEnded) {
+        await reader.cancel();
+        return;
+      }
+
       const { done, value } = await reader.read();
       if (done) {
         break;
       }
 
       if (!serverResponse.write(value)) {
-        await new Promise<void>((resolve) => {
-          serverResponse.once("drain", resolve);
-        });
+        await waitForDrain(serverResponse, reader);
       }
     }
 
-    serverResponse.end();
+    if (!serverResponse.destroyed && !serverResponse.writableEnded) {
+      serverResponse.end();
+    }
   } finally {
     reader.releaseLock();
   }
+};
+
+const waitForDrain = async (
+  serverResponse: ServerResponse,
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+): Promise<void> => {
+  if (serverResponse.destroyed || serverResponse.writableEnded) {
+    await reader.cancel();
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const cleanup = (): void => {
+      serverResponse.off("drain", handleDrain);
+      serverResponse.off("close", handleClose);
+      serverResponse.off("error", handleError);
+    };
+    const handleDrain = (): void => {
+      cleanup();
+      resolve();
+    };
+    const handleClose = (): void => {
+      cleanup();
+      reject(new Error("Response closed before drain."));
+    };
+    const handleError = (error: Error): void => {
+      cleanup();
+      reject(error);
+    };
+
+    serverResponse.once("drain", handleDrain);
+    serverResponse.once("close", handleClose);
+    serverResponse.once("error", handleError);
+  }).catch(async (error: unknown) => {
+    await reader.cancel(error);
+    throw error;
+  });
 };
 
 const writeMiddlewareError = (
