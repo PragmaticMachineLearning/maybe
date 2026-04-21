@@ -39,8 +39,65 @@ test("opens a confidence interval distribution chart", async ({ page }) => {
   expect(pageErrors).toEqual([]);
 });
 
-test("opens the local AI copilot and reviews a mock diff", async ({ page }) => {
+test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
+  const assistantText = [
+    "I can add a dependent output that keeps the uncertainty from A1.",
+    "",
+    "```maybe-proposal",
+    JSON.stringify({
+      title: "Add review output",
+      summary: "Adds an output based on the selected input.",
+      changes: [
+        {
+          cell: "B1",
+          before: "",
+          after: "=A1*2",
+          reason: "Creates an uncertainty-preserving dependent output.",
+          kind: "add",
+        },
+      ],
+    }),
+    "```",
+  ].join("\n");
+
+  await page.route("**/api/assistant", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: [
+        { type: "start", messageId: "sage-test-proposal" },
+        { type: "start-step" },
+        { type: "text-start", id: "text-1" },
+        { type: "text-delta", id: "text-1", delta: assistantText },
+        { type: "text-end", id: "text-1" },
+        { type: "finish-step" },
+        { type: "finish", finishReason: "stop" },
+      ]
+        .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+        .join(""),
+    });
+  });
+
   await page.goto("/");
+
+  const firstCell = page.locator("tbody tr:first-child td:nth-child(2) > div");
+  const secondCell = page.locator("tbody tr:first-child td:nth-child(3) > div");
+  const thirdCell = page.locator("tbody tr:first-child td:nth-child(4) > div");
+
+  await firstCell.dblclick();
+
+  let editor = page.getByLabel("Cell A1");
+  await editor.fill("CI[10, 20]");
+  await editor.press("Enter");
+
+  // GaussFormula trims empty rightmost columns, so C1 keeps empty B1 in bounds.
+  await thirdCell.dblclick();
+
+  editor = page.getByLabel("Cell C1");
+  await editor.fill("context");
+  await editor.press("Enter");
+
+  await firstCell.click();
 
   await expect(page.getByRole("button", { name: /Sage/i })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Sage" })).toHaveCount(
@@ -52,19 +109,49 @@ test("opens the local AI copilot and reviews a mock diff", async ({ page }) => {
 
   await page
     .getByPlaceholder("Describe what to change…")
-    .fill("Add 95% confidence interval outputs");
+    .fill("Add an output that doubles the selected input");
   await page.getByRole("button", { name: "Send" }).click();
 
-  await expect(page.getByText("I prepared a local preview")).toContainText(
-    "Add 95% confidence interval outputs",
-  );
   await expect(
-    page.getByRole("button", { name: /Apply \d+ changes/ }),
+    page.getByText("I can add a dependent output that keeps the uncertainty from A1."),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Dismiss" })).toBeVisible();
+  await expect(page.getByText("```maybe-proposal")).toHaveCount(0);
+  await expect(page.getByText("=A1*2")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Apply 1 change" }),
+  ).toBeVisible();
 
-  await page.getByRole("button", { name: /Apply \d+ changes/ }).click();
+  await page.getByRole("button", { name: "Apply 1 change" }).click();
+  await expect(secondCell).not.toHaveText("");
   await expect(page.getByText("Applied")).toBeVisible();
+});
+
+test("shows a setup error when the assistant server has no OpenAI key", async ({
+  page,
+}) => {
+  await page.route("**/api/assistant", async (route) => {
+    await route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: "OPENAI_API_KEY is not configured for the assistant server.",
+      }),
+    });
+  });
+
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /Sage/i }).click();
+  await expect(page.getByRole("complementary", { name: "Sage" })).toBeVisible();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("What formulas should I add?");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(
+    page.getByText("OPENAI_API_KEY is not configured for the assistant server."),
+  ).toBeVisible();
 });
 
 test("starts with workstation side panels collapsed", async ({ page }) => {
