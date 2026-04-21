@@ -5,14 +5,14 @@ import type { WorkbookSnapshot } from "./workbookSnapshot";
 
 export type MaybeAssistantMessage = UIMessage;
 
-export const uiMessagePartSchema = z
+const uiMessagePartSchema = z
   .object({
     type: z.literal("text"),
     text: z.string(),
   })
   .passthrough();
 
-export const maybeAssistantMessageSchema = z
+const maybeAssistantMessageSchema = z
   .object({
     id: z.string().optional(),
     role: z.enum(["system", "user", "assistant"]),
@@ -20,7 +20,7 @@ export const maybeAssistantMessageSchema = z
   })
   .passthrough();
 
-export const workbookCellKindSchema = z.enum([
+const workbookCellKindSchema = z.enum([
   "scalar",
   "text",
   "boolean",
@@ -30,14 +30,14 @@ export const workbookCellKindSchema = z.enum([
   "unknown_object",
 ]);
 
-export const workbookConfidenceIntervalSchema = z.object({
+const workbookConfidenceIntervalSchema = z.object({
   lower: z.number(),
   upper: z.number(),
   confidenceLevel: z.number(),
   interpretation: z.string(),
 });
 
-export const workbookSampleSummarySchema = z.object({
+const workbookSampleSummarySchema = z.object({
   sampleCount: z.number(),
   mean: z.number(),
   standardDeviation: z.number(),
@@ -46,7 +46,7 @@ export const workbookSampleSummarySchema = z.object({
   p90: z.number(),
 });
 
-export const workbookCellSnapshotSchema = z.object({
+const workbookCellSnapshotSchema = z.object({
   address: z.string(),
   row: z.number(),
   col: z.number(),
@@ -57,7 +57,7 @@ export const workbookCellSnapshotSchema = z.object({
   sampleSummary: workbookSampleSummarySchema.optional(),
 });
 
-export const workbookSnapshotSchema = z.object({
+const workbookSnapshotSchema = z.object({
   sheetName: z.string(),
   dimensions: z.object({
     width: z.number(),

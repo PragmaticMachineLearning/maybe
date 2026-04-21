@@ -15,16 +15,16 @@ export const assistantCellChangeSchema = z.object({
   kind: z.enum(["add", "update", "review"]),
 }).strict();
 
-export const assistantProposalSchema = z.object({
+const assistantProposalSchema = z.object({
   title: z.string(),
   summary: z.string(),
   changes: z.array(assistantCellChangeSchema),
 }).strict();
 
 export type AssistantCellChange = z.infer<typeof assistantCellChangeSchema>;
-export type AssistantProposal = z.infer<typeof assistantProposalSchema>;
+type AssistantProposal = z.infer<typeof assistantProposalSchema>;
 
-export interface AssistantProposalValidationResult {
+interface AssistantProposalValidationResult {
   valid: boolean;
   proposal: AssistantProposal | null;
   applyableChanges: AssistantCellChange[];
