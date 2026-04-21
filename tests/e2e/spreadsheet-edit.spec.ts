@@ -40,6 +40,7 @@ test("opens a confidence interval distribution chart", async ({ page }) => {
 });
 
 test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
+  const promptText = "Add an output that doubles the selected input";
   const assistantText = [
     "I can add a dependent output that keeps the uncertainty from A1.",
     "",
@@ -61,6 +62,42 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   ].join("\n");
 
   await page.route("**/api/assistant", async (route) => {
+    const requestBody = route.request().postDataJSON() as {
+      messages?: Array<{
+        role?: string;
+        parts?: Array<{ type?: string; text?: string }>;
+      }>;
+      workbookSnapshot?: {
+        selectedCell?: string | null;
+        cells?: Array<{
+          address?: string;
+          kind?: string;
+          displayValue?: string;
+        }>;
+      };
+    };
+
+    expect(requestBody.workbookSnapshot).toBeTruthy();
+    expect(requestBody.workbookSnapshot?.selectedCell).toBe("A1");
+    expect(requestBody.workbookSnapshot?.cells).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          address: "A1",
+          kind: "confidence_interval",
+        }),
+      ]),
+    );
+    expect(requestBody.messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          role: "user",
+          parts: expect.arrayContaining([
+            expect.objectContaining({ type: "text", text: promptText }),
+          ]),
+        }),
+      ]),
+    );
+
     await route.fulfill({
       status: 200,
       contentType: "text/event-stream",
@@ -109,7 +146,7 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
 
   await page
     .getByPlaceholder("Describe what to change…")
-    .fill("Add an output that doubles the selected input");
+    .fill(promptText);
   await page.getByRole("button", { name: "Send" }).click();
 
   await expect(
@@ -122,7 +159,10 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Apply 1 change" }).click();
-  await expect(secondCell).not.toHaveText("");
+  await secondCell.dispatchEvent("click", { bubbles: true, cancelable: true });
+  await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
+    "=A1*2",
+  );
   await expect(page.getByText("Applied")).toBeVisible();
 });
 
