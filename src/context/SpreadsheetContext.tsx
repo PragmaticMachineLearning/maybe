@@ -1,11 +1,16 @@
 import React, { createContext, useCallback, useEffect, useState } from "react";
 
 import { GaussFormulaEngine, type FormulaEngine } from "../lib/formulaEngine";
+import {
+  canUseLognormalInterpretation,
+  parseConfidenceIntervalValue,
+  type DistributionViewType,
+} from "../utils/distribution/distributionUtils";
 
 type CellContent = string | number | null;
 type SheetData = CellContent[][];
 
-export type DistributionViewType = "normal" | "lognormal" | "uniform";
+export type { DistributionViewType };
 
 interface SpreadsheetContextValue {
   formulaEngine: FormulaEngine | null;
@@ -130,14 +135,40 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
   const setDistributionView = useCallback(
     (row: number, col: number, view: DistributionViewType) => {
       const key = `${row}:${col}`;
+      let appliedView = view;
+
+      if (formulaEngine) {
+        const address = { sheet: 0, row, col };
+        const formula = formulaEngine.getCellFormula(address);
+        const value = formulaEngine.getCellValue(address);
+        const confidenceInterval = parseConfidenceIntervalValue(value);
+
+        if (!formula && confidenceInterval) {
+          appliedView =
+            view === "lognormal" &&
+            !canUseLognormalInterpretation(confidenceInterval)
+              ? "normal"
+              : view;
+          formulaEngine.setCellContents(
+            address,
+            new GaussFormulaEngine.ConfidenceIntervalNumber(
+              confidenceInterval.lower,
+              confidenceInterval.upper,
+              confidenceInterval.confidenceLevel,
+              { interpretation: appliedView },
+            ),
+          );
+        }
+      }
+
       setDistributionViews((prev) => {
-        if (prev[key] === view) {
+        if (prev[key] === appliedView) {
           return prev;
         }
-        return { ...prev, [key]: view };
+        return { ...prev, [key]: appliedView };
       });
     },
-    [],
+    [formulaEngine],
   );
 
   const clearDistributionView = useCallback((row: number, col: number) => {

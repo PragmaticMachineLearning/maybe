@@ -100,19 +100,45 @@
     width: 5px;
 }
 
-/* ── Side panels ─────────────────────────────────────────────────────── */
+/* ── Sage panel resize handle ────────────────────────────────────────── */
 
-.sidePanels {
+.sageResizeHandle {
+    flex: 0 0 12px;
     display: flex;
-    align-items: stretch;
-    flex: 0 0 auto;
-    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    position: relative;
+    z-index: 10;
+    touch-action: none;
 }
 
-.panelSlot {
+.sageResizeHandle::before {
+    content: "";
+    position: absolute;
+    inset: 0 -4px;
+}
+
+.sageResizeHandle:hover .resizeHandleBar {
+    background-color: var(--resize-handle-active);
+    height: 64px;
+    width: 5px;
+}
+
+.sageResizeHandleActive .resizeHandleBar {
+    background-color: var(--resize-handle-active);
+    height: 80px;
+    width: 5px;
+}
+
+/* ── Sage slot ───────────────────────────────────────────────────────── */
+
+.sageSlot {
     flex: 0 0 auto;
+    min-width: 0;
     display: flex;
     align-items: stretch;
+    overflow: hidden;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────── */
@@ -162,11 +188,11 @@
         height: 5px;
     }
 
-    .sidePanels {
-        flex-direction: column;
+    .sageResizeHandle {
+        display: none;
     }
 
-    .panelSlot {
-        width: 100%;
+    .sageSlot {
+        width: 100% !important;
     }
 }

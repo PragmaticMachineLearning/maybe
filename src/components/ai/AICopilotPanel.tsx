@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import {
   createMockCopilotResult,
@@ -12,12 +12,10 @@ interface AICopilotPanelProps {
   compact?: boolean;
 }
 
-const DEFAULT_PROMPT = "Propagate uncertainty downstream cells (95% CI)";
-
-const SageIcon: React.FC = () => (
+const SageIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   <svg
-    width="20"
-    height="20"
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
     fill="none"
     aria-hidden="true"
@@ -40,23 +38,17 @@ const toneLabels: Record<CopilotDiffRow["tone"], string> = {
   review: "Review",
 };
 
-const toneClasses: Record<CopilotDiffRow["tone"], string> = {
-  change: styles.changeBadgeChange,
-  add: styles.changeBadgeAdd,
-  review: styles.changeBadgeReview,
-};
-
 export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   onClose,
   compact = false,
 }) => {
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
-  const [result, setResult] = useState<MockCopilotResult | null>(() =>
-    createMockCopilotResult(DEFAULT_PROMPT),
-  );
+  const [prompt, setPrompt] = useState("");
+  const [result, setResult] = useState<MockCopilotResult | null>(null);
   const [status, setStatus] = useState<
     "idle" | "preview" | "accepted" | "cancelled"
-  >("preview");
+  >("idle");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -65,21 +57,40 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     setStatus("preview");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (prompt.trim()) {
+        setResult(createMockCopilotResult(prompt));
+        setStatus("preview");
+      }
+    }
+  };
+
   const handleConfirm = () => {
     setStatus("accepted");
   };
 
-  const handleCancel = () => {
+  const handleDismiss = () => {
     setStatus("cancelled");
   };
 
-  const handleReset = () => {
+  const handleNewRequest = () => {
     setResult(null);
     setStatus("idle");
+    setPrompt("");
+    inputRef.current?.focus();
   };
 
-  const showResult =
-    result &&
+  // Scroll to bottom when new results appear
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [result, status]);
+
+  const hasResult =
+    result != null &&
     (status === "preview" || status === "accepted" || status === "cancelled");
 
   return (
@@ -91,12 +102,9 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <div className={styles.sageAvatar}>
-            <SageIcon />
+            <SageIcon size={16} />
           </div>
-          <div className={styles.headerText}>
-            <span className={styles.title}>Sage</span>
-            <span className={styles.subtitle}>Modeling assistant</span>
-          </div>
+          <span className={styles.title}>Sage</span>
         </div>
         <button
           type="button"
@@ -120,127 +128,52 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         </button>
       </header>
 
-      {/* ── Body ───────────────────────────────────────────────────── */}
-      <div className={styles.body}>
-        {/* Prompt area */}
-        <form className={styles.promptForm} onSubmit={handleSubmit}>
-          <div className={styles.promptHeader}>
-            <label className={styles.promptLabel} htmlFor="sage-prompt">
-              What would you like to model?
-            </label>
+      {/* ── Scrollable content area ────────────────────────────────── */}
+      <div ref={scrollRef} className={styles.content}>
+        {/* Empty state */}
+        {!hasResult && (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>
+              <SageIcon size={20} />
+            </div>
+            <p className={styles.emptyTitle}>What can I help you build?</p>
+            <p className={styles.emptyHint}>
+              Describe a change to your model — I&apos;ll suggest the
+              spreadsheet updates.
+            </p>
           </div>
-          <div className={styles.promptInputWrapper}>
-            <textarea
-              id="sage-prompt"
-              className={styles.promptInput}
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="e.g. Add confidence intervals to my cost forecast..."
-              rows={3}
-            />
-            <button
-              type="submit"
-              className={styles.submitButton}
-              disabled={!prompt.trim()}
-              title="Generate suggestions"
-              aria-label="Generate suggestions"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
-          </div>
-        </form>
+        )}
 
         {/* Results */}
-        {showResult && result && (
+        {hasResult && result && (
           <div className={styles.results}>
-            {/* Sage's message */}
-            <div className={styles.sageMessage}>
-              <div className={styles.sageMessageAvatar}>
-                <SageIcon />
-              </div>
-              <div className={styles.sageMessageBubble}>
-                <p className={styles.sageMessageText}>{result.message}</p>
-              </div>
+            {/* User's prompt (shown as context) */}
+            <div className={styles.userPrompt}>
+              <span className={styles.userPromptText}>{result.message}</span>
             </div>
 
-            {/* Change cards */}
-            <div className={styles.changesSection}>
-              <div className={styles.changesSectionHeader}>
-                <span className={styles.changesSectionTitle}>
-                  Suggested changes
-                </span>
-                <span className={styles.changesSectionCount}>
-                  {result.preview.rows.length}
-                </span>
-              </div>
-
-              <div className={styles.changeCards}>
-                {result.preview.rows.map((row) => (
-                  <div key={row.cell} className={styles.changeCard}>
-                    <div className={styles.changeCardHeader}>
-                      <span
-                        className={`${styles.changeBadge} ${toneClasses[row.tone]}`}
-                      >
-                        {toneLabels[row.tone]}
-                      </span>
-                      <span className={styles.changeCell}>{row.cell}</span>
-                    </div>
-                    <p className={styles.changeReason}>{row.reason}</p>
-                    <div className={styles.changeFormula}>
-                      {row.before ? (
-                        <>
-                          <span className={styles.formulaBefore}>
-                            {row.before}
-                          </span>
-                          <svg
-                            className={styles.formulaArrow}
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <line x1="5" y1="12" x2="19" y2="12" />
-                            <polyline points="12 5 19 12 12 19" />
-                          </svg>
-                        </>
-                      ) : null}
-                      <span className={styles.formulaAfter}>{row.after}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            {/* Change list */}
+            <div className={styles.changeList}>
+              {result.preview.rows.map((row) => (
+                <ChangeRow key={row.cell} row={row} />
+              ))}
             </div>
 
-            {/* Actions */}
+            {/* Inline actions */}
             {status === "preview" && (
-              <div className={styles.actions}>
+              <div className={styles.inlineActions}>
                 <button
                   type="button"
-                  className={styles.confirmButton}
+                  className={styles.applyBtn}
                   onClick={handleConfirm}
                 >
-                  Apply changes
+                  Apply {result.preview.rows.length} change
+                  {result.preview.rows.length !== 1 ? "s" : ""}
                 </button>
                 <button
                   type="button"
-                  className={styles.cancelButton}
-                  onClick={handleCancel}
+                  className={styles.dismissBtn}
+                  onClick={handleDismiss}
                 >
                   Dismiss
                 </button>
@@ -248,25 +181,13 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
             )}
 
             {status === "accepted" && (
-              <div className={styles.statusBanner}>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="var(--resize-handle-active)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-                <span>Changes applied to your sheet</span>
+              <div className={styles.statusRow}>
+                <span className={styles.statusDot} />
+                <span className={styles.statusText}>Applied</span>
                 <button
                   type="button"
-                  className={styles.statusAction}
-                  onClick={handleReset}
+                  className={styles.statusLink}
+                  onClick={handleNewRequest}
                 >
                   New request
                 </button>
@@ -274,12 +195,12 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
             )}
 
             {status === "cancelled" && (
-              <div className={styles.statusBanner}>
-                <span>Suggestions dismissed</span>
+              <div className={styles.statusRow}>
+                <span className={styles.statusText}>Dismissed</span>
                 <button
                   type="button"
-                  className={styles.statusAction}
-                  onClick={handleReset}
+                  className={styles.statusLink}
+                  onClick={handleNewRequest}
                 >
                   Try again
                 </button>
@@ -287,27 +208,71 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
             )}
           </div>
         )}
-
-        {/* Empty state when no result */}
-        {!showResult && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>
-              <SageIcon />
-            </div>
-            <p className={styles.emptyText}>
-              Describe what you&apos;d like to add or change in your model, and
-              I&apos;ll suggest the spreadsheet updates.
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* ── Footer ─────────────────────────────────────────────────── */}
-      <footer className={styles.footer}>
-        <span className={styles.footerText}>
-          Sage previews changes locally before applying
-        </span>
-      </footer>
+      {/* ── Input area (anchored to bottom) ────────────────────────── */}
+      <form className={styles.inputBar} onSubmit={handleSubmit}>
+        <textarea
+          ref={inputRef}
+          className={styles.input}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Describe what to change…"
+          rows={1}
+        />
+        <button
+          type="submit"
+          className={styles.sendBtn}
+          disabled={!prompt.trim()}
+          title="Send"
+          aria-label="Send"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+        </button>
+      </form>
     </aside>
+  );
+};
+
+// ── Change row (compact, single-line-ish) ───────────────────────────────────
+
+const ChangeRow: React.FC<{ row: CopilotDiffRow }> = ({ row }) => {
+  const toneClass =
+    row.tone === "add"
+      ? styles.toneAdd
+      : row.tone === "change"
+        ? styles.toneChange
+        : styles.toneReview;
+
+  return (
+    <div className={`${styles.changeRow} ${toneClass}`}>
+      <div className={styles.changeTop}>
+        <span className={styles.changeTone}>{toneLabels[row.tone]}</span>
+        <span className={styles.changeCell}>{row.cell}</span>
+        {row.before ? (
+          <span className={styles.changeArrow}>
+            <span className={styles.changeBefore}>{row.before}</span>
+            <span className={styles.changeArrowIcon}>→</span>
+            <span className={styles.changeAfter}>{row.after}</span>
+          </span>
+        ) : (
+          <span className={styles.changeAfter}>{row.after}</span>
+        )}
+      </div>
+      <p className={styles.changeReason}>{row.reason}</p>
+    </div>
   );
 };

@@ -16,10 +16,9 @@
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
-    "@xyflow/react": "^12.10.2",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.6",
-    "gaussformula": "^0.1.5",
+    "gaussformula": "^0.1.6",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

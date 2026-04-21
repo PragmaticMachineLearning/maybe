@@ -1,4 +1,4 @@
-import { GaussFormula as GaussFormulaEngine } from 'gaussformula'
+import GaussFormulaEngine from "gaussformula";
 
-export { GaussFormulaEngine }
-export type FormulaEngine = InstanceType<typeof GaussFormulaEngine>
+export { GaussFormulaEngine };
+export type FormulaEngine = InstanceType<typeof GaussFormulaEngine>;

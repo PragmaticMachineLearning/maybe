@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import {
+  getAvailableDistributionViews,
   getSamplesFromDistribution,
   isConfidenceIntervalValue,
   isSampledDistributionValue,
@@ -64,15 +65,31 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const [showPlot, setShowPlot] = useState(false);
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 });
   const [showViewDropdown, setShowViewDropdown] = useState(false);
+  const confidenceInterval = useMemo(
+    () =>
+      isConfidenceIntervalValue(value)
+        ? parseConfidenceIntervalValue(value)
+        : null,
+    [value],
+  );
+  const availableDistributionViews = useMemo(
+    () =>
+      confidenceInterval
+        ? getAvailableDistributionViews(confidenceInterval)
+        : (["normal", "lognormal", "uniform"] satisfies DistributionViewType[]),
+    [confidenceInterval],
+  );
   const inferViewFromValue = () => {
-    if (isConfidenceIntervalValue(value)) {
+    if (confidenceInterval) {
       const override = getDistributionView(row, col);
-      if (override) {
+      if (override && availableDistributionViews.includes(override)) {
         return override;
       }
-      const ci = parseConfidenceIntervalValue(value);
-      const interpretation = ci?.interpretation;
-      if (interpretation === "lognormal") {
+      const interpretation = confidenceInterval.interpretation;
+      if (
+        interpretation === "lognormal" &&
+        availableDistributionViews.includes("lognormal")
+      ) {
         return "lognormal";
       }
       if (interpretation === "uniform") {
@@ -148,15 +165,17 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   const distColors = getDistributionColors();
 
   useEffect(() => {
-    if (isConfidenceIntervalValue(value)) {
+    if (confidenceInterval) {
       const override = getDistributionView(row, col);
-      const ci = parseConfidenceIntervalValue(value);
       let nextType: DistributionViewType = "normal";
-      if (override) {
+      if (override && availableDistributionViews.includes(override)) {
         nextType = override;
-      } else if (ci?.interpretation === "lognormal") {
+      } else if (
+        confidenceInterval.interpretation === "lognormal" &&
+        availableDistributionViews.includes("lognormal")
+      ) {
         nextType = "lognormal";
-      } else if (ci?.interpretation === "uniform") {
+      } else if (confidenceInterval.interpretation === "uniform") {
         nextType = "uniform";
       }
 
@@ -175,6 +194,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
   }, [
     value,
+    confidenceInterval,
+    availableDistributionViews,
     row,
     col,
     getDistributionView,
@@ -388,6 +409,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             </span>
             {showViewOptions && !isEditing && (
               <DistributionViewDropdown
+                availableViews={availableDistributionViews}
                 viewType={viewOptions.type}
                 showDropdown={showViewDropdown}
                 onToggleDropdown={() => setShowViewDropdown(!showViewDropdown)}
