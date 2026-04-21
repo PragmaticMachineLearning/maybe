@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { FormulaEngine } from "../lib/formulaEngine";
 import { cellAddressFromA1 } from "./address";
 import type { WorkbookSnapshot } from "./workbookSnapshot";
 
@@ -132,4 +133,26 @@ export const validateAssistantProposal = (
     applyableChanges,
     errors,
   };
+};
+
+export const applyAssistantChangesToEngine = (
+  formulaEngine: FormulaEngine,
+  dimensions: WorkbookSnapshot["dimensions"],
+  changes: AssistantCellChange[],
+): void => {
+  for (const change of changes) {
+    if (change.kind === "review") {
+      continue;
+    }
+
+    const address = cellAddressFromA1(change.cell, dimensions);
+    if (!address) {
+      throw new Error(`${change.cell} is outside the current sheet.`);
+    }
+
+    formulaEngine.setCellContents(
+      { sheet: 0, row: address.row, col: address.col },
+      change.after,
+    );
+  }
 };

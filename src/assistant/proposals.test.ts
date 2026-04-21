@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { GaussFormulaEngine } from "../lib/formulaEngine";
 import type { WorkbookSnapshot } from "./workbookSnapshot";
 import {
+  applyAssistantChangesToEngine,
   extractAssistantProposalFromText,
   stripAssistantProposalFromText,
   validateAssistantProposal,
@@ -258,5 +260,58 @@ describe("assistant proposal parsing", () => {
       "Z99 is outside the current sheet.",
       "C1 needs a reason before it can be applied.",
     ]);
+  });
+
+  it("applies add and update changes to the formula engine while skipping review changes", () => {
+    const engine = GaussFormulaEngine.buildEmpty({
+      licenseKey: "gpl-v3",
+      language: "enGB",
+      useColumnIndex: true,
+    });
+
+    try {
+      engine.addSheet("Sheet1");
+      engine.setSheetContent(0, [["CI[10, 20]", "=A1*2", null]]);
+
+      applyAssistantChangesToEngine(
+        engine,
+        { width: 3, height: 1 },
+        [
+          {
+            cell: "B1",
+            before: "=A1*2",
+            after: "=A1*3",
+            reason: "Update the sampled distribution.",
+            kind: "update",
+          },
+          {
+            cell: "C1",
+            before: "",
+            after: "=B1+1",
+            reason: "Add a follow-up calculation.",
+            kind: "add",
+          },
+          {
+            cell: "A1",
+            before: "CI[10, 20]",
+            after: "CI[15, 25]",
+            reason: "Flag for manual review.",
+            kind: "review",
+          },
+        ],
+      );
+
+      expect(engine.getCellFormula({ sheet: 0, row: 0, col: 1 })).toBe(
+        "=A1*3",
+      );
+      expect(engine.getCellFormula({ sheet: 0, row: 0, col: 2 })).toBe(
+        "=B1+1",
+      );
+      expect(
+        engine.getCellFormula({ sheet: 0, row: 0, col: 0 }) ?? null,
+      ).toBeNull();
+    } finally {
+      engine.destroy();
+    }
   });
 });

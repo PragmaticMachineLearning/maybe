@@ -10,6 +10,7 @@ import styles from "./AICopilotPanel.module.css";
 interface AICopilotPanelProps {
   onClose: () => void;
   compact?: boolean;
+  selectedCell?: { row: number; col: number } | null;
 }
 
 const SageIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (

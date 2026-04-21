@@ -1,5 +1,14 @@
 import React, { createContext, useCallback, useEffect, useState } from "react";
 
+import {
+  applyAssistantChangesToEngine,
+  type AssistantCellChange,
+} from "../assistant/proposals";
+import {
+  buildWorkbookSnapshot,
+  type SelectedCell,
+  type WorkbookSnapshot,
+} from "../assistant/workbookSnapshot";
 import { GaussFormulaEngine, type FormulaEngine } from "../lib/formulaEngine";
 import {
   canUseLognormalInterpretation,
@@ -27,6 +36,10 @@ interface SpreadsheetContextValue {
     view: DistributionViewType,
   ) => void;
   clearDistributionView: (row: number, col: number) => void;
+  getWorkbookSnapshot: (
+    selectedCell: SelectedCell | null,
+  ) => WorkbookSnapshot | null;
+  applyAssistantChanges: (changes: AssistantCellChange[]) => void;
 }
 
 const SpreadsheetContext = createContext<SpreadsheetContextValue>({
@@ -37,6 +50,8 @@ const SpreadsheetContext = createContext<SpreadsheetContextValue>({
   getDistributionView: () => null,
   setDistributionView: () => {},
   clearDistributionView: () => {},
+  getWorkbookSnapshot: () => null,
+  applyAssistantChanges: () => {},
 });
 
 export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -183,6 +198,25 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
+  const getWorkbookSnapshot = useCallback(
+    (selectedCell: SelectedCell | null) => {
+      if (!formulaEngine) return null;
+
+      return buildWorkbookSnapshot({ formulaEngine, selectedCell });
+    },
+    [formulaEngine],
+  );
+
+  const applyAssistantChanges = useCallback(
+    (changes: AssistantCellChange[]) => {
+      if (!formulaEngine) return;
+
+      const dimensions = formulaEngine.getSheetDimensions(0);
+      applyAssistantChangesToEngine(formulaEngine, dimensions, changes);
+    },
+    [formulaEngine],
+  );
+
   return (
     <SpreadsheetContext
       value={{
@@ -193,6 +227,8 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
         getDistributionView,
         setDistributionView,
         clearDistributionView,
+        getWorkbookSnapshot,
+        applyAssistantChanges,
       }}
     >
       {children}
