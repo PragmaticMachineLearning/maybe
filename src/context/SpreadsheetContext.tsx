@@ -202,7 +202,12 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     (selectedCell: SelectedCell | null) => {
       if (!formulaEngine) return null;
 
-      return buildWorkbookSnapshot({ formulaEngine, selectedCell });
+      const dimensions = formulaEngine.getSheetDimensions(0);
+      return buildWorkbookSnapshot({
+        formulaEngine,
+        selectedCell,
+        maxCells: dimensions.width * dimensions.height,
+      });
     },
     [formulaEngine],
   );
