@@ -1,92 +1,171 @@
 .appShell {
-  height: 100%;
-  min-height: 100vh;
-  box-sizing: border-box;
-  padding: 18px;
-  background:
-    radial-gradient(circle at 18% 0%, rgba(111, 182, 163, 0.1), transparent 28%),
-    var(--bg-secondary);
+    height: 100%;
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 18px;
+    background:
+        radial-gradient(
+            circle at 18% 0%,
+            rgba(111, 182, 163, 0.1),
+            transparent 28%
+        ),
+        var(--bg-secondary);
 }
 
 .toolbarRow {
-  margin-bottom: 8px;
+    margin-bottom: 8px;
 }
 
 .workspace {
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-  min-height: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    min-height: 0;
 }
+
+.workspaceDragging {
+    cursor: col-resize;
+    user-select: none;
+}
+
+/* ── When flow diagram is OFF, the sheet takes all available space ──── */
 
 .sheetPane {
-  flex: 1 1 auto;
-  min-width: 0;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
+/* ── When flow diagram is ON, both panes live inside splitArea ──────── */
+
+.splitArea {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+    min-height: calc(100vh - 132px);
+}
+
+.sheetPaneSplit {
+    flex: 0 0 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.flowPane {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ── Resize handle ───────────────────────────────────────────────────── */
+
+.resizeHandle {
+    flex: 0 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    position: relative;
+    z-index: 10;
+    touch-action: none;
+}
+
+.resizeHandle::before {
+    content: "";
+    position: absolute;
+    inset: 0 -4px;
+}
+
+.resizeHandleBar {
+    width: 4px;
+    height: 48px;
+    border-radius: 999px;
+    background-color: var(--resize-handle);
+    transition:
+        background-color 0.15s ease,
+        height 0.15s ease,
+        width 0.15s ease;
+}
+
+.resizeHandle:hover .resizeHandleBar {
+    background-color: var(--resize-handle-active);
+    height: 64px;
+    width: 5px;
+}
+
+.resizeHandleActive .resizeHandleBar {
+    background-color: var(--resize-handle-active);
+    height: 80px;
+    width: 5px;
+}
+
+/* ── Side panels ─────────────────────────────────────────────────────── */
+
 .sidePanels {
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-  flex: 0 0 auto;
-  min-width: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 0;
 }
 
 .panelSlot {
-  flex: 0 0 auto;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: stretch;
 }
 
-.flowOverlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.flowDialog {
-  width: 90vw;
-  height: 80vh;
-  max-width: 1200px;
-  max-height: 800px;
-  background-color: var(--bg-surface);
-  border-radius: 8px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  position: relative;
-}
-
-.flowCloseButton {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  z-index: 1001;
-  padding: 0;
-  border-radius: 7px;
-  font-size: 18px;
-  font-weight: 700;
-}
+/* ── Responsive ──────────────────────────────────────────────────────── */
 
 @media (max-width: 1023px) {
-  .appShell {
-    padding: 12px;
-  }
+    .appShell {
+        padding: 12px;
+    }
 
-  .workspace {
-    flex-direction: column;
-  }
+    .workspace {
+        flex-direction: column;
+    }
 
-  .sidePanels {
-    flex-direction: column;
-  }
+    .splitArea {
+        flex-direction: column;
+        min-height: auto;
+    }
 
-  .panelSlot {
-    width: 100%;
-  }
+    .sheetPaneSplit {
+        width: 100% !important;
+        flex: 1 1 auto;
+    }
+
+    .flowPane {
+        flex: 1 1 auto;
+        min-height: 400px;
+    }
+
+    .resizeHandle {
+        flex: 0 0 12px;
+        cursor: row-resize;
+    }
+
+    .resizeHandleBar {
+        width: 48px;
+        height: 4px;
+    }
+
+    .resizeHandle:hover .resizeHandleBar {
+        width: 64px;
+        height: 5px;
+    }
+
+    .resizeHandleActive .resizeHandleBar {
+        width: 80px;
+        height: 5px;
+    }
+
+    .sidePanels {
+        flex-direction: column;
+    }
+
+    .panelSlot {
+        width: 100%;
+    }
 }

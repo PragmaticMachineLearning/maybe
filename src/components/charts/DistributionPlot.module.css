@@ -168,3 +168,34 @@
     background: var(--resize-handle-active);
     color: var(--bg-surface);
 }
+
+/* Stats strip */
+.statsStrip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background-color: var(--bg-muted);
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.statChip {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.statLabel {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.statValue {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}

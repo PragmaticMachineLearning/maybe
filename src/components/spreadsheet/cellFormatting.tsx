@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import React from 'react'
+import React from "react";
 
 import {
   getConfidenceIntervalMedian,
@@ -9,10 +9,10 @@ import {
   parseConfidenceIntervalValue,
   parseSampledDistributionValue,
   zScoreForConfidence,
-} from '../../utils/distribution/distributionUtils'
+} from "../../utils/distribution/distributionUtils";
 
 export interface DistributionViewOptions {
-  type: 'normal' | 'lognormal' | 'uniform'
+  type: "normal" | "lognormal" | "uniform";
 }
 
 export type CellValue =
@@ -24,7 +24,7 @@ export type CellValue =
   | undefined
   | { samples: number[] }
   | { mean: number; variance: number }
-  | { lower: number; upper: number; confidenceLevel: number }
+  | { lower: number; upper: number; confidenceLevel: number };
 
 export const BooleanIcon: React.FC<{ value: boolean }> = ({ value }) => (
   <svg
@@ -67,33 +67,33 @@ export const BooleanIcon: React.FC<{ value: boolean }> = ({ value }) => (
       </>
     )}
   </svg>
-)
+);
 
 export const MicroSparkline: React.FC<{
-  type: 'normal' | 'lognormal' | 'uniform' | 'sampled'
-  color: string
+  type: "normal" | "lognormal" | "uniform" | "sampled";
+  color: string;
 }> = ({ type, color }) => {
   const getPath = () => {
     switch (type) {
-      case 'normal':
-        return 'M0,14 C4,14 6,12 8,8 C10,4 11,1 14,1 C17,1 18,4 20,8 C22,12 24,14 28,14'
-      case 'lognormal':
-        return 'M0,14 C2,14 3,13 5,8 C6,5 7,1 9,1 C11,1 13,4 16,8 C19,11 22,13 28,14'
-      case 'uniform':
-        return 'M0,14 L0,14 L4,14 L4,3 L24,3 L24,14 L28,14'
-      case 'sampled':
-        return 'M0,14 L3,12 L6,8 L9,10 L12,4 L14,2 L16,3 L19,7 L22,10 L25,12 L28,14'
+      case "normal":
+        return "M0,16 C5,16 7,13 10,9 C13,4 14,1 18,1 C22,1 23,4 26,9 C29,13 31,16 36,16";
+      case "lognormal":
+        return "M0,16 C3,16 4,15 6,9 C8,5 9,1 12,1 C14,1 17,5 21,9 C25,13 29,15 36,16";
+      case "uniform":
+        return "M0,16 L0,16 L5,16 L5,3 L31,3 L31,16 L36,16";
+      case "sampled":
+        return "M0,16 L4,14 L8,9 L12,11 L15,5 L18,2 L21,4 L25,8 L29,12 L32,14 L36,16";
       default:
-        return 'M0,14 L28,14'
+        return "M0,16 L36,16";
     }
-  }
+  };
 
   return (
     <svg
-      width={28}
-      height={14}
-      viewBox="0 0 28 14"
-      style={{ flexShrink: 0, opacity: 0.7 }}
+      width={36}
+      height={16}
+      viewBox="0 0 36 16"
+      style={{ flexShrink: 0, opacity: 0.8 }}
       aria-hidden="true"
     >
       <path
@@ -105,58 +105,58 @@ export const MicroSparkline: React.FC<{
         strokeLinejoin="round"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const formatCellValue = (
   val: CellValue,
   options: DistributionViewOptions,
 ): string => {
-  if (val === null || val === undefined) return ''
+  if (val === null || val === undefined) return "";
 
-  if (typeof val === 'boolean') {
-    return val ? 'TRUE' : 'FALSE'
+  if (typeof val === "boolean") {
+    return val ? "TRUE" : "FALSE";
   }
 
-  if (typeof val === 'string' || typeof val === 'number') {
-    return String(val)
+  if (typeof val === "string" || typeof val === "number") {
+    return String(val);
   }
 
   if (isConfidenceIntervalValue(val)) {
-    const ci = parseConfidenceIntervalValue(val)
+    const ci = parseConfidenceIntervalValue(val);
     if (ci) {
-      const median = getConfidenceIntervalMedian(ci)
+      const median = getConfidenceIntervalMedian(ci);
 
       switch (options.type) {
-        case 'normal': {
-          const mean = (ci.lower + ci.upper) / 2
-          const zScore = zScoreForConfidence(ci.confidenceLevel)
-          const std = (ci.upper - ci.lower) / (2 * zScore)
-          return `N(μ=${mean.toFixed(2)}, σ=${std.toFixed(2)})`
+        case "normal": {
+          const mean = (ci.lower + ci.upper) / 2;
+          const zScore = zScoreForConfidence(ci.confidenceLevel);
+          const std = (ci.upper - ci.lower) / (2 * zScore);
+          return `N(μ=${mean.toFixed(2)}, σ=${std.toFixed(2)})`;
         }
-        case 'lognormal':
+        case "lognormal":
           if (ci.lower > 0 && ci.upper > 0) {
-            const lnLower = Math.log(ci.lower)
-            const lnUpper = Math.log(ci.upper)
-            const mu = (lnLower + lnUpper) / 2
-            const sigma = (lnUpper - lnLower) / 3.29
-            return `LN(μ=${mu.toFixed(2)}, σ=${sigma.toFixed(2)})`
+            const lnLower = Math.log(ci.lower);
+            const lnUpper = Math.log(ci.upper);
+            const mu = (lnLower + lnUpper) / 2;
+            const sigma = (lnUpper - lnLower) / 3.29;
+            return `LN(μ=${mu.toFixed(2)}, σ=${sigma.toFixed(2)})`;
           }
-          return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`
-        case 'uniform':
-          return `U[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`
+          return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`;
+        case "uniform":
+          return `U[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
         default:
-          return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`
+          return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`;
       }
     }
   }
 
   if (isSampledDistributionValue(val)) {
-    const sampled = parseSampledDistributionValue(val)
+    const sampled = parseSampledDistributionValue(val);
     if (sampled) {
-      return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`
+      return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
     }
   }
 
-  return String(val)
-}
+  return String(val);
+};

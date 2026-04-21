@@ -36,6 +36,18 @@
     --dist-sampled-border: rgba(139, 92, 246, 0.5);
     --dist-sampled-accent: #8b5cf6;
 
+    /* Design tokens */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-full: 999px;
+
+    --shadow-sm: 0 1px 3px var(--shadow);
+    --shadow-md: 0 4px 12px var(--shadow);
+    --shadow-lg: 0 12px 32px var(--shadow);
+
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
     color-scheme: light dark;
     color: var(--text-primary);
     background-color: var(--bg-secondary);
@@ -111,7 +123,7 @@ button {
     background-color: var(--bg-surface);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     padding: 0.5rem 0.9rem;
     letter-spacing: 0.01em;
     transition:
@@ -119,12 +131,12 @@ button {
         box-shadow 0.2s ease,
         color 0.2s ease,
         border-color 0.2s ease;
-    box-shadow: 0 4px 10px rgba(15, 31, 31, 0.04);
+    box-shadow: var(--shadow-sm);
 }
 
 button:hover {
     background-color: var(--bg-hover);
-    box-shadow: 0 6px 18px rgba(15, 31, 31, 0.08);
+    box-shadow: var(--shadow-md);
 }
 
 /* Spreadsheet specific styles */
@@ -224,40 +236,4 @@ textarea {
         background-color 0.1s ease,
         border-color 0.1s ease,
         color 0.1s ease;
-}
-
-/* Theme-aware Tailwind utilities - for when you want to use Tailwind classes */
-.dark .bg-white {
-    background-color: var(--bg-surface);
-}
-.dark .bg-gray-50 {
-    background-color: var(--bg-secondary);
-}
-.dark .bg-gray-100 {
-    background-color: var(--bg-hover);
-}
-.dark .text-gray-900 {
-    color: var(--text-primary);
-}
-.dark .text-gray-600 {
-    color: var(--text-secondary);
-}
-.dark .text-gray-500 {
-    color: var(--text-muted);
-}
-.dark .border-gray-200 {
-    border-color: var(--border-color);
-}
-.dark .border-gray-300 {
-    border-color: var(--border-header);
-}
-
-@media (prefers-color-scheme: light) {
-    :root {
-        color: var(--text-primary);
-        background-color: var(--bg-primary);
-    }
-    a:hover {
-        color: #747bff;
-    }
 }
