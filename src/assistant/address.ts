@@ -9,6 +9,10 @@ export interface ZeroBasedCellAddress {
 }
 
 const toColumnLetters = (col: number): string => {
+  if (!Number.isInteger(col) || col < 0) {
+    throw new RangeError("Column index must be a non-negative integer");
+  }
+
   let columnName = "";
   let columnNumber = col + 1;
 
@@ -22,6 +26,10 @@ const toColumnLetters = (col: number): string => {
 };
 
 export const cellAddressToA1 = (row: number, col: number): string => {
+  if (!Number.isInteger(row) || row < 0) {
+    throw new RangeError("Row index must be a non-negative integer");
+  }
+
   return `${toColumnLetters(col)}${row + 1}`;
 };
 

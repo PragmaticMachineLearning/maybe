@@ -15,6 +15,11 @@ describe("assistant workbook snapshot", () => {
     expect(cellAddressFromA1("ZZ99", { width: 2, height: 2 })).toBeNull();
   });
 
+  it("throws for negative zero-based coordinates", () => {
+    expect(() => cellAddressToA1(-1, 0)).toThrow(RangeError);
+    expect(() => cellAddressToA1(0, -1)).toThrow(RangeError);
+  });
+
   it("captures formulas, evaluated values, selected cell, and uncertainty metadata", () => {
     const engine = GaussFormulaEngine.buildEmpty({
       licenseKey: "gpl-v3",
@@ -62,6 +67,30 @@ describe("assistant workbook snapshot", () => {
         formula: "=B1*2",
         kind: "sampled_distribution",
       });
+    } finally {
+      engine.destroy();
+    }
+  });
+
+  it("returns null for an out-of-bounds selected cell and uses the engine sheet name", () => {
+    const engine = GaussFormulaEngine.buildEmpty({
+      licenseKey: "gpl-v3",
+      language: "enGB",
+      useColumnIndex: true,
+    });
+
+    try {
+      engine.addSheet("Budget");
+      engine.setSheetContent(0, [["Only cell"]]);
+
+      const snapshot = buildWorkbookSnapshot({
+        formulaEngine: engine,
+        selectedCell: { row: 9, col: 9 },
+        maxCells: 20,
+      });
+
+      expect(snapshot.selectedCell).toBeNull();
+      expect(snapshot.sheetName).toBe("Budget");
     } finally {
       engine.destroy();
     }

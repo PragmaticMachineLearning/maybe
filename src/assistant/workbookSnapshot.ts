@@ -11,7 +11,7 @@ import type { SheetDimensions, ZeroBasedCellAddress } from "./address";
 
 export type { SheetDimensions, ZeroBasedCellAddress };
 
-export interface SelectedCell extends ZeroBasedCellAddress {}
+export type SelectedCell = ZeroBasedCellAddress;
 
 export type WorkbookCellKind =
   | "scalar"
@@ -50,7 +50,7 @@ export interface WorkbookCellSnapshot {
 }
 
 export interface WorkbookSnapshot {
-  sheetName: "Sheet1";
+  sheetName: string;
   dimensions: SheetDimensions;
   selectedCell: string | null;
   cells: WorkbookCellSnapshot[];
@@ -71,6 +71,32 @@ const isBlankCell = (value: unknown, formula: string | null): boolean =>
   formula == null && (value === null || value === undefined || value === "");
 
 const round6 = (value: number): number => Number(value.toFixed(6));
+
+const resolveSheetName = (formulaEngine: FormulaEngine): string => {
+  const engineWithSheetName = formulaEngine as FormulaEngine & {
+    getSheetName?: (sheetId: number) => string | undefined;
+  };
+
+  const sheetName = engineWithSheetName.getSheetName?.(0);
+  if (typeof sheetName === "string" && sheetName.length > 0) {
+    return sheetName;
+  }
+
+  // The current app initializes a single default sheet named Sheet1 when the
+  // engine does not expose sheet-name lookup.
+  return "Sheet1";
+};
+
+const isSelectedCellInBounds = (
+  selectedCell: SelectedCell,
+  dimensions: SheetDimensions,
+): boolean =>
+  Number.isInteger(selectedCell.row) &&
+  Number.isInteger(selectedCell.col) &&
+  selectedCell.row >= 0 &&
+  selectedCell.col >= 0 &&
+  selectedCell.row < dimensions.height &&
+  selectedCell.col < dimensions.width;
 
 const summarizeSamples = (value: unknown): WorkbookSampleSummary | undefined => {
   const parsed = parseSampledDistributionValue(value);
@@ -209,11 +235,12 @@ export const buildWorkbookSnapshot = ({
   }
 
   return {
-    sheetName: "Sheet1",
+    sheetName: resolveSheetName(formulaEngine),
     dimensions,
-    selectedCell: selectedCell
-      ? cellAddressToA1(selectedCell.row, selectedCell.col)
-      : null,
+    selectedCell:
+      selectedCell && isSelectedCellInBounds(selectedCell, dimensions)
+        ? cellAddressToA1(selectedCell.row, selectedCell.col)
+        : null,
     cells,
     includedCellCount: cells.length,
     totalNonEmptyCellCount,
