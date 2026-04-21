@@ -18,6 +18,17 @@ import {
   isSampledDistributionValue,
   parseSampledDistributionValue,
 } from "../../utils/distribution/distributionUtils";
+import {
+  buildVisualGraphIndex,
+  getDefaultFocusMode,
+  getEdgeFocusState,
+  getFocusCounts,
+  getFocusState,
+  type GraphFocusMode,
+  type GraphFocusScope,
+  type GraphFocusState,
+  type VisualGraphIndex,
+} from "../../utils/visual-dependency-graph/graphQueries";
 import { formatVisualDependencyValue } from "../../utils/visual-dependency-graph/visualDependencyGraphFormatter";
 import { MicroSparkline } from "../spreadsheet/cellFormatting";
 import type { FormulaEngine } from "../../lib/formulaEngine";
@@ -42,6 +53,7 @@ interface FlowDiagramNodeData extends Record<string, unknown> {
   valueKind: "scalar" | "confidence_interval" | "sampled_distribution";
   interpretation?: "normal" | "uniform" | "lognormal" | "auto";
   isSelected: boolean;
+  focusState: GraphFocusState;
   onSelect: () => void;
   onEdit: (value: string) => void;
 }
@@ -72,6 +84,10 @@ interface PlainNodeData extends Record<string, unknown> {
 interface PlainNode extends LayoutNode {
   data: PlainNodeData;
   type: "formula" | "value";
+}
+
+interface FocusedLayoutEdge extends LayoutEdge {
+  focusState: GraphFocusState;
 }
 
 // ── Build plain elements from dependency graph ──────────────────────────────
@@ -231,23 +247,133 @@ function enrichNodes(
   selectedCell: { row: number; col: number } | null | undefined,
   onCellSelect: ((row: number, col: number) => void) | undefined,
   onEdit: (row: number, col: number, value: string) => void,
+  graphIndex: VisualGraphIndex | null,
+  selectedNodeId: string | undefined,
+  focusMode: GraphFocusMode,
+  focusScope: GraphFocusScope,
 ): FlowNode[] {
   return plainNodes.map((node) => {
     const isSelected =
       selectedCell != null &&
       selectedCell.row === node.data.row &&
       selectedCell.col === node.data.col;
+    const focusState = graphIndex
+      ? getFocusState(graphIndex, node.id, selectedNodeId, focusMode, focusScope)
+      : "neutral";
 
     return {
       ...node,
       data: {
         ...node.data,
         isSelected,
+        focusState,
         onSelect: () => onCellSelect?.(node.data.row, node.data.col),
         onEdit: (val: string) => onEdit(node.data.row, node.data.col, val),
       } as FlowDiagramNodeData,
     } as FlowNode;
   });
+}
+
+function getSelectedNodeId(
+  selectedCell: { row: number; col: number } | null | undefined,
+): string | undefined {
+  if (!selectedCell) return undefined;
+  return `0:${selectedCell.row}:${selectedCell.col}`;
+}
+
+function createGraphIndex(
+  nodes: PlainNode[],
+  edges: LayoutEdge[],
+): VisualGraphIndex {
+  return buildVisualGraphIndex({
+    nodes: nodes.map((node) => ({ id: node.id })),
+    edges: edges.map((edge) => ({
+      sourceId: edge.source,
+      targetId: edge.target,
+    })),
+  });
+}
+
+function enrichEdges(
+  edges: LayoutEdge[],
+  graphIndex: VisualGraphIndex | null,
+  selectedNodeId: string | undefined,
+  focusMode: GraphFocusMode,
+  focusScope: GraphFocusScope,
+): FocusedLayoutEdge[] {
+  return edges.map((edge) => {
+    const focusState = graphIndex
+      ? getEdgeFocusState(
+          graphIndex,
+          edge.source,
+          edge.target,
+          selectedNodeId,
+          focusMode,
+          focusScope,
+        )
+      : "neutral";
+
+    return {
+      ...edge,
+      animated:
+        focusState === "neutral"
+          ? edge.animated
+          : focusState === "upstream" || focusState === "downstream",
+      focusState,
+    };
+  });
+}
+
+function getValueKindLabel(
+  valueKind: FlowDiagramNodeData["valueKind"],
+): string {
+  switch (valueKind) {
+    case "confidence_interval":
+      return "confidence interval";
+    case "sampled_distribution":
+      return "sampled distribution";
+    case "scalar":
+      return "scalar";
+  }
+}
+
+function getSelectedNodeInspectorDetails(
+  nodes: FlowNode[],
+  edges: FocusedLayoutEdge[],
+  selectedNodeId: string | undefined,
+):
+  | {
+      node: FlowNode;
+      role: string;
+      directInputs: FlowNode[];
+      directOutputs: FlowNode[];
+    }
+  | null {
+  if (!selectedNodeId) return null;
+
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const node = nodeById.get(selectedNodeId);
+  if (!node) return null;
+
+  const directInputs = edges
+    .filter((edge) => edge.target === selectedNodeId)
+    .map((edge) => nodeById.get(edge.source))
+    .filter((input): input is FlowNode => input !== undefined);
+  const directOutputs = edges
+    .filter((edge) => edge.source === selectedNodeId)
+    .map((edge) => nodeById.get(edge.target))
+    .filter((output): output is FlowNode => output !== undefined);
+
+  const role =
+    directInputs.length === 0 && directOutputs.length > 0
+      ? "input"
+      : directInputs.length > 0 && directOutputs.length === 0
+        ? "output"
+        : directInputs.length > 0 && directOutputs.length > 0
+          ? "transform"
+          : "standalone";
+
+  return { node, role, directInputs, directOutputs };
 }
 
 // ── CSS class helpers ───────────────────────────────────────────────────────
@@ -267,6 +393,20 @@ function getDistributionClass(data: FlowDiagramNodeData): string {
   }
   if (data.valueKind === "sampled_distribution") return styles.nodeDistSampled;
   return "";
+}
+
+function getNodeFocusClass(data: FlowDiagramNodeData): string {
+  switch (data.focusState) {
+    case "upstream":
+      return styles.nodeFocusUpstream;
+    case "downstream":
+      return styles.nodeFocusDownstream;
+    case "unrelated":
+      return styles.nodeFocusUnrelated;
+    case "selected":
+    case "neutral":
+      return "";
+  }
 }
 
 function getSparklineProps(data: FlowDiagramNodeData): {
@@ -339,6 +479,7 @@ const FlowNodeView: React.FC<{
   const dragStart = useRef({ x: 0, y: 0, nodeX: 0, nodeY: 0 });
   const hasMoved = useRef(false);
   const distClass = getDistributionClass(data);
+  const focusClass = getNodeFocusClass(data);
   const sparkline = getSparklineProps(data);
   const isFormula = data.type === "formula";
 
@@ -347,6 +488,7 @@ const FlowNodeView: React.FC<{
     data.isSelected ? styles.nodeSelected : "",
     dragging ? styles.nodeDragging : "",
     distClass,
+    focusClass,
   ]
     .filter(Boolean)
     .join(" ");
@@ -438,10 +580,66 @@ const FlowNodeView: React.FC<{
   );
 };
 
+const RelationshipList: React.FC<{
+  label: string;
+  nodes: FlowNode[];
+}> = ({ label, nodes }) => (
+  <div className={styles.inspectorRelationGroup}>
+    <span className={styles.inspectorRelationLabel}>{label}</span>
+    {nodes.length > 0 ? (
+      <div className={styles.inspectorChips}>
+        {nodes.map((node) => (
+          <span key={node.id} className={styles.inspectorChip}>
+            {node.data.address}
+          </span>
+        ))}
+      </div>
+    ) : (
+      <span className={styles.inspectorEmpty}>none</span>
+    )}
+  </div>
+);
+
+const SelectedNodeInspector: React.FC<{
+  details: NonNullable<ReturnType<typeof getSelectedNodeInspectorDetails>>;
+}> = ({ details }) => {
+  const { node, role, directInputs, directOutputs } = details;
+  const { data } = node;
+
+  return (
+    <aside className={styles.nodeInspector} aria-label="Selected node inspector">
+      <div className={styles.inspectorHeader}>
+        <span className={styles.inspectorAddress}>{data.address}</span>
+        <span className={styles.inspectorRole}>{role}</span>
+      </div>
+      <div className={styles.inspectorRows}>
+        <div className={styles.inspectorRow}>
+          <span className={styles.inspectorLabel}>Value</span>
+          <span className={styles.inspectorValue}>{data.value}</span>
+        </div>
+        {data.formula && (
+          <div className={styles.inspectorRow}>
+            <span className={styles.inspectorLabel}>Formula</span>
+            <span className={styles.inspectorFormula}>{data.formula}</span>
+          </div>
+        )}
+        <div className={styles.inspectorMetaRow}>
+          <span>{getValueKindLabel(data.valueKind)}</span>
+          {data.interpretation && <span>{data.interpretation}</span>}
+        </div>
+      </div>
+      <div className={styles.inspectorRelations}>
+        <RelationshipList label="Direct inputs" nodes={directInputs} />
+        <RelationshipList label="Direct outputs" nodes={directOutputs} />
+      </div>
+    </aside>
+  );
+};
+
 // ── Edge SVG component ──────────────────────────────────────────────────────
 
 const EdgePath: React.FC<{
-  edge: LayoutEdge;
+  edge: FocusedLayoutEdge;
   nodes: FlowNode[];
 }> = ({ edge, nodes }) => {
   const source = nodes.find((n) => n.id === edge.source);
@@ -457,15 +655,29 @@ const EdgePath: React.FC<{
   const dx = Math.abs(x2 - x1) * 0.5;
 
   const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+  const focusClass =
+    edge.focusState === "upstream"
+      ? styles.edgeFocusUpstream
+      : edge.focusState === "downstream"
+        ? styles.edgeFocusDownstream
+        : edge.focusState === "unrelated"
+          ? styles.edgeFocusUnrelated
+          : "";
+  const className = [
+    edge.animated ? styles.animatedEdge : "",
+    focusClass,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <path
       d={d}
       fill="none"
-      stroke="var(--resize-handle-active)"
+      stroke="currentColor"
       strokeWidth="1.5"
       strokeDasharray={edge.animated ? "6 4" : undefined}
-      className={edge.animated ? styles.animatedEdge : undefined}
+      className={className || undefined}
     />
   );
 };
@@ -528,6 +740,7 @@ const EmptyStateIcon: React.FC = () => (
 
 const MIN_ZOOM = 0.15;
 const MAX_ZOOM = 2;
+const TOP_CONTROL_CLEARANCE = 64;
 
 interface ViewState {
   x: number;
@@ -537,6 +750,18 @@ interface ViewState {
 
 // Large fixed canvas size — nodes live in a coordinate space starting at 0,0
 const CANVAS_SIZE = 8000;
+
+const focusModeOptions: Array<{ value: GraphFocusMode; label: string }> = [
+  { value: "lineage", label: "Lineage" },
+  { value: "impact", label: "Impact" },
+  { value: "both", label: "Both" },
+  { value: "full", label: "Full" },
+];
+
+const focusScopeOptions: Array<{ value: GraphFocusScope; label: string }> = [
+  { value: "direct", label: "Direct" },
+  { value: "all", label: "All" },
+];
 
 function fitToView(
   nodes: FlowNode[],
@@ -572,7 +797,10 @@ function fitToView(
   );
 
   const x = (containerWidth - contentW * zoom) / 2 - minX * zoom;
-  const y = (containerHeight - contentH * zoom) / 2 - minY * zoom;
+  const y =
+    TOP_CONTROL_CLEARANCE +
+    (containerHeight - TOP_CONTROL_CLEARANCE - contentH * zoom) / 2 -
+    minY * zoom;
 
   return { x, y, zoom };
 }
@@ -585,8 +813,14 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
 }) => {
   const { formulaEngine, updateCell } = useContext(SpreadsheetContext);
   const [nodes, setNodes] = useState<FlowNode[]>([]);
-  const [edges, setEdges] = useState<LayoutEdge[]>([]);
+  const [edges, setEdges] = useState<FocusedLayoutEdge[]>([]);
   const [isEmpty, setIsEmpty] = useState(true);
+  const [focusMode, setFocusMode] = useState<GraphFocusMode>("full");
+  const [focusScope, setFocusScope] = useState<GraphFocusScope>("all");
+  const [focusCounts, setFocusCounts] = useState({
+    upstream: 0,
+    downstream: 0,
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewState>({ x: 0, y: 0, zoom: 1 });
@@ -594,9 +828,14 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
   const panStart = useRef({ x: 0, y: 0, viewX: 0, viewY: 0 });
 
   const plainNodesRef = useRef<PlainNode[]>([]);
+  const plainEdgesRef = useRef<LayoutEdge[]>([]);
+  const graphIndexRef = useRef<VisualGraphIndex | null>(null);
   const selectedCellRef = useRef(selectedCell);
   const onCellSelectRef = useRef(onCellSelect);
   const updateCellRef = useRef(updateCell);
+  const focusModeRef = useRef<GraphFocusMode>(focusMode);
+  const focusScopeRef = useRef<GraphFocusScope>(focusScope);
+  const defaultedSelectedNodeRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     selectedCellRef.current = selectedCell;
@@ -607,6 +846,27 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
   useEffect(() => {
     updateCellRef.current = updateCell;
   }, [updateCell]);
+  useEffect(() => {
+    focusModeRef.current = focusMode;
+  }, [focusMode]);
+  useEffect(() => {
+    focusScopeRef.current = focusScope;
+  }, [focusScope]);
+
+  const resolveFocusMode = useCallback(
+    (graphIndex: VisualGraphIndex, selectedNodeId: string | undefined) => {
+      if (defaultedSelectedNodeRef.current !== selectedNodeId) {
+        defaultedSelectedNodeRef.current = selectedNodeId;
+        const defaultMode = getDefaultFocusMode(graphIndex, selectedNodeId);
+        focusModeRef.current = defaultMode;
+        setFocusMode(defaultMode);
+        return defaultMode;
+      }
+
+      return focusModeRef.current;
+    },
+    [],
+  );
 
   // ── Refresh graph data ──────────────────────────────────────────────────
 
@@ -628,24 +888,45 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
 
     if (plain.length === 0) {
       plainNodesRef.current = [];
+      plainEdgesRef.current = [];
+      graphIndexRef.current = null;
       setNodes([]);
       setEdges([]);
+      setFocusCounts({ upstream: 0, downstream: 0 });
       setIsEmpty(true);
       return;
     }
 
     const layouted = getLayoutedNodes(plain, newEdges);
+    const graphIndex = createGraphIndex(layouted, newEdges);
+    const selectedNodeId = getSelectedNodeId(selectedCellRef.current);
+    const nextFocusMode = resolveFocusMode(graphIndex, selectedNodeId);
     plainNodesRef.current = layouted;
+    plainEdgesRef.current = newEdges;
+    graphIndexRef.current = graphIndex;
 
     const enriched = enrichNodes(
       layouted,
       selectedCellRef.current,
       onCellSelectRef.current,
       (r, c, v) => updateCellRef.current(r, c, v),
+      graphIndex,
+      selectedNodeId,
+      nextFocusMode,
+      focusScopeRef.current,
     );
 
     setNodes(enriched);
-    setEdges(newEdges);
+    setEdges(
+      enrichEdges(
+        newEdges,
+        graphIndex,
+        selectedNodeId,
+        nextFocusMode,
+        focusScopeRef.current,
+      ),
+    );
+    setFocusCounts(getFocusCounts(graphIndex, selectedNodeId, focusScopeRef.current));
     setIsEmpty(false);
 
     // Fit to view after layout
@@ -655,7 +936,7 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
         setView(fitToView(enriched, rect.width, rect.height));
       }
     });
-  }, [formulaEngine]);
+  }, [formulaEngine, resolveFocusMode]);
 
   // ── Subscribe to formula engine ─────────────────────────────────────────
 
@@ -672,6 +953,11 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
 
   useEffect(() => {
     if (plainNodesRef.current.length === 0) return;
+    const graphIndex = graphIndexRef.current;
+    if (!graphIndex) return;
+
+    const selectedNodeId = getSelectedNodeId(selectedCell);
+    const nextFocusMode = resolveFocusMode(graphIndex, selectedNodeId);
 
     setNodes(
       enrichNodes(
@@ -679,9 +965,82 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
         selectedCell,
         onCellSelect,
         (r, c, v) => updateCellRef.current(r, c, v),
+        graphIndex,
+        selectedNodeId,
+        nextFocusMode,
+        focusScopeRef.current,
       ),
     );
-  }, [selectedCell, onCellSelect]);
+    setEdges(
+      enrichEdges(
+        plainEdgesRef.current,
+        graphIndex,
+        selectedNodeId,
+        nextFocusMode,
+        focusScopeRef.current,
+      ),
+    );
+    setFocusCounts(getFocusCounts(graphIndex, selectedNodeId, focusScopeRef.current));
+  }, [selectedCell, onCellSelect, resolveFocusMode]);
+
+  useEffect(() => {
+    if (plainNodesRef.current.length === 0) return;
+    const graphIndex = graphIndexRef.current;
+    if (!graphIndex) return;
+
+    const selectedNodeId = getSelectedNodeId(selectedCellRef.current);
+    setNodes(
+      enrichNodes(
+        plainNodesRef.current,
+        selectedCellRef.current,
+        onCellSelectRef.current,
+        (r, c, v) => updateCellRef.current(r, c, v),
+        graphIndex,
+        selectedNodeId,
+        focusMode,
+        focusScopeRef.current,
+      ),
+    );
+    setEdges(
+      enrichEdges(
+        plainEdgesRef.current,
+        graphIndex,
+        selectedNodeId,
+        focusMode,
+        focusScopeRef.current,
+      ),
+    );
+  }, [focusMode]);
+
+  useEffect(() => {
+    if (plainNodesRef.current.length === 0) return;
+    const graphIndex = graphIndexRef.current;
+    if (!graphIndex) return;
+
+    const selectedNodeId = getSelectedNodeId(selectedCellRef.current);
+    setNodes(
+      enrichNodes(
+        plainNodesRef.current,
+        selectedCellRef.current,
+        onCellSelectRef.current,
+        (r, c, v) => updateCellRef.current(r, c, v),
+        graphIndex,
+        selectedNodeId,
+        focusModeRef.current,
+        focusScope,
+      ),
+    );
+    setEdges(
+      enrichEdges(
+        plainEdgesRef.current,
+        graphIndex,
+        selectedNodeId,
+        focusModeRef.current,
+        focusScope,
+      ),
+    );
+    setFocusCounts(getFocusCounts(graphIndex, selectedNodeId, focusScope));
+  }, [focusScope]);
 
   // ── Pan handlers ────────────────────────────────────────────────────────
 
@@ -750,6 +1109,16 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
     setView(fitToView(nodes, rect.width, rect.height));
   }, [nodes]);
 
+  const handleFocusModeChange = useCallback((mode: GraphFocusMode) => {
+    focusModeRef.current = mode;
+    setFocusMode(mode);
+  }, []);
+
+  const handleFocusScopeChange = useCallback((scope: GraphFocusScope) => {
+    focusScopeRef.current = scope;
+    setFocusScope(scope);
+  }, []);
+
   // ── Zoom controls ─────────────────────────────────────────────────────
 
   const handleZoomIn = useCallback(() => {
@@ -807,6 +1176,15 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
       edges.map((edge) => <EdgePath key={edge.id} edge={edge} nodes={nodes} />),
     [edges, nodes],
   );
+  const inspectorDetails = useMemo(
+    () =>
+      getSelectedNodeInspectorDetails(
+        nodes,
+        edges,
+        getSelectedNodeId(selectedCell),
+      ),
+    [edges, nodes, selectedCell],
+  );
 
   // ── Render ────────────────────────────────────────────────────────────
 
@@ -825,6 +1203,42 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
 
   return (
     <div className={styles.container}>
+      <div className={styles.focusToolbar} aria-label="Dependency focus mode">
+        <div className={styles.focusModeGroup}>
+          {focusModeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.focusModeButton} ${
+                focusMode === option.value ? styles.focusModeButtonActive : ""
+              }`}
+              onClick={() => handleFocusModeChange(option.value)}
+              aria-pressed={focusMode === option.value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <div className={styles.focusScopeGroup} aria-label="Dependency scope">
+          {focusScopeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${styles.focusScopeButton} ${
+                focusScope === option.value ? styles.focusScopeButtonActive : ""
+              }`}
+              onClick={() => handleFocusScopeChange(option.value)}
+              aria-pressed={focusScope === option.value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <span className={styles.focusCounts}>
+          {focusCounts.upstream} upstream · {focusCounts.downstream} downstream
+        </span>
+      </div>
+      {inspectorDetails && <SelectedNodeInspector details={inspectorDetails} />}
       <div
         ref={containerRef}
         className={styles.canvas}

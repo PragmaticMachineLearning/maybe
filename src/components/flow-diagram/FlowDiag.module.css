@@ -40,6 +40,7 @@
     position: absolute;
     overflow: visible;
     pointer-events: none;
+    color: var(--resize-handle-active);
 }
 
 @keyframes dashFlow {
@@ -50,6 +51,226 @@
 
 .animatedEdge {
     animation: dashFlow 0.8s linear infinite;
+}
+
+.edgeFocusUpstream {
+    color: var(--dist-normal-accent);
+    stroke-width: 2;
+}
+
+.edgeFocusDownstream {
+    color: var(--dist-sampled-accent);
+    stroke-width: 2;
+}
+
+.edgeFocusUnrelated {
+    color: var(--border-color);
+    opacity: 0.22;
+}
+
+/* ── Focus controls ──────────────────────────────────────────────────── */
+
+.focusToolbar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100% - 24px);
+    padding: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 6px);
+    background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+    box-shadow: var(--shadow-sm, 0 1px 2px var(--shadow));
+}
+
+.focusModeGroup {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.focusScopeGroup {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding-left: 8px;
+    border-left: 1px solid var(--border-color);
+}
+
+.focusModeButton,
+.focusScopeButton {
+    min-width: 58px;
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.focusModeButton:hover,
+.focusScopeButton:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.focusModeButtonActive,
+.focusScopeButtonActive {
+    background: var(--resize-handle-bg);
+    color: var(--text-primary);
+}
+
+.focusScopeButton {
+    min-width: 48px;
+}
+
+.focusCounts {
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ── Selected node inspector ─────────────────────────────────────────── */
+
+.nodeInspector {
+    position: absolute;
+    top: 58px;
+    right: 12px;
+    z-index: 6;
+    width: min(330px, calc(100% - 24px));
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 6px);
+    background: color-mix(in srgb, var(--bg-surface) 94%, transparent);
+    box-shadow: var(--shadow-md, 0 4px 12px var(--shadow));
+}
+
+.inspectorHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.inspectorAddress {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.inspectorRole {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.inspectorRows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inspectorRow {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 8px;
+    align-items: baseline;
+}
+
+.inspectorLabel,
+.inspectorRelationLabel {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.inspectorValue,
+.inspectorFormula {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inspectorFormula {
+    font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+    );
+}
+
+.inspectorMetaRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.inspectorMetaRow span {
+    padding: 2px 7px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.inspectorRelations {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.inspectorRelationGroup {
+    min-width: 0;
+}
+
+.inspectorChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 5px;
+}
+
+.inspectorChip {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-muted);
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.inspectorEmpty {
+    display: block;
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: 12px;
 }
 
 /* ── Zoom controls ───────────────────────────────────────────────────── */
@@ -156,6 +377,24 @@
     box-shadow:
         0 0 0 2px var(--resize-handle-bg),
         var(--shadow-md, 0 4px 12px var(--shadow));
+}
+
+.nodeFocusUpstream {
+    border-color: var(--dist-normal-border);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--dist-normal-accent) 55%, transparent),
+        var(--shadow-sm, 0 1px 2px var(--shadow));
+}
+
+.nodeFocusDownstream {
+    border-color: var(--dist-sampled-border);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--dist-sampled-accent) 55%, transparent),
+        var(--shadow-sm, 0 1px 2px var(--shadow));
+}
+
+.nodeFocusUnrelated {
+    opacity: 0.32;
 }
 
 /* ── Formula node ────────────────────────────────────────────────────── */

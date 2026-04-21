@@ -13,7 +13,7 @@ test("edits a spreadsheet cell directly", async ({ page }) => {
   await editor.press("Enter");
 
   await expect(firstCell).toHaveText("456");
-  await expect(page.getByPlaceholder("Enter formula or value...")).toHaveValue(
+  await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
     "456",
   );
 });
@@ -43,31 +43,36 @@ test("opens the local AI copilot and reviews a mock diff", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("button", { name: /Sage/i })).toBeVisible();
-  await expect(page.getByLabel("Sage")).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "Sage" })).toHaveCount(
+    0,
+  );
 
   await page.getByRole("button", { name: /Sage/i }).click();
-  await expect(page.getByLabel("Sage")).toBeVisible();
-  await expect(page.getByLabel("Diff preview")).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Sage" })).toBeVisible();
 
   await page
-    .getByLabel("How can I assist?")
+    .getByPlaceholder("Describe what to change…")
     .fill("Add 95% confidence interval outputs");
-  await page.getByRole("button", { name: "Preview diff" }).click();
+  await page.getByRole("button", { name: "Send" }).click();
 
   await expect(page.getByText("I prepared a local preview")).toContainText(
     "Add 95% confidence interval outputs",
   );
-  await expect(page.getByRole("button", { name: "Confirm" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Apply \d+ changes/ }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Dismiss" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Confirm" }).click();
-  await expect(page.getByText("No sheet changes were applied")).toBeVisible();
+  await page.getByRole("button", { name: /Apply \d+ changes/ }).click();
+  await expect(page.getByText("Applied")).toBeVisible();
 });
 
 test("starts with workstation side panels collapsed", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("button", { name: /Sage/i })).toBeVisible();
-  await expect(page.getByLabel("Sage")).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "Sage" })).toHaveCount(
+    0,
+  );
   await expect(page.locator(".echarts-for-react")).toHaveCount(0);
 });
