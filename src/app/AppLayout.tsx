@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { AICopilotPanel } from "../components/ai/AICopilotPanel";
 import { FlowDiag } from "../components/flow-diagram/FlowDiag";
-import { FormulaBar } from "../components/formula-bar/FormulaBar";
 import { Spreadsheet } from "../components/spreadsheet/Spreadsheet";
 import { Toolbar } from "../components/toolbar/Toolbar";
+import { useFormulaBar } from "../hooks/useFormulaBar";
 import styles from "./AppLayout.module.css";
 import type { SelectedCell } from "./analysisState";
 
@@ -17,7 +17,6 @@ interface AppLayoutProps {
   onToggleFlowDiag: () => void;
   onToggleAiPanel: () => void;
   onCloseAiPanel: () => void;
-  onFormulaSubmit: (row: number, col: number, formula: string) => void;
 }
 
 const MIN_SHEET_PX = 200;
@@ -32,8 +31,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onToggleFlowDiag,
   onToggleAiPanel,
   onCloseAiPanel,
-  onFormulaSubmit,
 }) => {
+  const { formulaValue, onFormulaChange, onFormulaCommit, onFormulaCancel } =
+    useFormulaBar(selectedCell);
   // sheetWidth is stored in pixels; null means "not yet measured / use default 50%"
   const [sheetWidth, setSheetWidth] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -90,13 +90,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onToggleFlowDiag={onToggleFlowDiag}
           aiPanelOpen={aiPanelOpen}
           onToggleAiPanel={onToggleAiPanel}
+          selectedCell={selectedCell}
+          formulaValue={formulaValue}
+          onFormulaChange={onFormulaChange}
+          onFormulaCommit={onFormulaCommit}
+          onFormulaCancel={onFormulaCancel}
         />
       </header>
-
-      <FormulaBar
-        selectedCell={selectedCell}
-        onFormulaSubmit={onFormulaSubmit}
-      />
 
       <div
         className={`${styles.workspace} ${isDragging ? styles.workspaceDragging : ""}`}

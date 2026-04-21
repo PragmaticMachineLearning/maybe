@@ -1,201 +1,349 @@
+/* ── Unified top bar ─────────────────────────────────────────────────── */
+
 .toolbar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 0;
-    padding: 0;
-    flex-wrap: wrap;
-    row-gap: 8px;
+    gap: 0;
+    padding: 6px 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 10px);
+    box-shadow: var(--shadow-sm, 0 1px 3px var(--shadow));
     width: 100%;
     box-sizing: border-box;
     min-width: 0;
+    height: 44px;
 }
 
-.toolbarBtn {
+/* ── Shared control styles ───────────────────────────────────────────── */
+
+.iconBtn {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: var(--text-muted);
     cursor: pointer;
-    font-size: 14px;
+    flex-shrink: 0;
+    transition:
+        background-color 0.12s ease,
+        color 0.12s ease;
+    box-shadow: none;
+}
+
+.iconBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    box-shadow: none;
+}
+
+.iconBtn:focus-visible {
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: -2px;
+}
+
+.iconBtnActive {
+    background: var(--resize-handle-bg);
+    color: var(--resize-handle-active);
+}
+
+.iconBtnActive:hover {
+    background: var(--resize-handle-bg);
+    color: var(--resize-handle-active);
+    box-shadow: none;
+}
+
+.textBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
     font-weight: 500;
     font-family: inherit;
-    box-shadow: 0 1px 3px var(--shadow);
-    transition: all 0.2s ease;
-    outline: none;
-    width: 40px;
-    height: 40px;
+    transition:
+        background-color 0.12s ease,
+        color 0.12s ease;
+    white-space: nowrap;
+    box-shadow: none;
 }
 
-.toolbarBtn:hover {
-    background-color: var(--bg-hover);
-    border-color: var(--border-header);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px var(--shadow-hover);
+.textBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    box-shadow: none;
 }
 
-.toolbarBtn:focus-visible {
-    outline: 2px solid var(--resize-handle-active);
-    outline-offset: 2px;
+.textBtnActive {
+    background: var(--bg-hover);
+    color: var(--text-primary);
 }
 
-.toolbarBtnActive {
-    background-color: var(--resize-handle-active);
-    color: white;
+/* ── Separator ───────────────────────────────────────────────────────── */
+
+.separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: 0 6px;
+    flex-shrink: 0;
 }
 
-.toolbarBtnActive:hover {
-    background-color: var(--resize-handle-active);
-    border-color: var(--resize-handle-active);
+/* ── Left group ──────────────────────────────────────────────────────── */
+
+.leftGroup {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
 }
+
+/* ── Examples dropdown ───────────────────────────────────────────────── */
 
 .examplesWrapper {
     position: relative;
 }
 
-.examplesBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    font-family: inherit;
-    box-shadow: 0 1px 3px var(--shadow);
-    transition: all 0.2s ease;
-    outline: none;
-    height: 40px;
-}
-
-.examplesBtn:hover {
-    background-color: var(--bg-hover);
-    border-color: var(--border-header);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px var(--shadow-hover);
-}
-
-.examplesBtn:focus-visible {
-    outline: 2px solid var(--resize-handle-active);
-    outline-offset: 2px;
-}
-
 .dropdown {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 8px);
     left: 0;
-    margin-top: 4px;
-    background-color: var(--bg-surface);
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: var(--radius-md, 10px);
+    box-shadow: var(--shadow-lg, 0 12px 32px var(--shadow));
     z-index: 1200;
-    min-width: 240px;
-    padding: 6px 0;
+    min-width: 260px;
+    padding: 4px;
+    animation: dropdownIn 0.12s ease-out;
+}
+
+@keyframes dropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dropdownHeader {
-    padding: 6px 12px;
-    font-weight: bold;
+    padding: 8px 10px 6px;
+    font-weight: 600;
     font-size: 11px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .dropdownItem {
     width: 100%;
-    padding: 8px 12px;
+    padding: 8px 10px;
     border: none;
-    background: none;
+    background: transparent;
     text-align: left;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-primary);
+    border-radius: var(--radius-sm, 6px);
+    box-shadow: none;
 }
 
 .dropdownItem:hover {
-    background-color: var(--bg-hover);
+    background: var(--bg-hover);
+    box-shadow: none;
 }
 
 .dropdownItemName {
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .dropdownItemDesc {
     font-size: 11px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     margin-top: 2px;
 }
 
 .dropdownFooter {
-    padding: 8px 12px 4px;
+    padding: 6px 10px 4px;
     font-size: 11px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
 }
 
-.panelToggles {
-    margin-left: auto;
+/* ── Center: formula bar ─────────────────────────────────────────────── */
+
+.formulaGroup {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 6px;
-    min-width: 0;
+    gap: 0;
+    margin: 0 10px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid transparent;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    height: 32px;
+    overflow: hidden;
 }
 
-.panelToggle {
+.formulaGroup:focus-within {
+    border-color: var(--resize-handle-active);
+    box-shadow: 0 0 0 2px var(--resize-handle-bg);
+}
+
+.cellRef {
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+    );
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-color);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    user-select: none;
+    letter-spacing: 0.02em;
+}
+
+.formulaInput {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+    );
+    outline: none;
+    box-shadow: none;
+}
+
+.formulaInput::placeholder {
+    color: var(--text-muted);
+    font-family: inherit;
+}
+
+.formulaInput:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* ── Right group ─────────────────────────────────────────────────────── */
+
+.rightGroup {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+/* ── Sage button ─────────────────────────────────────────────────────── */
+
+.sageBtn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-surface);
-    color: var(--text-muted);
+    padding: 5px 12px;
+    border: none;
+    border-radius: var(--radius-full, 999px);
+    background: var(--resize-handle-bg);
+    color: var(--resize-handle-active);
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     font-family: inherit;
-    box-shadow: 0 1px 3px var(--shadow);
-    transition: all 0.2s ease;
-    outline: none;
-    height: 40px;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
+    transition:
+        background-color 0.12s ease,
+        box-shadow 0.12s ease;
+    white-space: nowrap;
+    height: 30px;
+    box-shadow: none;
 }
 
-.panelToggle:hover,
-.panelToggle:focus-visible {
-    color: var(--text-primary);
-    background-color: var(--bg-hover);
-    border-color: var(--border-header);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px var(--shadow-hover);
+.sageBtn:hover {
+    background: color-mix(
+        in srgb,
+        var(--resize-handle-bg) 80%,
+        var(--resize-handle-active) 20%
+    );
+    box-shadow: none;
 }
 
-.panelToggle:focus-visible {
-    outline: 2px solid var(--resize-handle-active);
-    outline-offset: 2px;
+.sageBtnActive {
+    background: var(--resize-handle-active);
+    color: white;
 }
 
-.panelToggleActive {
-    color: var(--resize-handle-active);
-    background-color: var(--resize-handle-bg);
-    border-color: var(--dist-normal-border);
+.sageBtnActive:hover {
+    background: var(--resize-handle-active);
+    box-shadow: none;
 }
 
-.panelToggleActive:hover {
-    color: var(--resize-handle-active);
-    background-color: var(--resize-handle-bg);
-    border-color: var(--dist-normal-border);
-    box-shadow: 0 2px 6px var(--shadow-hover);
-}
+/* ── Responsive ──────────────────────────────────────────────────────── */
 
-.themeToggleWrapper {
-    display: flex;
-    align-items: center;
+@media (max-width: 640px) {
+    .toolbar {
+        flex-wrap: wrap;
+        height: auto;
+        gap: 6px;
+        padding: 6px;
+    }
+
+    .leftGroup,
+    .rightGroup {
+        flex-shrink: 0;
+    }
+
+    .formulaGroup {
+        order: 3;
+        flex-basis: 100%;
+        margin: 0;
+    }
+
+    .separator {
+        display: none;
+    }
+
+    .sageBtn span {
+        display: none;
+    }
+
+    .sageBtn {
+        width: 30px;
+        padding: 0;
+        justify-content: center;
+    }
 }

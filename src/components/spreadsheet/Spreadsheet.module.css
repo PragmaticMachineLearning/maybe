@@ -1,12 +1,14 @@
+/* ── Container ───────────────────────────────────────────────────────── */
+
 .tableContainer {
     position: relative;
     overflow: auto;
-    height: calc(100vh - 132px);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    height: 100%;
     background: var(--bg-surface);
-    box-shadow: 0 18px 42px var(--shadow);
+    border-right: 1px solid var(--border-color);
 }
+
+/* ── Table ────────────────────────────────────────────────────────────── */
 
 .table {
     border-collapse: collapse;
@@ -16,19 +18,21 @@
     table-layout: fixed;
 }
 
+/* ── Headers ─────────────────────────────────────────────────────────── */
+
 .header {
     background-color: var(--bg-header);
-    border: 1px solid var(--border-header);
-    border-right: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     padding: 4px 8px;
     text-align: center;
-    font-weight: normal;
-    font-size: 12px;
+    font-weight: 500;
+    font-size: 11px;
     position: sticky;
     top: 0;
     z-index: 1;
-    color: var(--text-secondary);
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
 }
 
 .stickyHeader {
@@ -40,14 +44,16 @@
 .headerCell {
     padding: 2px 4px;
     text-align: center;
-    font-weight: normal;
-    font-size: 12px;
+    font-weight: 500;
+    font-size: 11px;
     height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
+    color: var(--text-muted);
 }
+
+/* ── Resize handle ───────────────────────────────────────────────────── */
 
 .resizeHandle {
     position: absolute;
@@ -60,17 +66,16 @@
     user-select: none;
     touch-action: none;
     border-right: 2px solid transparent;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.15s ease;
     z-index: 2;
 }
 
-.tableBody tr:nth-child(even) {
-    background-color: var(--bg-hover);
-}
+/* ── Cells ────────────────────────────────────────────────────────────── */
 
 .cell {
     padding: 0;
-    border: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     position: relative;
 }
 
@@ -104,7 +109,7 @@
 }
 
 .welcomeIcon {
-    opacity: 0.3;
+    opacity: 0.25;
     margin-bottom: 4px;
 }
 
@@ -123,13 +128,7 @@
 }
 
 .welcomeSubtitle code {
-    font-family: var(
-        --font-mono,
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        monospace
-    );
+    font-family: var(--font-mono);
     background: var(--bg-muted);
     padding: 2px 6px;
     border-radius: 4px;

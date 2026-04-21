@@ -5,35 +5,37 @@
     line-height: 1.5;
     font-weight: 400;
 
-    /* Light theme variables */
+    /* Light theme */
     --bg-primary: #f8faf9;
-    --bg-secondary: #eff3f1;
+    --bg-secondary: #f0f3f1;
     --bg-surface: #ffffff;
-    --bg-header: #eaefed;
+    --bg-header: #f5f7f6;
     --bg-hover: #f3f7f5;
-    --text-primary: #1f2d2d;
-    --text-secondary: #2f3a3a;
-    --text-muted: #6a7a78;
-    --border-color: #cedad6;
-    --border-header: #b9c7c2;
-    --shadow: rgba(15, 31, 31, 0.08);
-    --shadow-hover: rgba(15, 31, 31, 0.12);
+    --bg-muted: #f0f4f2;
+    --text-primary: #1a2626;
+    --text-secondary: #3a4a48;
+    --text-muted: #7a8a88;
+    --text-tertiary: #8a9a97;
+    --border-color: #e2e8e6;
+    --border-header: #d5ddd9;
+    --shadow: rgba(15, 31, 31, 0.06);
+    --shadow-hover: rgba(15, 31, 31, 0.1);
     --resize-handle: #c7d9d4;
     --resize-handle-active: #4e8376;
-    --resize-handle-bg: rgba(78, 131, 118, 0.14);
-    --text-tertiary: #8a9a97;
-    --bg-muted: #f0f4f2;
-    --dist-normal-bg: rgba(78, 131, 118, 0.08);
-    --dist-normal-border: rgba(78, 131, 118, 0.5);
+    --resize-handle-bg: rgba(78, 131, 118, 0.12);
+
+    /* Distribution colors */
+    --dist-normal-bg: rgba(78, 131, 118, 0.07);
+    --dist-normal-border: rgba(78, 131, 118, 0.4);
     --dist-normal-accent: #4e8376;
-    --dist-lognormal-bg: rgba(182, 124, 104, 0.08);
-    --dist-lognormal-border: rgba(182, 124, 104, 0.5);
+    --dist-lognormal-bg: rgba(182, 124, 104, 0.07);
+    --dist-lognormal-border: rgba(182, 124, 104, 0.4);
     --dist-lognormal-accent: #b67c68;
-    --dist-uniform-bg: rgba(99, 102, 241, 0.08);
-    --dist-uniform-border: rgba(99, 102, 241, 0.5);
+    --dist-uniform-bg: rgba(99, 102, 241, 0.07);
+    --dist-uniform-border: rgba(99, 102, 241, 0.4);
     --dist-uniform-accent: #6366f1;
-    --dist-sampled-bg: rgba(139, 92, 246, 0.08);
-    --dist-sampled-border: rgba(139, 92, 246, 0.5);
+    --dist-sampled-bg: rgba(139, 92, 246, 0.07);
+    --dist-sampled-border: rgba(139, 92, 246, 0.4);
     --dist-sampled-accent: #8b5cf6;
 
     /* Design tokens */
@@ -42,13 +44,13 @@
     --radius-lg: 16px;
     --radius-full: 999px;
 
-    --shadow-sm: 0 1px 3px var(--shadow);
+    --shadow-sm: 0 1px 2px var(--shadow);
     --shadow-md: 0 4px 12px var(--shadow);
     --shadow-lg: 0 12px 32px var(--shadow);
 
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-    color-scheme: light dark;
+    color-scheme: light;
     color: var(--text-primary);
     background-color: var(--bg-secondary);
 
@@ -58,48 +60,48 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dark theme variables */
+/* Dark theme */
 :root.dark {
     --bg-primary: #111716;
     --bg-secondary: #0f1414;
-    --bg-surface: #141c1b;
-    --bg-header: #192321;
-    --bg-hover: #1c2927;
-    --text-primary: #edf5f2;
-    --text-secondary: #cbd8d4;
-    --text-muted: #8da09c;
-    --border-color: rgba(203, 216, 212, 0.16);
-    --border-header: rgba(203, 216, 212, 0.24);
-    --shadow: rgba(0, 0, 0, 0.32);
-    --shadow-hover: rgba(0, 0, 0, 0.42);
-    --resize-handle: #34524d;
-    --resize-handle-active: #78d2c0;
-    --resize-handle-bg: rgba(120, 210, 192, 0.15);
-    --text-tertiary: #647a75;
-    --bg-muted: #182220;
-    --dist-normal-bg: rgba(120, 210, 192, 0.12);
-    --dist-normal-border: rgba(120, 210, 192, 0.46);
-    --dist-normal-accent: #78d2c0;
-    --dist-lognormal-bg: rgba(240, 141, 141, 0.1);
-    --dist-lognormal-border: rgba(240, 141, 141, 0.42);
-    --dist-lognormal-accent: #f08d8d;
-    --dist-uniform-bg: rgba(116, 213, 196, 0.1);
-    --dist-uniform-border: rgba(116, 213, 196, 0.42);
-    --dist-uniform-accent: #74d5c4;
-    --dist-sampled-bg: rgba(167, 130, 255, 0.15);
-    --dist-sampled-border: rgba(167, 130, 255, 0.5);
-    --dist-sampled-accent: #a782ff;
+    --bg-surface: #161e1d;
+    --bg-header: #1a2423;
+    --bg-hover: #1e2a28;
+    --bg-muted: #1a2422;
+    --text-primary: #e8f0ed;
+    --text-secondary: #b8c8c4;
+    --text-muted: #6e837f;
+    --text-tertiary: #5a706b;
+    --border-color: rgba(180, 200, 196, 0.12);
+    --border-header: rgba(180, 200, 196, 0.18);
+    --shadow: rgba(0, 0, 0, 0.3);
+    --shadow-hover: rgba(0, 0, 0, 0.4);
+    --resize-handle: #2e4843;
+    --resize-handle-active: #6ec4b0;
+    --resize-handle-bg: rgba(110, 196, 176, 0.12);
+
+    --dist-normal-bg: rgba(110, 196, 176, 0.1);
+    --dist-normal-border: rgba(110, 196, 176, 0.35);
+    --dist-normal-accent: #6ec4b0;
+    --dist-lognormal-bg: rgba(230, 140, 120, 0.1);
+    --dist-lognormal-border: rgba(230, 140, 120, 0.35);
+    --dist-lognormal-accent: #e68c78;
+    --dist-uniform-bg: rgba(120, 122, 255, 0.1);
+    --dist-uniform-border: rgba(120, 122, 255, 0.35);
+    --dist-uniform-accent: #787aff;
+    --dist-sampled-bg: rgba(160, 130, 255, 0.1);
+    --dist-sampled-border: rgba(160, 130, 255, 0.35);
+    --dist-sampled-accent: #a082ff;
 
     color-scheme: dark;
 }
 
-a {
-    font-weight: 500;
-    color: #4e8376;
-    text-decoration: none;
-}
-a:hover {
-    color: #406d63;
+/* ── Resets ───────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
 body {
@@ -108,59 +110,69 @@ body {
     min-height: 100vh;
     background-color: var(--bg-secondary);
     color: var(--text-primary);
-    /* No transition for instant theme switching */
-}
-
-h1 {
-    font-size: 2em;
-    line-height: 1.1;
-    margin: 0 0 1rem;
-    color: var(--text-primary);
 }
 
 button {
     font-family: inherit;
-    background-color: var(--bg-surface);
+    font-size: inherit;
+    border: none;
+    background: none;
+    color: inherit;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+input,
+select,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
     color: var(--text-primary);
+    background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    padding: 0.5rem 0.9rem;
-    letter-spacing: 0.01em;
-    transition:
-        background-color 0.2s ease,
-        box-shadow 0.2s ease,
-        color 0.2s ease,
-        border-color 0.2s ease;
-    box-shadow: var(--shadow-sm);
+    outline: none;
 }
 
-button:hover {
-    background-color: var(--bg-hover);
-    box-shadow: var(--shadow-md);
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--resize-handle-active);
+    box-shadow: 0 0 0 2px var(--resize-handle-bg);
 }
 
-/* Spreadsheet specific styles */
-.spreadsheet-table {
-    background: var(--bg-surface);
-    border-collapse: collapse;
-    width: 100%;
+a {
+    color: var(--resize-handle-active);
+    text-decoration: none;
 }
 
-.spreadsheet-table th,
-.spreadsheet-table td {
-    border: 1px solid var(--border-color);
-    padding: 8px;
-    text-align: left;
-    color: var(--text-primary);
+a:hover {
+    text-decoration: underline;
 }
 
-.spreadsheet-table th {
-    background-color: var(--bg-header);
-    font-weight: 600;
-    color: var(--text-secondary);
+/* ── Scrollbars ──────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
 
-/* Column resize handle styles */
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-header);
+}
+
+/* ── Column resize handles (used by TanStack Table) ──────────────────── */
+
 th:hover .resizer {
     border-right: 2px solid var(--resize-handle) !important;
 }
@@ -174,66 +186,9 @@ th .resizer.isResizing {
     background-color: var(--resize-handle-bg);
 }
 
-/* Make resize handles more visible on touch devices */
 @media (hover: none) and (pointer: coarse) {
     th .resizer {
         border-right: 2px solid var(--resize-handle) !important;
         width: 8px;
     }
-}
-
-/* Distribution wizard styles */
-.distribution-wizard {
-    background: var(--bg-surface);
-    border-radius: 8px;
-    box-shadow: 0 2px 10px var(--shadow);
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-}
-
-/* Dark mode adjustments for inputs and form elements */
-:root.dark input,
-:root.dark select,
-:root.dark textarea {
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
-    border-color: var(--border-color);
-}
-
-:root.dark input:focus,
-:root.dark select:focus,
-:root.dark textarea:focus {
-    border-color: var(--resize-handle-active);
-    outline: none;
-    box-shadow: 0 0 0 2px var(--resize-handle-bg);
-}
-
-/* Scrollbar styling for dark mode */
-:root.dark ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-:root.dark ::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-}
-
-:root.dark ::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 4px;
-}
-
-:root.dark ::-webkit-scrollbar-thumb:hover {
-    background: var(--border-header);
-}
-
-/* Selective transitions for smooth UX without slowing theme switching */
-button,
-input,
-select,
-textarea {
-    transition:
-        background-color 0.1s ease,
-        border-color 0.1s ease,
-        color 0.1s ease;
 }
