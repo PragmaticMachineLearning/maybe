@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { GaussFormulaEngine } from "../lib/formulaEngine";
+import { cellAddressToA1 } from "./address";
 import type { WorkbookSnapshot } from "./workbookSnapshot";
 import {
   applyAssistantChangesToEngine,
@@ -394,6 +395,54 @@ describe("assistant proposal parsing", () => {
       expect(
         engine.getCellFormula({ sheet: 0, row: 0, col: 2 }) ?? null,
       ).toBeNull();
+    } finally {
+      engine.destroy();
+    }
+  });
+
+  it("rejects stale updates for populated cells beyond the default snapshot cutoff", () => {
+    const engine = GaussFormulaEngine.buildEmpty({
+      licenseKey: "gpl-v3",
+      language: "enGB",
+      useColumnIndex: true,
+    });
+    const targetCol = 204;
+    const targetCell = cellAddressToA1(0, targetCol);
+
+    try {
+      engine.addSheet("Sheet1");
+      engine.setSheetContent(0, [
+        Array.from({ length: 205 }, (_, col) =>
+          col === targetCol ? "=A1" : col + 1,
+        ),
+      ]);
+
+      let error: unknown;
+      try {
+        applyAssistantChangesToEngine(
+          engine,
+          { width: 205, height: 1 },
+          [
+            {
+              cell: targetCell,
+              before: "",
+              after: "=A1*2",
+              reason: "Update the far-right formula.",
+              kind: "update",
+            },
+          ],
+        );
+      } catch (caughtError) {
+        error = caughtError;
+      }
+
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe(
+        `${targetCell} has changed since Sage prepared this proposal.`,
+      );
+      expect(engine.getCellFormula({ sheet: 0, row: 0, col: targetCol })).toBe(
+        "=A1",
+      );
     } finally {
       engine.destroy();
     }

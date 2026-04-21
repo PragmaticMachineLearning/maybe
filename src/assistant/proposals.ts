@@ -146,6 +146,7 @@ export const applyAssistantChangesToEngine = (
   const currentSnapshot = buildWorkbookSnapshot({
     formulaEngine,
     selectedCell: null,
+    maxCells: dimensions.width * dimensions.height,
   });
   const validationSnapshot = {
     ...currentSnapshot,
