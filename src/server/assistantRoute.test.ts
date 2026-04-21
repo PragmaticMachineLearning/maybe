@@ -366,6 +366,10 @@ describe("assistant route", () => {
     ]);
     expect(options?.system).toContain("Always allow");
     expect(options?.system).toContain("applyCellChanges");
+    expect(options?.system).toContain(
+      "Use applyCellChanges instead of proposeCellChanges",
+    );
+    expect(options?.system).not.toContain("The user must click Apply");
 
     const tools = options?.tools as unknown as Record<
       string,

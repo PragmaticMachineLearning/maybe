@@ -204,6 +204,14 @@ test("resized Sage panel fills its allocated slot", async ({ page }) => {
     .toBeLessThanOrEqual(2);
 });
 
+test("focuses the Sage input when the panel opens", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /Sage/i }).click();
+
+  await expect(page.getByPlaceholder("Describe what to change…")).toBeFocused();
+});
+
 test("renders Sage prose readably and applies proposals from json fences", async ({
   page,
 }) => {
@@ -331,6 +339,100 @@ test("renders and applies proposals produced by Sage tools", async ({ page }) =>
   );
 });
 
+test("keeps proposal cards with the assistant messages that produced them", async ({
+  page,
+}) => {
+  const firstProposal = {
+    title: "Add uncertain input",
+    summary: "Adds a starter confidence interval.",
+    changes: [
+      {
+        cell: "A1",
+        before: "",
+        after: "CI[100, 200]",
+        reason: "Capture the uncertain source estimate as a distribution.",
+        kind: "add",
+      },
+    ],
+  };
+  const secondProposal = {
+    title: "Add scalar input",
+    summary: "Adds a scalar fallback value.",
+    changes: [
+      {
+        cell: "A1",
+        before: "",
+        after: "42",
+        reason: "Capture a simple fallback value.",
+        kind: "add",
+      },
+    ],
+  };
+  let assistantRequestCount = 0;
+
+  await page.route("**/api/assistant", async (route) => {
+    assistantRequestCount += 1;
+    const proposal =
+      assistantRequestCount === 1 ? firstProposal : secondProposal;
+
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: [
+        {
+          type: "start",
+          messageId: `sage-history-proposal-${assistantRequestCount}`,
+        },
+        { type: "start-step" },
+        { type: "text-start", id: "text-1" },
+        {
+          type: "text-delta",
+          id: "text-1",
+          delta: `Proposal ${assistantRequestCount} is ready.`,
+        },
+        { type: "text-end", id: "text-1" },
+        {
+          type: "tool-input-available",
+          toolCallId: `proposal-tool-call-${assistantRequestCount}`,
+          toolName: "proposeCellChanges",
+          input: proposal,
+        },
+        {
+          type: "tool-output-available",
+          toolCallId: `proposal-tool-call-${assistantRequestCount}`,
+          output: proposal,
+        },
+        { type: "finish-step" },
+        { type: "finish", finishReason: "stop" },
+      ]
+        .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+        .join(""),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /Sage/i }).click();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("Prepare the first change");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("CI[100, 200]")).toBeVisible();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("Prepare a second change");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  const sagePanel = page.getByRole("complementary", { name: "Sage" });
+  await expect(page.getByText("CI[100, 200]")).toBeVisible();
+  await expect(sagePanel.getByText("42", { exact: true })).toBeVisible();
+  await expect(
+    sagePanel.getByRole("button", { name: "Apply 1 change" }),
+  ).toHaveCount(2);
+});
+
 test("auto-applies direct apply tool results after Always allow is enabled", async ({
   page,
 }) => {
@@ -402,6 +504,154 @@ test("auto-applies direct apply tool results after Always allow is enabled", asy
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
     "CI[100.00, 200.00]",
   );
+});
+
+test("auto-applies proposal tool results after Always allow is enabled", async ({
+  page,
+}) => {
+  const proposal = {
+    title: "Proposal tool output",
+    summary: "Adds a starter confidence interval through the proposal tool.",
+    changes: [
+      {
+        cell: "A1",
+        before: "",
+        after: "CI[100, 200]",
+        reason: "Capture the uncertain source estimate as a distribution.",
+        kind: "add",
+      },
+    ],
+  };
+
+  await page.route("**/api/assistant", async (route) => {
+    const requestBody = route.request().postDataJSON() as {
+      allowDirectCellChanges?: boolean;
+    };
+
+    expect(requestBody.allowDirectCellChanges).toBe(true);
+
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: [
+        { type: "start", messageId: "sage-allowed-proposal-tool" },
+        { type: "start-step" },
+        { type: "text-start", id: "text-1" },
+        {
+          type: "text-delta",
+          id: "text-1",
+          delta: "I prepared one workbook change.",
+        },
+        { type: "text-end", id: "text-1" },
+        {
+          type: "tool-input-available",
+          toolCallId: "proposal-tool-call",
+          toolName: "proposeCellChanges",
+          input: proposal,
+        },
+        {
+          type: "tool-output-available",
+          toolCallId: "proposal-tool-call",
+          output: proposal,
+        },
+        { type: "finish-step" },
+        { type: "finish", finishReason: "stop" },
+      ]
+        .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+        .join(""),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("checkbox", { name: "Always allow Sage to apply changes" })
+    .check();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("Apply the setup directly");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("Applied", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Apply 1 change" }),
+  ).toHaveCount(0);
+  await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
+  await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
+    "CI[100.00, 200.00]",
+  );
+});
+
+test("does not show proposal action buttons while Always allow is enabled", async ({
+  page,
+}) => {
+  const proposal = {
+    title: "Stale proposal output",
+    summary: "This proposal cannot be applied because the before value is stale.",
+    changes: [
+      {
+        cell: "A1",
+        before: "stale",
+        after: "CI[100, 200]",
+        reason: "Capture the uncertain source estimate as a distribution.",
+        kind: "add",
+      },
+    ],
+  };
+
+  await page.route("**/api/assistant", async (route) => {
+    const requestBody = route.request().postDataJSON() as {
+      allowDirectCellChanges?: boolean;
+    };
+
+    expect(requestBody.allowDirectCellChanges).toBe(true);
+
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: [
+        { type: "start", messageId: "sage-stale-allowed-proposal" },
+        { type: "start-step" },
+        { type: "text-start", id: "text-1" },
+        {
+          type: "text-delta",
+          id: "text-1",
+          delta: "I prepared one workbook change.",
+        },
+        { type: "text-end", id: "text-1" },
+        {
+          type: "tool-input-available",
+          toolCallId: "proposal-tool-call",
+          toolName: "proposeCellChanges",
+          input: proposal,
+        },
+        {
+          type: "tool-output-available",
+          toolCallId: "proposal-tool-call",
+          output: proposal,
+        },
+        { type: "finish-step" },
+        { type: "finish", finishReason: "stop" },
+      ]
+        .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+        .join(""),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("checkbox", { name: "Always allow Sage to apply changes" })
+    .check();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("Apply the setup directly");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("A1 has changed since Sage prepared this proposal."))
+    .toBeVisible();
+  await expect(page.getByRole("button", { name: /Apply/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Dismiss" })).toHaveCount(0);
 });
 
 test("shows a setup error when the assistant server has no OpenAI key", async ({

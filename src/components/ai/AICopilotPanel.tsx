@@ -1,6 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import React, {
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -18,6 +19,21 @@ import {
 } from "../../assistant/proposals";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./AICopilotPanel.module.css";
+
+type ProposalValidationResult = ReturnType<typeof validateAssistantProposal>;
+
+interface AssistantMessageProposalEntry {
+  key: string;
+  messageId: string;
+  result: AssistantProposalResult;
+  isApplied: boolean;
+  isDismissed: boolean;
+  needsValidation: boolean;
+  validation: ProposalValidationResult | null;
+  displayProposal: AssistantProposalResult["proposal"];
+  canApply: boolean;
+  show: boolean;
+}
 
 interface AICopilotPanelProps {
   onClose: () => void;
@@ -70,6 +86,11 @@ const getMessageProposalResult = (
     ? null
     : { proposal: textProposal, source: "text" };
 };
+
+const getProposalKey = (
+  message: UIMessage,
+  proposal: AssistantProposalResult["proposal"],
+): string => `${message.id}:${JSON.stringify(proposal)}`;
 
 const proposalFencePattern = /```(?:maybe-proposal|json)/g;
 
@@ -273,13 +294,13 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const { getWorkbookSnapshot, applyAssistantChanges } =
     useContext(SpreadsheetContext);
   const [prompt, setPrompt] = useState("");
-  const [dismissedProposalKey, setDismissedProposalKey] = useState<
-    string | null
-  >(null);
+  const [dismissedProposalKeys, setDismissedProposalKeys] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const [allowDirectCellChanges, setAllowDirectCellChanges] = useState(false);
-  const [appliedProposalKey, setAppliedProposalKey] = useState<string | null>(
-    null,
-  );
+  const [appliedProposalKeys, setAppliedProposalKeys] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const [applyError, setApplyError] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -297,6 +318,10 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   } = useChat<UIMessage>({
     transport,
   });
+
+  useEffect(() => {
+    inputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -332,109 +357,205 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const assistantMessages = messages.filter(
     (message) => message.role === "assistant",
   );
-  const latestAssistantWithProposal = assistantMessages
-    .slice()
-    .reverse()
-    .map((message) => ({ message, result: getMessageProposalResult(message) }))
-    .find(({ result }) => result !== null);
-  const latestProposal = latestAssistantWithProposal
-    ? (latestAssistantWithProposal.result?.proposal ?? null)
-    : null;
-  const latestProposalSource = latestAssistantWithProposal?.result?.source ?? null;
-  const latestProposalKey =
-    latestAssistantWithProposal && latestProposal
-      ? `${latestAssistantWithProposal.message.id}:${JSON.stringify(latestProposal)}`
-      : null;
-  const proposalIsApplied =
-    latestProposalKey !== null && latestProposalKey === appliedProposalKey;
-  const proposalIsDismissed =
-    latestProposalKey !== null && latestProposalKey === dismissedProposalKey;
-  const proposalNeedsValidation =
-    latestProposal !== null &&
-    latestProposalKey !== null &&
-    !proposalIsApplied &&
-    !proposalIsDismissed;
-  const validationSnapshot = proposalNeedsValidation
+  const proposalCandidates = assistantMessages
+    .map((message) => {
+      const result = getMessageProposalResult(message);
+
+      if (result === null) {
+        return null;
+      }
+
+      const key = getProposalKey(message, result.proposal);
+      const isApplied = appliedProposalKeys.has(key);
+      const isDismissed = dismissedProposalKeys.has(key);
+
+      return {
+        key,
+        messageId: message.id,
+        result,
+        isApplied,
+        isDismissed,
+        needsValidation: !isApplied && !isDismissed,
+      };
+    })
+    .filter((entry) => entry !== null);
+  const needsProposalValidation = proposalCandidates.some(
+    (entry) => entry.needsValidation,
+  );
+  const validationSnapshot = needsProposalValidation
     ? getWorkbookSnapshot(selectedCell ?? null)
     : null;
-  const proposalValidation =
-    proposalNeedsValidation && validationSnapshot
-      ? validateAssistantProposal(latestProposal, validationSnapshot)
-      : null;
-  const showProposal =
-    latestProposal !== null &&
-    latestProposalKey !== null &&
-    !proposalIsDismissed;
-  const displayProposal = proposalValidation?.proposal ?? latestProposal;
-  const canApplyProposal =
-    proposalValidation?.valid === true &&
-    proposalValidation.applyableChanges.length > 0;
+  const proposalEntries: AssistantMessageProposalEntry[] =
+    proposalCandidates.map((entry) => {
+      const validation =
+        entry.needsValidation && validationSnapshot
+          ? validateAssistantProposal(entry.result.proposal, validationSnapshot)
+          : null;
+      const displayProposal = validation?.proposal ?? entry.result.proposal;
+      const canApply =
+        validation?.valid === true && validation.applyableChanges.length > 0;
+
+      return {
+        ...entry,
+        validation,
+        displayProposal,
+        canApply,
+        show: !entry.isDismissed,
+      };
+    });
+  const proposalEntryByMessageId = new Map(
+    proposalEntries.map((entry) => [entry.messageId, entry]),
+  );
+  const visibleProposalKeys = proposalEntries
+    .filter((entry) => entry.show)
+    .map((entry) => entry.key)
+    .join("|");
   const transportError = getReadableError(error) ?? requestError;
   const isBusy = status === "submitted" || status === "streaming";
 
-  const handleConfirm = () => {
-    if (!proposalValidation || !canApplyProposal || !latestProposalKey) return;
+  const markProposalApplied = useCallback((proposalKey: string) => {
+    setAppliedProposalKeys((currentKeys) => {
+      if (currentKeys.has(proposalKey)) {
+        return currentKeys;
+      }
 
-    setApplyError(null);
+      const nextKeys = new Set(currentKeys);
+      nextKeys.add(proposalKey);
+      return nextKeys;
+    });
+  }, []);
 
-    try {
-      applyAssistantChanges(proposalValidation.applyableChanges);
-      setAppliedProposalKey(latestProposalKey);
-    } catch (caughtError) {
-      setApplyError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Unable to apply Sage's proposal.",
-      );
-    }
+  const applyProposal = useCallback(
+    (proposalKey: string, validation: ProposalValidationResult) => {
+      if (!validation.valid || validation.applyableChanges.length === 0) return;
+
+      setApplyError(null);
+
+      try {
+        applyAssistantChanges(validation.applyableChanges);
+        markProposalApplied(proposalKey);
+      } catch (caughtError) {
+        setApplyError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Unable to apply Sage's proposal.",
+        );
+      }
+    },
+    [applyAssistantChanges, markProposalApplied],
+  );
+
+  const handleDismiss = (proposalKey: string) => {
+    setDismissedProposalKeys((currentKeys) => {
+      if (currentKeys.has(proposalKey)) {
+        return currentKeys;
+      }
+
+      const nextKeys = new Set(currentKeys);
+      nextKeys.add(proposalKey);
+      return nextKeys;
+    });
   };
 
-  const handleDismiss = () => {
-    if (latestProposalKey) {
-      setDismissedProposalKey(latestProposalKey);
-    }
-  };
+  const autoApplyProposal = allowDirectCellChanges && applyError === null
+    ? proposalEntries.find(
+        (entry) =>
+          entry.show &&
+          !entry.isApplied &&
+          entry.canApply &&
+          entry.validation !== null,
+      )
+    : undefined;
 
   // Scroll to bottom when new results appear
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, status, showProposal, applyError, transportError]);
+  }, [messages, status, visibleProposalKeys, applyError, transportError]);
 
   useEffect(() => {
-    if (
-      !allowDirectCellChanges ||
-      latestProposalSource !== "tool-applyCellChanges" ||
-      proposalIsApplied ||
-      !canApplyProposal ||
-      !proposalValidation ||
-      !latestProposalKey
-    ) {
+    if (!autoApplyProposal?.validation) {
       return;
     }
 
-    setApplyError(null);
+    applyProposal(autoApplyProposal.key, autoApplyProposal.validation);
+  }, [applyProposal, autoApplyProposal]);
 
-    try {
-      applyAssistantChanges(proposalValidation.applyableChanges);
-      setAppliedProposalKey(latestProposalKey);
-    } catch (caughtError) {
-      setApplyError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Unable to apply Sage's proposal.",
-      );
-    }
-  }, [
-    allowDirectCellChanges,
-    applyAssistantChanges,
-    canApplyProposal,
-    latestProposalKey,
-    latestProposalSource,
-    proposalIsApplied,
-    proposalValidation,
-  ]);
+  const renderProposalCard = (entry: AssistantMessageProposalEntry) => {
+    if (!entry.show) return null;
+
+    const isAutoApplyingProposal =
+      allowDirectCellChanges &&
+      entry.canApply &&
+      !entry.isApplied &&
+      applyError === null;
+
+    return (
+      <>
+        {entry.needsValidation && !validationSnapshot && (
+          <div className={styles.errorBox}>
+            Sage prepared a proposal, but the workbook is not ready for review.
+          </div>
+        )}
+        {entry.needsValidation &&
+          entry.validation?.errors.map((validationError) => (
+            <div
+              key={`${entry.key}:${validationError}`}
+              className={styles.errorBox}
+            >
+              {validationError}
+            </div>
+          ))}
+        <div className={styles.results}>
+          <div className={styles.changeList}>
+            {entry.displayProposal.changes.map((row, index) => (
+              <ChangeRow key={`${row.cell}:${row.kind}:${index}`} row={row} />
+            ))}
+          </div>
+
+          {entry.isApplied ? (
+            <div className={styles.statusRow}>
+              <span className={styles.statusDot} />
+              <span className={styles.statusText}>Applied</span>
+            </div>
+          ) : allowDirectCellChanges ? (
+            isAutoApplyingProposal ? (
+              <div className={styles.statusRow}>
+                <span className={styles.statusDot} />
+                <span className={styles.statusText}>Applying</span>
+              </div>
+            ) : null
+          ) : (
+            <div className={styles.inlineActions}>
+              <button
+                type="button"
+                className={`${styles.applyBtn} ${
+                  !entry.canApply ? styles.applyBtnDisabled : ""
+                }`}
+                onClick={() => {
+                  if (entry.validation) {
+                    applyProposal(entry.key, entry.validation);
+                  }
+                }}
+                disabled={!entry.canApply}
+              >
+                Apply {entry.validation?.applyableChanges.length ?? 0} change
+                {entry.validation?.applyableChanges.length !== 1 ? "s" : ""}
+              </button>
+              <button
+                type="button"
+                className={styles.dismissBtn}
+                onClick={() => handleDismiss(entry.key)}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
 
   return (
     <aside
@@ -511,8 +632,12 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
                 message.role === "assistant"
                   ? getVisibleAssistantText(rawText)
                   : rawText;
+              const proposalEntry =
+                message.role === "assistant"
+                  ? proposalEntryByMessageId.get(message.id)
+                  : undefined;
 
-              if (!visibleText) return null;
+              if (!visibleText && !proposalEntry?.show) return null;
 
               return (
                 <div
@@ -523,13 +648,14 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
                       : styles.assistantMessage
                   }
                 >
-                  {message.role === "assistant" ? (
+                  {message.role === "assistant" && visibleText ? (
                     <FormattedAssistantText text={visibleText} />
-                  ) : (
+                  ) : message.role === "user" ? (
                     <span className={styles.userPromptText}>
                       {visibleText}
                     </span>
-                  )}
+                  ) : null}
+                  {proposalEntry ? renderProposalCard(proposalEntry) : null}
                 </div>
               );
             })}
@@ -544,66 +670,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         )}
 
         {transportError && <div className={styles.errorBox}>{transportError}</div>}
-        {proposalNeedsValidation && !validationSnapshot && (
-          <div className={styles.errorBox}>
-            Sage prepared a proposal, but the workbook is not ready for review.
-          </div>
-        )}
-        {proposalNeedsValidation &&
-          proposalValidation?.errors.map((validationError) => (
-            <div key={validationError} className={styles.errorBox}>
-              {validationError}
-            </div>
-          ))}
         {applyError && <div className={styles.errorBox}>{applyError}</div>}
-
-        {/* Results */}
-        {showProposal && displayProposal && (
-          <div className={styles.results}>
-            <div className={styles.changeList}>
-              {displayProposal.changes.map((row, index) => (
-                <ChangeRow
-                  key={`${row.cell}:${row.kind}:${index}`}
-                  row={row}
-                />
-              ))}
-            </div>
-
-            {/* Inline actions */}
-            {proposalIsApplied ? (
-              <div className={styles.statusRow}>
-                <span className={styles.statusDot} />
-                <span className={styles.statusText}>Applied</span>
-              </div>
-            ) : (
-              <div className={styles.inlineActions}>
-                <button
-                  type="button"
-                  className={`${styles.applyBtn} ${
-                    !canApplyProposal
-                      ? styles.applyBtnDisabled
-                      : ""
-                  }`}
-                  onClick={handleConfirm}
-                  disabled={!canApplyProposal}
-                >
-                  Apply {proposalValidation?.applyableChanges.length ?? 0}{" "}
-                  change
-                  {proposalValidation?.applyableChanges.length !== 1
-                    ? "s"
-                    : ""}
-                </button>
-                <button
-                  type="button"
-                  className={styles.dismissBtn}
-                  onClick={handleDismiss}
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── Input area (anchored to bottom) ────────────────────────── */}

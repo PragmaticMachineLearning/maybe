@@ -40,13 +40,14 @@ const buildSystemPrompt = (
     "Do not use LaTeX. Use Maybe spreadsheet formulas such as =A1*B1, CI[10, 20], P10(A1), P50(A1), and P90(A1).",
     "Keep visible responses concise and readable: a short summary, the key formulas, and any caveats. Do not expose raw JSON to the user.",
     "Use getWorkbookContext when you need to inspect the workbook state, selected cell, formulas, or distribution summaries.",
-    "Use validateFormula before proposing any formula you invent or revise.",
-    "Use proposeCellChanges when the user asks you to add, update, or set up worksheet content. The tool returns a typed proposal for the UI to review; it does not mutate the workbook.",
+    "Use validateFormula before proposing or applying any formula you invent or revise.",
     allowDirectCellChanges
-      ? "Always allow is enabled for this request. You may use applyCellChanges when the requested edit is clear, validated, and safe to apply directly."
-      : "Always allow is disabled for this request. Do not apply changes directly; use proposeCellChanges for workbook edits.",
-    "Each proposed change must use before fields that exactly match the current formula when a formula exists, otherwise the current display value.",
-    "Do not say that you will implement changes, have implemented changes, or that the user should look for a hidden proposal. The user must click Apply before any proposed edit changes the workbook.",
+      ? "Always allow is enabled for this request. Use applyCellChanges instead of proposeCellChanges when the requested edit is clear, validated, and safe to apply directly."
+      : "Always allow is disabled for this request. Do not apply changes directly. Use proposeCellChanges for workbook edits. The tool returns a typed proposal for the UI to review; it does not mutate the workbook.",
+    "Each changed cell must use a before field that exactly matches the current formula when a formula exists, otherwise the current display value.",
+    allowDirectCellChanges
+      ? "Do not say a change was applied until applyCellChanges returns successfully. If you only propose or discuss a change, do not claim it was applied."
+      : "Do not say that you will implement changes, have implemented changes, or that the user should look for a hidden proposal. The user must click Apply before any proposed edit changes the workbook.",
     "If the workbook snapshot is truncated, say that the recommendation is based on partial context and ask for confirmation before relying on omitted cells.",
     "Current workbook snapshot:",
     JSON.stringify(workbookSnapshot, null, 2),
