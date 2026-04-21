@@ -55,6 +55,25 @@ const getMessageText = (message: UIMessage): string =>
     .map((part) => part.text)
     .join("");
 
+const proposalFence = "```maybe-proposal";
+
+const getVisibleAssistantText = (rawText: string): string => {
+  const proposalStartIndex = rawText.lastIndexOf(proposalFence);
+
+  if (proposalStartIndex !== -1) {
+    const proposalEndIndex = rawText.indexOf(
+      "```",
+      proposalStartIndex + proposalFence.length,
+    );
+
+    if (proposalEndIndex === -1) {
+      return rawText.slice(0, proposalStartIndex).trim();
+    }
+  }
+
+  return stripAssistantProposalFromText(rawText);
+};
+
 const getReadableError = (error: Error | undefined): string | null => {
   if (!error) return null;
 
@@ -153,21 +172,35 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     latestAssistantWithProposal && latestProposal
       ? `${latestAssistantWithProposal.message.id}:${JSON.stringify(latestProposal)}`
       : null;
-  const validationSnapshot = getWorkbookSnapshot(selectedCell ?? null);
+  const proposalIsApplied =
+    latestProposalKey !== null && latestProposalKey === appliedProposalKey;
+  const proposalIsDismissed =
+    latestProposalKey !== null && latestProposalKey === dismissedProposalKey;
+  const proposalNeedsValidation =
+    latestProposal !== null &&
+    latestProposalKey !== null &&
+    !proposalIsApplied &&
+    !proposalIsDismissed;
+  const validationSnapshot = proposalNeedsValidation
+    ? getWorkbookSnapshot(selectedCell ?? null)
+    : null;
   const proposalValidation =
-    latestProposal && validationSnapshot
+    proposalNeedsValidation && validationSnapshot
       ? validateAssistantProposal(latestProposal, validationSnapshot)
       : null;
   const showProposal =
     latestProposal !== null &&
-    proposalValidation !== null &&
     latestProposalKey !== null &&
-    latestProposalKey !== dismissedProposalKey;
+    !proposalIsDismissed;
+  const displayProposal = proposalValidation?.proposal ?? latestProposal;
+  const canApplyProposal =
+    proposalValidation?.valid === true &&
+    proposalValidation.applyableChanges.length > 0;
   const transportError = getReadableError(error) ?? requestError;
   const isBusy = status === "submitted" || status === "streaming";
 
   const handleConfirm = () => {
-    if (!proposalValidation || !latestProposalKey) return;
+    if (!proposalValidation || !canApplyProposal || !latestProposalKey) return;
 
     setApplyError(null);
 
@@ -253,7 +286,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
               const rawText = getMessageText(message);
               const visibleText =
                 message.role === "assistant"
-                  ? stripAssistantProposalFromText(rawText)
+                  ? getVisibleAssistantText(rawText)
                   : rawText;
 
               if (!visibleText) return null;
@@ -282,29 +315,30 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         )}
 
         {transportError && <div className={styles.errorBox}>{transportError}</div>}
-        {latestProposal && !validationSnapshot && (
+        {proposalNeedsValidation && !validationSnapshot && (
           <div className={styles.errorBox}>
             Sage prepared a proposal, but the workbook is not ready for review.
           </div>
         )}
-        {proposalValidation?.errors.map((validationError) => (
-          <div key={validationError} className={styles.errorBox}>
-            {validationError}
-          </div>
-        ))}
+        {proposalNeedsValidation &&
+          proposalValidation?.errors.map((validationError) => (
+            <div key={validationError} className={styles.errorBox}>
+              {validationError}
+            </div>
+          ))}
         {applyError && <div className={styles.errorBox}>{applyError}</div>}
 
         {/* Results */}
-        {showProposal && proposalValidation && (
+        {showProposal && displayProposal && (
           <div className={styles.results}>
             <div className={styles.changeList}>
-              {proposalValidation.proposal?.changes.map((row) => (
+              {displayProposal.changes.map((row) => (
                 <ChangeRow key={`${row.cell}:${row.kind}`} row={row} />
               ))}
             </div>
 
             {/* Inline actions */}
-            {appliedProposalKey === latestProposalKey ? (
+            {proposalIsApplied ? (
               <div className={styles.statusRow}>
                 <span className={styles.statusDot} />
                 <span className={styles.statusText}>Applied</span>
@@ -314,15 +348,18 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
                 <button
                   type="button"
                   className={`${styles.applyBtn} ${
-                    proposalValidation.applyableChanges.length === 0
+                    !canApplyProposal
                       ? styles.applyBtnDisabled
                       : ""
                   }`}
                   onClick={handleConfirm}
-                  disabled={proposalValidation.applyableChanges.length === 0}
+                  disabled={!canApplyProposal}
                 >
-                  Apply {proposalValidation.applyableChanges.length} change
-                  {proposalValidation.applyableChanges.length !== 1 ? "s" : ""}
+                  Apply {proposalValidation?.applyableChanges.length ?? 0}{" "}
+                  change
+                  {proposalValidation?.applyableChanges.length !== 1
+                    ? "s"
+                    : ""}
                 </button>
                 <button
                   type="button"
