@@ -45,12 +45,6 @@ const SpreadsheetWithWizard: React.FC = () => {
     setAiPanelOpen(false);
   };
 
-  const handleFormulaSubmit = (row: number, col: number, formula: string) => {
-    console.log(
-      `Formula submitted for ${String.fromCharCode(65 + col)}${row + 1}: ${formula}`,
-    );
-  };
-
   return (
     <AppLayout
       selectedCell={selectedCell}
@@ -61,7 +55,6 @@ const SpreadsheetWithWizard: React.FC = () => {
       onToggleFlowDiag={handleToggleFlowDiag}
       onToggleAiPanel={handleToggleAiPanel}
       onCloseAiPanel={handleCloseAiPanel}
-      onFormulaSubmit={handleFormulaSubmit}
     />
   );
 };
