@@ -2,7 +2,10 @@ import { z } from "zod";
 
 import type { FormulaEngine } from "../lib/formulaEngine";
 import { cellAddressFromA1 } from "./address";
-import type { WorkbookSnapshot } from "./workbookSnapshot";
+import {
+  buildWorkbookSnapshot,
+  type WorkbookSnapshot,
+} from "./workbookSnapshot";
 
 export const assistantCellChangeSchema = z.object({
   cell: z.string(),
@@ -140,11 +143,28 @@ export const applyAssistantChangesToEngine = (
   dimensions: WorkbookSnapshot["dimensions"],
   changes: AssistantCellChange[],
 ): void => {
-  for (const change of changes) {
-    if (change.kind === "review") {
-      continue;
-    }
+  const currentSnapshot = buildWorkbookSnapshot({
+    formulaEngine,
+    selectedCell: null,
+  });
+  const validationSnapshot = {
+    ...currentSnapshot,
+    dimensions,
+  };
+  const validationResult = validateAssistantProposal(
+    {
+      title: "Apply assistant changes",
+      summary: "",
+      changes,
+    },
+    validationSnapshot,
+  );
 
+  if (!validationResult.valid) {
+    throw new Error(validationResult.errors.join(" "));
+  }
+
+  for (const change of validationResult.applyableChanges) {
     const address = cellAddressFromA1(change.cell, dimensions);
     if (!address) {
       throw new Error(`${change.cell} is outside the current sheet.`);

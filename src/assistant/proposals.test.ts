@@ -314,4 +314,88 @@ describe("assistant proposal parsing", () => {
       engine.destroy();
     }
   });
+
+  it("rejects stale updates before mutating the formula engine", () => {
+    const engine = GaussFormulaEngine.buildEmpty({
+      licenseKey: "gpl-v3",
+      language: "enGB",
+      useColumnIndex: true,
+    });
+
+    try {
+      engine.addSheet("Sheet1");
+      engine.setSheetContent(0, [["CI[10, 20]", "=A1*2"]]);
+
+      let error: unknown;
+      try {
+        applyAssistantChangesToEngine(
+          engine,
+          { width: 2, height: 1 },
+          [
+            {
+              cell: "B1",
+              before: "=A1*99",
+              after: "=A1*3",
+              reason: "Update the sampled distribution.",
+              kind: "update",
+            },
+          ],
+        );
+      } catch (caughtError) {
+        error = caughtError;
+      }
+
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe(
+        "B1 has changed since Sage prepared this proposal.",
+      );
+      expect(engine.getCellFormula({ sheet: 0, row: 0, col: 1 })).toBe(
+        "=A1*2",
+      );
+    } finally {
+      engine.destroy();
+    }
+  });
+
+  it("rejects blank reasons before mutating the target cell", () => {
+    const engine = GaussFormulaEngine.buildEmpty({
+      licenseKey: "gpl-v3",
+      language: "enGB",
+      useColumnIndex: true,
+    });
+
+    try {
+      engine.addSheet("Sheet1");
+      engine.setSheetContent(0, [["CI[10, 20]", "=A1*2", null]]);
+
+      let error: unknown;
+      try {
+        applyAssistantChangesToEngine(
+          engine,
+          { width: 3, height: 1 },
+          [
+            {
+              cell: "C1",
+              before: "",
+              after: "=B1+1",
+              reason: "   ",
+              kind: "add",
+            },
+          ],
+        );
+      } catch (caughtError) {
+        error = caughtError;
+      }
+
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe(
+        "C1 needs a reason before it can be applied.",
+      );
+      expect(
+        engine.getCellFormula({ sheet: 0, row: 0, col: 2 }) ?? null,
+      ).toBeNull();
+    } finally {
+      engine.destroy();
+    }
+  });
 });
