@@ -15,12 +15,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.53",
+    "@ai-sdk/react": "^3.0.170",
     "@tanstack/react-table": "^8.21.3",
+    "ai": "^6.0.168",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.6",
     "gaussformula": "^0.1.6",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
