@@ -8,24 +8,10 @@ import styles from "./Toolbar.module.css";
 
 interface ToolbarProps {
   useFlowDiag: boolean;
-  insightsOpen: boolean;
   aiPanelOpen: boolean;
   onToggleFlowDiag: () => void;
-  onToggleInsights: () => void;
   onToggleAiPanel: () => void;
 }
-
-const InsightsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-    <path
-      d="M4 18V6M9 18v-8M14 18V4M19 18v-5"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeWidth="1.8"
-    />
-  </svg>
-);
 
 const AiIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -43,10 +29,8 @@ const AiIcon = () => (
 
 export const Toolbar: React.FC<ToolbarProps> = ({
   useFlowDiag,
-  insightsOpen,
   aiPanelOpen,
   onToggleFlowDiag,
-  onToggleInsights,
   onToggleAiPanel,
 }) => {
   const { formulaEngine } = useContext(SpreadsheetContext);
@@ -193,26 +177,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <div className={styles.panelToggles}>
         <button
           type="button"
-          className={`${styles.panelToggle} ${insightsOpen ? styles.panelToggleActive : ""}`}
-          onClick={onToggleInsights}
-          aria-pressed={insightsOpen}
-          aria-controls="insights-panel"
-          title="Toggle Insights panel"
-        >
-          <InsightsIcon />
-          <span>Insights</span>
-        </button>
-
-        <button
-          type="button"
           className={`${styles.panelToggle} ${aiPanelOpen ? styles.panelToggleActive : ""}`}
           onClick={onToggleAiPanel}
           aria-pressed={aiPanelOpen}
           aria-controls="ai-copilot-panel"
-          title="Toggle AI panel"
+          title="Toggle Sage"
         >
           <AiIcon />
-          <span>AI</span>
+          <span>Sage</span>
         </button>
 
         <div className={styles.themeToggleWrapper}>

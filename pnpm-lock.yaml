@@ -20,9 +20,6 @@ importers:
       echarts-for-react:
         specifier: ^3.0.6
         version: 3.0.6(echarts@6.0.0)(react@19.2.5)
-      elkjs:
-        specifier: ^0.11.1
-        version: 0.11.1
       gaussformula:
         specifier: ^0.1.5
         version: 0.1.5
@@ -888,9 +885,6 @@ packages:
 
   electron-to-chromium@1.5.340:
     resolution: {integrity: sha512-908qahOGocRMinT2nM3ajCEM99H4iPdv84eagPP3FfZy/1ZGeOy2CZYzjhms81ckOPCXPlW7LkY4XpxD8r1DrA==}
-
-  elkjs@0.11.1:
-    resolution: {integrity: sha512-zxxR9k+rx5ktMwT/FwyLdPCrq7xN6e4VGGHH8hA01vVYKjTFik7nHOxBnAYtrgYUB1RpAiLvA1/U2YraWxyKKg==}
 
   es-module-lexer@2.0.0:
     resolution: {integrity: sha512-5POEcUuZybH7IdmGsD8wlf0AI55wMecM9rVBTI/qEAy2c1kTOm3DjFYjrBdI2K3BaJjJYfYFeRtM0t9ssnRuxw==}
@@ -2274,8 +2268,6 @@ snapshots:
       zrender: 6.0.0
 
   electron-to-chromium@1.5.340: {}
-
-  elkjs@0.11.1: {}
 
   es-module-lexer@2.0.0: {}
 

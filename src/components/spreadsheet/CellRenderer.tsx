@@ -40,7 +40,6 @@ interface CellRendererProps {
   isEditing?: boolean;
   onRequestEdit?: (row: number, col: number) => void;
   onStopEdit?: () => void;
-  onOpenAnalysis?: () => void;
 }
 
 export const CellRenderer: React.FC<CellRendererProps> = ({
@@ -54,7 +53,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   isEditing = false,
   onRequestEdit,
   onStopEdit,
-  onOpenAnalysis,
 }) => {
   const {
     getCellFormula,
@@ -227,6 +225,35 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     onStopEdit?.();
   };
 
+  const handleChartHintClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!cellRef.current) return;
+    const rect = cellRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const margin = 16;
+    const panelWidth = Math.min(420, viewportWidth - margin * 2);
+    const panelHeight = Math.min(360, viewportHeight - margin * 2);
+
+    let left = rect.right + 12;
+    if (left + panelWidth + margin > viewportWidth) {
+      left = rect.left - panelWidth - 12;
+    }
+    left = Math.max(
+      margin,
+      Math.min(left, viewportWidth - panelWidth - margin),
+    );
+
+    let top = rect.top + rect.height / 2 - panelHeight / 2;
+    top = Math.max(
+      margin,
+      Math.min(top, viewportHeight - panelHeight - margin),
+    );
+
+    setPlotPosition({ top, left });
+    setShowPlot(true);
+  };
+
   const handleCustomContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onContextMenu) {
@@ -309,13 +336,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     [value, viewOptions],
   );
 
-  const handleOpenAnalysis = useCallback(() => {
-    setShowPlot(false);
-    if (onOpenAnalysis) {
-      onOpenAnalysis();
-    }
-  }, [onOpenAnalysis]);
-
   const cellClassName = [
     styles.cell,
     isSelected && styles.cellSelected,
@@ -337,10 +357,14 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         className={cellClassName}
         style={{
           gridTemplateColumns: showViewOptions
-            ? "auto 1fr auto"
-            : leadingIcon
-              ? "auto 1fr"
-              : "1fr",
+            ? "auto 1fr auto auto"
+            : isDistribution
+              ? leadingIcon
+                ? "auto 1fr auto"
+                : "1fr auto"
+              : leadingIcon
+                ? "auto 1fr"
+                : "1fr",
         }}
       >
         {isEditing ? (
@@ -370,6 +394,28 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
                 onSelectView={handleViewOptionChange}
                 dropdownRef={dropdownRef}
               />
+            )}
+            {isDistribution && !isEditing && (
+              <button
+                type="button"
+                className={styles.chartHint}
+                onClick={handleChartHintClick}
+                title="View distribution"
+                aria-label="View distribution chart"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M3 20 C6,20 8,18 10,14 C12,8 13,4 15,4 C17,4 18,8 20,14 C21,17 22,19 23,20" />
+                  <line x1="3" y1="20" x2="23" y2="20" />
+                </svg>
+              </button>
             )}
           </>
         )}
@@ -420,7 +466,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
               onClose={() => setShowPlot(false)}
               distributionType={distributionType}
               confidenceInterval={confidenceInterval}
-              onOpenAnalysis={onOpenAnalysis ? handleOpenAnalysis : undefined}
             />
           );
         })()}

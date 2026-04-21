@@ -1,47 +1,42 @@
 .container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .toggleBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  box-shadow: 0 1px 3px var(--shadow);
-  transition: all 0.2s ease;
-  outline: none;
-  width: 40px;
-  height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    box-shadow: 0 1px 3px var(--shadow);
+    transition: all 0.2s ease;
+    outline: none;
+    width: 40px;
+    height: 40px;
 }
 
 .toggleBtn:hover {
-  background-color: var(--bg-hover);
-  border-color: var(--border-header);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px var(--shadow-hover);
+    background-color: var(--bg-hover);
+    border-color: var(--border-header);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px var(--shadow-hover);
 }
 
 .toggleBtn:focus-visible {
-  outline: 2px solid var(--resize-handle-active);
-  outline-offset: 2px;
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: 2px;
 }
 
 .label {
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.indicator {
-  font-size: 11px;
-  color: var(--text-muted);
+    color: var(--text-secondary);
+    font-size: 14px;
 }

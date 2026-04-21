@@ -1,93 +1,166 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { AnalysisPanel } from "../components/analysis/AnalysisPanel";
 import { AICopilotPanel } from "../components/ai/AICopilotPanel";
 import { FlowDiag } from "../components/flow-diagram/FlowDiag";
 import { FormulaBar } from "../components/formula-bar/FormulaBar";
 import { Spreadsheet } from "../components/spreadsheet/Spreadsheet";
 import { Toolbar } from "../components/toolbar/Toolbar";
 import styles from "./AppLayout.module.css";
-import type { AnalysisState, SelectedCell } from "./analysisState";
+import type { SelectedCell } from "./analysisState";
 
 interface AppLayoutProps {
   selectedCell: SelectedCell | null;
   useFlowDiag: boolean;
-  insightsOpen: boolean;
   aiPanelOpen: boolean;
-  analysisState: AnalysisState | null;
   isCompactLayout: boolean;
   onCellSelect: (row: number, col: number) => void;
   onToggleFlowDiag: () => void;
-  onToggleInsights: () => void;
   onToggleAiPanel: () => void;
-  onCloseInsights: () => void;
   onCloseAiPanel: () => void;
-  onCloseFlowDiag: () => void;
   onFormulaSubmit: (row: number, col: number, formula: string) => void;
 }
+
+const MIN_SHEET_PX = 200;
+const MIN_FLOW_PX = 200;
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
   selectedCell,
   useFlowDiag,
-  insightsOpen,
   aiPanelOpen,
-  analysisState,
   isCompactLayout,
   onCellSelect,
   onToggleFlowDiag,
-  onToggleInsights,
   onToggleAiPanel,
-  onCloseInsights,
   onCloseAiPanel,
-  onCloseFlowDiag,
   onFormulaSubmit,
-}) => (
-  <div className={styles.appShell}>
-    <header className={styles.toolbarRow}>
-      <Toolbar
-        useFlowDiag={useFlowDiag}
-        onToggleFlowDiag={onToggleFlowDiag}
-        insightsOpen={insightsOpen}
-        aiPanelOpen={aiPanelOpen}
-        onToggleInsights={onToggleInsights}
-        onToggleAiPanel={onToggleAiPanel}
-      />
-    </header>
+}) => {
+  // sheetWidth is stored in pixels; null means "not yet measured / use default 50%"
+  const [sheetWidth, setSheetWidth] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const splitAreaRef = useRef<HTMLDivElement>(null);
 
-    {!useFlowDiag && (
+  // When the flow diagram is first toggled on, initialise sheetWidth to half
+  // the available split area.
+  useEffect(() => {
+    if (useFlowDiag && sheetWidth === null && splitAreaRef.current) {
+      setSheetWidth(splitAreaRef.current.getBoundingClientRect().width / 2);
+    }
+    if (!useFlowDiag) {
+      setSheetWidth(null);
+    }
+  }, [useFlowDiag, sheetWidth]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsDragging(true);
+  }, []);
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging || !splitAreaRef.current) return;
+
+      const rect = splitAreaRef.current.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const maxSheet = rect.width - MIN_FLOW_PX;
+      const clamped = Math.min(maxSheet, Math.max(MIN_SHEET_PX, offsetX));
+      setSheetWidth(clamped);
+    },
+    [isDragging],
+  );
+
+  const handlePointerUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Prevent text selection while dragging
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const preventSelection = (e: Event) => e.preventDefault();
+    document.addEventListener("selectstart", preventSelection);
+    return () => document.removeEventListener("selectstart", preventSelection);
+  }, [isDragging]);
+
+  return (
+    <div className={styles.appShell}>
+      <header className={styles.toolbarRow}>
+        <Toolbar
+          useFlowDiag={useFlowDiag}
+          onToggleFlowDiag={onToggleFlowDiag}
+          aiPanelOpen={aiPanelOpen}
+          onToggleAiPanel={onToggleAiPanel}
+        />
+      </header>
+
       <FormulaBar
         selectedCell={selectedCell}
         onFormulaSubmit={onFormulaSubmit}
       />
-    )}
 
-    <div className={styles.workspace}>
-      <div className={styles.sheetPane}>
-        <Spreadsheet
-          rows={50}
-          columns={26}
-          onCellSelect={onCellSelect}
-          selectedCell={selectedCell}
-          onOpenAnalysis={onToggleInsights}
-        />
-      </div>
+      <div
+        className={`${styles.workspace} ${isDragging ? styles.workspaceDragging : ""}`}
+      >
+        {/* ── Split area: sheet + handle + flow (takes remaining space) ── */}
+        <div
+          ref={splitAreaRef}
+          className={useFlowDiag ? styles.splitArea : styles.sheetPane}
+        >
+          {useFlowDiag ? (
+            <>
+              <div
+                className={styles.sheetPaneSplit}
+                style={
+                  sheetWidth !== null
+                    ? { width: sheetWidth }
+                    : { flex: "1 1 50%" }
+                }
+              >
+                <Spreadsheet
+                  rows={50}
+                  columns={26}
+                  onCellSelect={onCellSelect}
+                  selectedCell={selectedCell}
+                />
+              </div>
 
-      {!useFlowDiag && (
-        <div className={styles.sidePanels}>
-          {insightsOpen && analysisState && (
-            <div className={styles.panelSlot} id="insights-panel">
-              <AnalysisPanel
-                cellLabel={analysisState.cellLabel}
-                samples={analysisState.samples}
-                distributionType={analysisState.distributionType}
-                confidenceInterval={analysisState.confidenceInterval}
-                message={analysisState.message}
-                onClose={onCloseInsights}
-                compact={isCompactLayout}
-              />
-            </div>
+              <div
+                className={`${styles.resizeHandle} ${isDragging ? styles.resizeHandleActive : ""}`}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                aria-label="Resize split panes"
+                role="separator"
+                aria-orientation="vertical"
+                aria-valuenow={
+                  sheetWidth !== null ? Math.round(sheetWidth) : 50
+                }
+                aria-valuemin={MIN_SHEET_PX}
+                aria-valuemax={800}
+              >
+                <div className={styles.resizeHandleBar} />
+              </div>
+
+              <div className={styles.flowPane}>
+                <FlowDiag
+                  selectedCell={selectedCell}
+                  onCellSelect={onCellSelect}
+                />
+              </div>
+            </>
+          ) : (
+            <Spreadsheet
+              rows={50}
+              columns={26}
+              onCellSelect={onCellSelect}
+              selectedCell={selectedCell}
+            />
           )}
+        </div>
 
+        {/* ── Side panels (AI) — always outside the split area ── */}
+        <div className={styles.sidePanels}>
           {aiPanelOpen && (
             <div className={styles.panelSlot} id="ai-copilot-panel">
               <AICopilotPanel
@@ -97,33 +170,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
           )}
         </div>
-      )}
-
-      {useFlowDiag && (
-        <div
-          className={styles.flowOverlay}
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              onCloseFlowDiag();
-            }
-          }}
-        >
-          <div
-            className={styles.flowDialog}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={onCloseFlowDiag}
-              className={styles.flowCloseButton}
-              title="Close Flow Diagram"
-            >
-              ×
-            </button>
-            <FlowDiag />
-          </div>
-        </div>
-      )}
+      </div>
     </div>
-  </div>
-);
+  );
+};

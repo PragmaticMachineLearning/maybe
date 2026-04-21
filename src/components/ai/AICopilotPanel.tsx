@@ -1,55 +1,55 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 
 import {
   createMockCopilotResult,
   type MockCopilotResult,
-} from './aiCopilotMock'
-import styles from './AICopilotPanel.module.css'
+} from "./aiCopilotMock";
+import styles from "./AICopilotPanel.module.css";
 
 interface AICopilotPanelProps {
-  onClose: () => void
-  compact?: boolean
+  onClose: () => void;
+  compact?: boolean;
 }
 
-const DEFAULT_PROMPT = 'Propagate uncertainty downstream cells (95% CI)'
+const DEFAULT_PROMPT = "Propagate uncertainty downstream cells (95% CI)";
 
 export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   onClose,
   compact = false,
 }) => {
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
+  const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [result, setResult] = useState<MockCopilotResult | null>(() =>
     createMockCopilotResult(DEFAULT_PROMPT),
-  )
-  const [reviewStatus, setReviewStatus] = useState('Preview ready')
+  );
+  const [reviewStatus, setReviewStatus] = useState("Preview ready");
 
   const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault()
-    setResult(createMockCopilotResult(prompt))
-    setReviewStatus('Preview ready')
-  }
+    event.preventDefault();
+    setResult(createMockCopilotResult(prompt));
+    setReviewStatus("Preview ready");
+  };
 
   const handleConfirm = () => {
-    setReviewStatus('Preview accepted locally. No sheet changes were applied.')
-  }
+    setReviewStatus("Preview accepted locally. No sheet changes were applied.");
+  };
 
   const handleCancel = () => {
-    setReviewStatus('Preview cancelled. No sheet changes were applied.')
-  }
+    setReviewStatus("Preview cancelled. No sheet changes were applied.");
+  };
 
   return (
     <aside
-      className={`${styles.panel} ${compact ? styles.panelCompact : ''}`}
-      aria-label="AI Copilot"
+      className={`${styles.panel} ${compact ? styles.panelCompact : ""}`}
+      aria-label="Sage"
     >
       <header className={styles.header}>
         <span className={styles.statusDot} />
-        <span className={styles.title}>AI Copilot</span>
+        <span className={styles.title}>Sage</span>
         <button
           type="button"
           onClick={onClose}
           className={styles.closeButton}
-          title="Close AI copilot"
+          title="Close Sage"
         >
           ×
         </button>
@@ -92,11 +92,11 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
                     <tr
                       key={row.cell}
                       className={
-                        row.tone === 'add' ? styles.rowAdd : styles.rowChange
+                        row.tone === "add" ? styles.rowAdd : styles.rowChange
                       }
                     >
                       <td className={styles.cellCode}>{row.cell}</td>
-                      <td className={styles.cellCode}>{row.before || '-'}</td>
+                      <td className={styles.cellCode}>{row.before || "-"}</td>
                       <td className={styles.cellCode}>{row.after}</td>
                       <td>{row.reason}</td>
                     </tr>
@@ -130,5 +130,5 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         </p>
       </div>
     </aside>
-  )
-}
+  );
+};

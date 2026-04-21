@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import ReactEChartsCore, { echarts } from "../../lib/echarts";
 import {
@@ -25,8 +20,17 @@ interface DistributionPlotProps {
     upper: number;
     confidenceLevel: number;
   };
-  onOpenAnalysis?: () => void;
 }
+
+const computePercentile = (sorted: number[], p: number): number => {
+  if (!sorted.length) return NaN;
+  const index = (p / 100) * (sorted.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  const weight = index - lower;
+  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+};
 
 const SettingsIcon: React.FC<{ size?: number; color?: string }> = ({
   size = 16,
@@ -98,7 +102,6 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   inline = false,
   distributionType,
   confidenceInterval,
-  onOpenAnalysis,
 }) => {
   const confidenceLower = confidenceInterval?.lower;
   const confidenceUpper = confidenceInterval?.upper;
@@ -182,7 +185,21 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       : undefined,
   );
   const confidenceIntervalSuppressedByMissingRef = useRef(false);
-  const hasSeenConfidenceIntervalRef = useRef(Boolean(normalizedConfidenceInterval));
+  const hasSeenConfidenceIntervalRef = useRef(
+    Boolean(normalizedConfidenceInterval),
+  );
+  const stats = useMemo(() => {
+    if (!samples || samples.length === 0) return null;
+    const sorted = [...samples].sort((a, b) => a - b);
+    const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+    return {
+      p10: computePercentile(sorted, 10),
+      median: computePercentile(sorted, 50),
+      p90: computePercentile(sorted, 90),
+      mean,
+    };
+  }, [samples]);
+
   const [queryState, setQueryState] = useState<DistributionQueryState>(() => ({
     ...DEFAULT_QUERY_STATE,
     confidenceLevel:
@@ -272,7 +289,9 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       ? `${normalizedConfidenceInterval.lower}|${normalizedConfidenceInterval.upper}|${normalizedConfidenceInterval.confidenceLevel}`
       : undefined;
 
-    if (previousConfidenceIntervalKeyRef.current === nextConfidenceIntervalKey) {
+    if (
+      previousConfidenceIntervalKeyRef.current === nextConfidenceIntervalKey
+    ) {
       return;
     }
 
@@ -342,27 +361,16 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       }
     >
       <div className={headerClassName}>
-        {onOpenAnalysis && (
-          <button onClick={onOpenAnalysis} className={styles.pillBtn}>
-            <SettingsIcon size={16} color="var(--text-secondary)" />
-            Analysis
-          </button>
-        )}
-        {!onOpenAnalysis && (
-          <button
-            onClick={() => setShowSettings((prev) => !prev)}
-            className={[
-              styles.pillBtn,
-              showSettings ? styles.pillBtnActive : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            aria-expanded={showSettings}
-          >
-            <SettingsIcon size={16} color="var(--text-secondary)" />
-            Settings
-          </button>
-        )}
+        <button
+          onClick={() => setShowSettings((prev) => !prev)}
+          className={[styles.pillBtn, showSettings ? styles.pillBtnActive : ""]
+            .filter(Boolean)
+            .join(" ")}
+          aria-expanded={showSettings}
+        >
+          <SettingsIcon size={16} color="var(--text-secondary)" />
+          Settings
+        </button>
         {!inline && (
           <button
             onClick={onClose}
@@ -450,6 +458,23 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
         style={{ height: inline ? "260px" : "240px" }}
         opts={{ renderer: "svg" }}
       />
+
+      {stats && (
+        <div className={styles.statsStrip}>
+          <div className={styles.statChip}>
+            <span className={styles.statLabel}>P10</span>
+            <span className={styles.statValue}>{stats.p10.toFixed(2)}</span>
+          </div>
+          <div className={styles.statChip}>
+            <span className={styles.statLabel}>MEDIAN</span>
+            <span className={styles.statValue}>{stats.median.toFixed(2)}</span>
+          </div>
+          <div className={styles.statChip}>
+            <span className={styles.statLabel}>P90</span>
+            <span className={styles.statValue}>{stats.p90.toFixed(2)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -30,7 +30,6 @@ interface SpreadsheetProps {
   columns: number;
   onCellSelect?: (row: number, col: number) => void;
   selectedCell?: { row: number; col: number } | null;
-  onOpenAnalysis?: () => void;
 }
 
 // Define the row data type
@@ -49,7 +48,6 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
   columns,
   onCellSelect,
   selectedCell,
-  onOpenAnalysis,
 }) => {
   const { formulaEngine, updateCell } = useContext(SpreadsheetContext);
   const [cellData, setCellData] = useState<unknown[][]>([]);
@@ -80,6 +78,12 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
       formulaEngine.off("valuesUpdated", updateCellData);
     };
   }, [formulaEngine, rows, columns]);
+
+  const hasData = useMemo(() => {
+    return cellData.some((row) =>
+      row.some((cell) => cell !== null && cell !== undefined && cell !== ""),
+    );
+  }, [cellData]);
 
   const getColumnName = (index: number): string => {
     let result = "";
@@ -156,7 +160,6 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
               }
               onRequestEdit={(row, col) => setEditingCell({ row, col })}
               onStopEdit={() => setEditingCell(null)}
-              onOpenAnalysis={onOpenAnalysis}
             />
           );
         },
@@ -170,7 +173,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
     }
 
     return cols;
-  }, [columns, editingCell, onOpenAnalysis]);
+  }, [columns, editingCell]);
 
   const handleCellValueChange = (
     rowIndex: number,
@@ -201,6 +204,67 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
 
   return (
     <div className={styles.tableContainer}>
+      {!hasData && (
+        <div className={styles.welcomeOverlay}>
+          <div className={styles.welcomeContent}>
+            <svg
+              className={styles.welcomeIcon}
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <rect
+                x="6"
+                y="6"
+                width="36"
+                height="36"
+                rx="4"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="6"
+                y1="16"
+                x2="42"
+                y2="16"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <line
+                x1="18"
+                y1="6"
+                x2="18"
+                y2="42"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <circle
+                cx="30"
+                cy="28"
+                r="6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeDasharray="3 2"
+              />
+              <path
+                d="M28 28 L30 24 L32 28"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <p className={styles.welcomeTitle}>Start building your model</p>
+            <p className={styles.welcomeSubtitle}>
+              Type values, formulas, or ranges like <code>CI[10, 20]</code> to
+              add uncertainty
+            </p>
+          </div>
+        </div>
+      )}
       <table className={styles.table}>
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
