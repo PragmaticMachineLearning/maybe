@@ -136,6 +136,12 @@
     gap: 10px;
 }
 
+.messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 /* ── User prompt echo ────────────────────────────────────────────────── */
 
 .userPrompt {
@@ -149,6 +155,24 @@
 
 .userPromptText {
     display: block;
+    white-space: pre-wrap;
+}
+
+.assistantMessage {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+}
+
+.errorBox {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--dist-lognormal-accent);
+    background: var(--dist-lognormal-bg);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 /* ── Change list ─────────────────────────────────────────────────────── */
@@ -281,6 +305,17 @@
 
 .applyBtn:hover {
     opacity: 0.85;
+}
+
+.applyBtn:disabled,
+.applyBtnDisabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.applyBtn:disabled:hover,
+.applyBtnDisabled:hover {
+    opacity: 0.45;
 }
 
 .dismissBtn {

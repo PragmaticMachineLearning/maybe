@@ -1,10 +1,20 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
-  createMockCopilotResult,
-  type MockCopilotResult,
-  type CopilotDiffRow,
-} from "./aiCopilotMock";
+  extractAssistantProposalFromText,
+  stripAssistantProposalFromText,
+  validateAssistantProposal,
+  type AssistantCellChange,
+} from "../../assistant/proposals";
+import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./AICopilotPanel.module.css";
 
 interface AICopilotPanelProps {
@@ -33,54 +43,150 @@ const SageIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
   </svg>
 );
 
-const toneLabels: Record<CopilotDiffRow["tone"], string> = {
-  change: "Update",
+const toneLabels: Record<AssistantCellChange["kind"], string> = {
+  update: "Update",
   add: "New",
   review: "Review",
 };
 
+const getMessageText = (message: UIMessage): string =>
+  message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("");
+
+const getReadableError = (error: Error | undefined): string | null => {
+  if (!error) return null;
+
+  try {
+    const parsed = JSON.parse(error.message) as { error?: unknown };
+    if (typeof parsed.error === "string") {
+      return parsed.error;
+    }
+  } catch {
+    // Non-JSON transport errors are already readable enough to show.
+  }
+
+  return error.message;
+};
+
+const getUnknownErrorMessage = (error: unknown): string =>
+  error instanceof Error
+    ? (getReadableError(error) ?? error.message)
+    : "Unable to contact Sage.";
+
 export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   onClose,
   compact = false,
+  selectedCell = null,
 }) => {
+  const { getWorkbookSnapshot, applyAssistantChanges } =
+    useContext(SpreadsheetContext);
   const [prompt, setPrompt] = useState("");
-  const [result, setResult] = useState<MockCopilotResult | null>(null);
-  const [status, setStatus] = useState<
-    "idle" | "preview" | "accepted" | "cancelled"
-  >("idle");
+  const [dismissedProposalKey, setDismissedProposalKey] = useState<
+    string | null
+  >(null);
+  const [appliedProposalKey, setAppliedProposalKey] = useState<string | null>(
+    null,
+  );
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const transport = useMemo(
+    () => new DefaultChatTransport<UIMessage>({ api: "/api/assistant" }),
+    [],
+  );
+  const {
+    messages,
+    sendMessage,
+    status,
+    error,
+    clearError,
+  } = useChat<UIMessage>({
+    transport,
+  });
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!prompt.trim()) return;
-    setResult(createMockCopilotResult(prompt));
-    setStatus("preview");
+    await submitPrompt();
+  };
+
+  const submitPrompt = async () => {
+    const text = prompt.trim();
+    if (!text) return;
+
+    setPrompt("");
+    setApplyError(null);
+    setRequestError(null);
+    clearError();
+    const workbookSnapshot = getWorkbookSnapshot(selectedCell ?? null);
+    try {
+      await sendMessage({ text }, { body: { workbookSnapshot } });
+    } catch (caughtError) {
+      setRequestError(getUnknownErrorMessage(caughtError));
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (prompt.trim()) {
-        setResult(createMockCopilotResult(prompt));
-        setStatus("preview");
-      }
+      void submitPrompt();
     }
   };
 
+  const assistantMessages = messages.filter(
+    (message) => message.role === "assistant",
+  );
+  const latestAssistantWithProposal = assistantMessages
+    .slice()
+    .reverse()
+    .map((message) => ({
+      message,
+      text: getMessageText(message),
+    }))
+    .find(({ text }) => extractAssistantProposalFromText(text) !== null);
+  const latestProposal = latestAssistantWithProposal
+    ? extractAssistantProposalFromText(latestAssistantWithProposal.text)
+    : null;
+  const latestProposalKey =
+    latestAssistantWithProposal && latestProposal
+      ? `${latestAssistantWithProposal.message.id}:${JSON.stringify(latestProposal)}`
+      : null;
+  const validationSnapshot = getWorkbookSnapshot(selectedCell ?? null);
+  const proposalValidation =
+    latestProposal && validationSnapshot
+      ? validateAssistantProposal(latestProposal, validationSnapshot)
+      : null;
+  const showProposal =
+    latestProposal !== null &&
+    proposalValidation !== null &&
+    latestProposalKey !== null &&
+    latestProposalKey !== dismissedProposalKey;
+  const transportError = getReadableError(error) ?? requestError;
+  const isBusy = status === "submitted" || status === "streaming";
+
   const handleConfirm = () => {
-    setStatus("accepted");
+    if (!proposalValidation || !latestProposalKey) return;
+
+    setApplyError(null);
+
+    try {
+      applyAssistantChanges(proposalValidation.applyableChanges);
+      setAppliedProposalKey(latestProposalKey);
+    } catch (caughtError) {
+      setApplyError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Unable to apply Sage's proposal.",
+      );
+    }
   };
 
   const handleDismiss = () => {
-    setStatus("cancelled");
-  };
-
-  const handleNewRequest = () => {
-    setResult(null);
-    setStatus("idle");
-    setPrompt("");
-    inputRef.current?.focus();
+    if (latestProposalKey) {
+      setDismissedProposalKey(latestProposalKey);
+    }
   };
 
   // Scroll to bottom when new results appear
@@ -88,11 +194,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [result, status]);
-
-  const hasResult =
-    result != null &&
-    (status === "preview" || status === "accepted" || status === "cancelled");
+  }, [messages, status, showProposal, applyError, transportError]);
 
   return (
     <aside
@@ -132,44 +234,95 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
       {/* ── Scrollable content area ────────────────────────────────── */}
       <div ref={scrollRef} className={styles.content}>
         {/* Empty state */}
-        {!hasResult && (
+        {messages.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
               <SageIcon size={20} />
             </div>
-            <p className={styles.emptyTitle}>What can I help you build?</p>
+            <p className={styles.emptyTitle}>Ask Sage about this workbook</p>
             <p className={styles.emptyHint}>
-              Describe a change to your model — I&apos;ll suggest the
-              spreadsheet updates.
+              Sage can inspect workbook values, formulas, and uncertainty, then
+              suggest spreadsheet updates for you to review.
             </p>
           </div>
         )}
 
-        {/* Results */}
-        {hasResult && result && (
-          <div className={styles.results}>
-            {/* User's prompt (shown as context) */}
-            <div className={styles.userPrompt}>
-              <span className={styles.userPromptText}>{result.message}</span>
-            </div>
+        {messages.length > 0 && (
+          <div className={styles.messages}>
+            {messages.map((message) => {
+              const rawText = getMessageText(message);
+              const visibleText =
+                message.role === "assistant"
+                  ? stripAssistantProposalFromText(rawText)
+                  : rawText;
 
-            {/* Change list */}
+              if (!visibleText) return null;
+
+              return (
+                <div
+                  key={message.id}
+                  className={
+                    message.role === "user"
+                      ? styles.userPrompt
+                      : styles.assistantMessage
+                  }
+                >
+                  <span className={styles.userPromptText}>{visibleText}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {isBusy && (
+          <div className={styles.statusRow}>
+            <span className={styles.statusDot} />
+            <span className={styles.statusText}>Sage is thinking…</span>
+          </div>
+        )}
+
+        {transportError && <div className={styles.errorBox}>{transportError}</div>}
+        {latestProposal && !validationSnapshot && (
+          <div className={styles.errorBox}>
+            Sage prepared a proposal, but the workbook is not ready for review.
+          </div>
+        )}
+        {proposalValidation?.errors.map((validationError) => (
+          <div key={validationError} className={styles.errorBox}>
+            {validationError}
+          </div>
+        ))}
+        {applyError && <div className={styles.errorBox}>{applyError}</div>}
+
+        {/* Results */}
+        {showProposal && proposalValidation && (
+          <div className={styles.results}>
             <div className={styles.changeList}>
-              {result.preview.rows.map((row) => (
-                <ChangeRow key={row.cell} row={row} />
+              {proposalValidation.proposal?.changes.map((row) => (
+                <ChangeRow key={`${row.cell}:${row.kind}`} row={row} />
               ))}
             </div>
 
             {/* Inline actions */}
-            {status === "preview" && (
+            {appliedProposalKey === latestProposalKey ? (
+              <div className={styles.statusRow}>
+                <span className={styles.statusDot} />
+                <span className={styles.statusText}>Applied</span>
+              </div>
+            ) : (
               <div className={styles.inlineActions}>
                 <button
                   type="button"
-                  className={styles.applyBtn}
+                  className={`${styles.applyBtn} ${
+                    proposalValidation.applyableChanges.length === 0
+                      ? styles.applyBtnDisabled
+                      : ""
+                  }`}
                   onClick={handleConfirm}
+                  disabled={proposalValidation.applyableChanges.length === 0}
                 >
-                  Apply {result.preview.rows.length} change
-                  {result.preview.rows.length !== 1 ? "s" : ""}
+                  Apply {proposalValidation.applyableChanges.length} change
+                  {proposalValidation.applyableChanges.length !== 1 ? "s" : ""}
                 </button>
                 <button
                   type="button"
@@ -177,33 +330,6 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
                   onClick={handleDismiss}
                 >
                   Dismiss
-                </button>
-              </div>
-            )}
-
-            {status === "accepted" && (
-              <div className={styles.statusRow}>
-                <span className={styles.statusDot} />
-                <span className={styles.statusText}>Applied</span>
-                <button
-                  type="button"
-                  className={styles.statusLink}
-                  onClick={handleNewRequest}
-                >
-                  New request
-                </button>
-              </div>
-            )}
-
-            {status === "cancelled" && (
-              <div className={styles.statusRow}>
-                <span className={styles.statusText}>Dismissed</span>
-                <button
-                  type="button"
-                  className={styles.statusLink}
-                  onClick={handleNewRequest}
-                >
-                  Try again
                 </button>
               </div>
             )}
@@ -221,11 +347,12 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
           onKeyDown={handleKeyDown}
           placeholder="Describe what to change…"
           rows={1}
+          disabled={isBusy}
         />
         <button
           type="submit"
           className={styles.sendBtn}
-          disabled={!prompt.trim()}
+          disabled={!prompt.trim() || isBusy}
           title="Send"
           aria-label="Send"
         >
@@ -250,18 +377,18 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
 
 // ── Change row (compact, single-line-ish) ───────────────────────────────────
 
-const ChangeRow: React.FC<{ row: CopilotDiffRow }> = ({ row }) => {
+const ChangeRow: React.FC<{ row: AssistantCellChange }> = ({ row }) => {
   const toneClass =
-    row.tone === "add"
+    row.kind === "add"
       ? styles.toneAdd
-      : row.tone === "change"
+      : row.kind === "update"
         ? styles.toneChange
         : styles.toneReview;
 
   return (
     <div className={`${styles.changeRow} ${toneClass}`}>
       <div className={styles.changeTop}>
-        <span className={styles.changeTone}>{toneLabels[row.tone]}</span>
+        <span className={styles.changeTone}>{toneLabels[row.kind]}</span>
         <span className={styles.changeCell}>{row.cell}</span>
         {row.before ? (
           <span className={styles.changeArrow}>
