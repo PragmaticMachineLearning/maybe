@@ -5,6 +5,20 @@ import type { WorkbookSnapshot } from "./workbookSnapshot";
 
 export type MaybeAssistantMessage = UIMessage;
 
+export const uiMessagePartSchema = z
+  .object({
+    type: z.string(),
+  })
+  .passthrough();
+
+export const maybeAssistantMessageSchema = z
+  .object({
+    id: z.string().optional(),
+    role: z.enum(["system", "user", "assistant"]),
+    parts: z.array(uiMessagePartSchema),
+  })
+  .passthrough();
+
 export const workbookSnapshotSchema = z.object({
   sheetName: z.string(),
   dimensions: z.object({
@@ -19,7 +33,7 @@ export const workbookSnapshotSchema = z.object({
 });
 
 export const assistantRequestSchema = z.object({
-  messages: z.array(z.unknown()),
+  messages: z.array(maybeAssistantMessageSchema),
   workbookSnapshot: workbookSnapshotSchema,
 });
 
