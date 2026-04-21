@@ -7,7 +7,8 @@ export type MaybeAssistantMessage = UIMessage;
 
 export const uiMessagePartSchema = z
   .object({
-    type: z.string(),
+    type: z.literal("text"),
+    text: z.string(),
   })
   .passthrough();
 

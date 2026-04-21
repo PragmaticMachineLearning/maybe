@@ -113,4 +113,61 @@ describe("assistant route", () => {
     expect(response.status).toBe(400);
     expect(streamTextFn).not.toHaveBeenCalled();
   });
+
+  it("returns a 400 error when a text part is missing text", async () => {
+    const streamTextFn = vi.fn(() => ({
+      toUIMessageStreamResponse: () => new Response(),
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => "sk-test",
+      streamTextFn,
+    });
+
+    const response = await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validAssistantRequestBody,
+          messages: [{ role: "user", parts: [{ type: "text" }] }],
+        }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: "Invalid assistant request.",
+    });
+    expect(response.status).toBe(400);
+    expect(streamTextFn).not.toHaveBeenCalled();
+  });
+
+  it("accepts valid text messages before checking OPENAI_API_KEY", async () => {
+    const streamTextFn = vi.fn(() => ({
+      toUIMessageStreamResponse: () => new Response(),
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => undefined,
+      streamTextFn,
+    });
+
+    const response = await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validAssistantRequestBody,
+          messages: [
+            {
+              role: "user",
+              parts: [{ type: "text", text: "hello" }],
+            },
+          ],
+        }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: "OPENAI_API_KEY is not configured for the assistant server.",
+    });
+    expect(response.status).toBe(500);
+    expect(streamTextFn).not.toHaveBeenCalled();
+  });
 });
