@@ -15,14 +15,14 @@ export const assistantCellChangeSchema = z.object({
   kind: z.enum(["add", "update", "review"]),
 }).strict();
 
-const assistantProposalSchema = z.object({
+export const assistantProposalSchema = z.object({
   title: z.string(),
   summary: z.string(),
   changes: z.array(assistantCellChangeSchema),
 }).strict();
 
 export type AssistantCellChange = z.infer<typeof assistantCellChangeSchema>;
-type AssistantProposal = z.infer<typeof assistantProposalSchema>;
+export type AssistantProposal = z.infer<typeof assistantProposalSchema>;
 
 interface AssistantProposalValidationResult {
   valid: boolean;
@@ -32,6 +32,13 @@ interface AssistantProposalValidationResult {
 }
 
 const proposalBlockPattern = /```(maybe-proposal|json)\s*([\s\S]*?)```/g;
+
+interface AssistantToolProposalPart {
+  type: string;
+  state?: string;
+  output?: unknown;
+  input?: unknown;
+}
 
 const normalizeCellAddress = (cell: string): string => cell.trim().toUpperCase();
 
@@ -52,7 +59,9 @@ const getCellTextFromSnapshot = (
   return snapshotCell.displayValue;
 };
 
-const normalizeProposal = (proposal: AssistantProposal): AssistantProposal => ({
+export const normalizeAssistantProposal = (
+  proposal: AssistantProposal,
+): AssistantProposal => ({
   ...proposal,
   changes: proposal.changes.map((change) => ({
     ...change,
@@ -65,10 +74,16 @@ const parseProposalJson = (jsonText: string): AssistantProposal | null => {
     const parsed = JSON.parse(jsonText);
     const result = assistantProposalSchema.safeParse(parsed);
 
-    return result.success ? normalizeProposal(result.data) : null;
+    return result.success ? normalizeAssistantProposal(result.data) : null;
   } catch {
     return null;
   }
+};
+
+const parseProposalValue = (value: unknown): AssistantProposal | null => {
+  const result = assistantProposalSchema.safeParse(value);
+
+  return result.success ? normalizeAssistantProposal(result.data) : null;
 };
 
 const getDuplicateNonReviewCells = (
@@ -119,6 +134,26 @@ export const stripAssistantProposalFromText = (text: string): string =>
     })
     .trim();
 
+export const extractAssistantProposalFromParts = (
+  parts: readonly AssistantToolProposalPart[],
+): AssistantProposal | null => {
+  for (const part of parts) {
+    if (
+      part.type !== "tool-proposeCellChanges" ||
+      part.state !== "output-available"
+    ) {
+      continue;
+    }
+
+    const proposal = parseProposalValue(part.output);
+    if (proposal !== null) {
+      return proposal;
+    }
+  }
+
+  return null;
+};
+
 export const validateAssistantProposal = (
   proposal: AssistantProposal | null,
   snapshot: WorkbookSnapshot,
@@ -132,7 +167,7 @@ export const validateAssistantProposal = (
     };
   }
 
-  const normalizedProposal = normalizeProposal(proposal);
+  const normalizedProposal = normalizeAssistantProposal(proposal);
   const applyableChanges: AssistantCellChange[] = [];
   const errors: string[] = [];
   const duplicateNonReviewCells = getDuplicateNonReviewCells(

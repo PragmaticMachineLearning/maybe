@@ -262,6 +262,75 @@ test("renders Sage prose readably and applies proposals from json fences", async
     .toBeVisible();
 });
 
+test("renders and applies proposals produced by Sage tools", async ({ page }) => {
+  const proposal = {
+    title: "Add tool proposal output",
+    summary: "Adds a starter confidence interval through the proposal tool.",
+    changes: [
+      {
+        cell: "A1",
+        before: "",
+        after: "CI[100, 200]",
+        reason: "Capture the uncertain source estimate as a distribution.",
+        kind: "add",
+      },
+    ],
+  };
+
+  await page.route("**/api/assistant", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: [
+        { type: "start", messageId: "sage-tool-proposal" },
+        { type: "start-step" },
+        { type: "text-start", id: "text-1" },
+        {
+          type: "text-delta",
+          id: "text-1",
+          delta: "I prepared one workbook change for review.",
+        },
+        { type: "text-end", id: "text-1" },
+        {
+          type: "tool-input-available",
+          toolCallId: "proposal-tool-call",
+          toolName: "proposeCellChanges",
+          input: proposal,
+        },
+        {
+          type: "tool-output-available",
+          toolCallId: "proposal-tool-call",
+          output: proposal,
+        },
+        { type: "finish-step" },
+        { type: "finish", finishReason: "stop" },
+      ]
+        .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+        .join(""),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /Sage/i }).click();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("Use the proposal tool to set up A1");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(
+    page.getByText("I prepared one workbook change for review."),
+  ).toBeVisible();
+  await expect(page.getByText("CI[100, 200]")).toBeVisible();
+  await page.getByRole("button", { name: "Apply 1 change" }).click();
+  await expect(page.getByText("Applied")).toBeVisible();
+
+  await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
+  await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
+    "CI[100.00, 200.00]",
+  );
+});
+
 test("shows a setup error when the assistant server has no OpenAI key", async ({
   page,
 }) => {

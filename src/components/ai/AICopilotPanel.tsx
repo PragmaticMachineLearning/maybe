@@ -9,10 +9,12 @@ import React, {
 } from "react";
 
 import {
+  extractAssistantProposalFromParts,
   extractAssistantProposalFromText,
   stripAssistantProposalFromText,
   validateAssistantProposal,
   type AssistantCellChange,
+  type AssistantProposal,
 } from "../../assistant/proposals";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./AICopilotPanel.module.css";
@@ -54,6 +56,10 @@ const getMessageText = (message: UIMessage): string =>
     .filter((part) => part.type === "text")
     .map((part) => part.text)
     .join("");
+
+const getMessageProposal = (message: UIMessage): AssistantProposal | null =>
+  extractAssistantProposalFromParts(message.parts) ??
+  extractAssistantProposalFromText(getMessageText(message));
 
 const proposalFencePattern = /```(?:maybe-proposal|json)/g;
 
@@ -315,13 +321,10 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const latestAssistantWithProposal = assistantMessages
     .slice()
     .reverse()
-    .map((message) => ({
-      message,
-      text: getMessageText(message),
-    }))
-    .find(({ text }) => extractAssistantProposalFromText(text) !== null);
+    .map((message) => ({ message, proposal: getMessageProposal(message) }))
+    .find(({ proposal }) => proposal !== null);
   const latestProposal = latestAssistantWithProposal
-    ? extractAssistantProposalFromText(latestAssistantWithProposal.text)
+    ? latestAssistantWithProposal.proposal
     : null;
   const latestProposalKey =
     latestAssistantWithProposal && latestProposal

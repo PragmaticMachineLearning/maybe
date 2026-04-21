@@ -234,11 +234,18 @@ describe("assistant route", () => {
       throw new Error("streamTextFn was not called with options.");
     }
 
+    expect(Object.keys(options.tools ?? {})).toEqual([
+      "getWorkbookContext",
+      "validateFormula",
+      "proposeCellChanges",
+    ]);
+    expect(options.stopWhen).toBeDefined();
     expect(options.system).toContain("Current workbook snapshot");
     expect(options.system).toContain("CI[10, 20]");
     expect(options.system).toContain("Do not use LaTeX");
-    expect(options.system).toContain("Return exactly one valid JSON object");
-    expect(options.system).toContain("```maybe-proposal");
+    expect(options.system).toContain("Use getWorkbookContext");
+    expect(options.system).toContain("Use validateFormula");
+    expect(options.system).toContain("Use proposeCellChanges");
 
     const sentMessages = options.messages;
     expect(sentMessages).toBeDefined();
@@ -258,6 +265,76 @@ describe("assistant route", () => {
       }),
     ]);
     expect(sentMessages[0]).not.toHaveProperty("parts");
+  });
+
+  it("provides workbook inspection, formula validation, and proposal tools", async () => {
+    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+      options,
+      toUIMessageStreamResponse: () => new Response("ok"),
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => "sk-test",
+      streamTextFn,
+    });
+
+    await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        body: JSON.stringify(requestBodyWithWorkbookContext),
+      }),
+    );
+
+    const options = streamTextFn.mock.calls[0]?.[0];
+    expect(options?.tools).toBeDefined();
+    if (!options?.tools) {
+      throw new Error("streamTextFn was not called with tools.");
+    }
+
+    const tools = options.tools as unknown as Record<
+      string,
+      { execute: (...args: unknown[]) => Promise<unknown> | unknown }
+    >;
+
+    await expect(tools.getWorkbookContext.execute({})).resolves.toMatchObject({
+      sheetName: "Sheet1",
+      cells: [
+        expect.objectContaining({
+          address: "A1",
+          kind: "confidence_interval",
+        }),
+      ],
+    });
+    await expect(
+      tools.validateFormula.execute({ cell: "B1", formula: "=A1*2" }),
+    ).resolves.toMatchObject({
+      cell: "B1",
+      valid: true,
+      formula: "=A1*2",
+      kind: "sampled_distribution",
+    });
+    await expect(
+      tools.proposeCellChanges.execute({
+        title: "Add output",
+        summary: "Adds one uncertainty-preserving output.",
+        changes: [
+          {
+            cell: " b1 ",
+            before: "",
+            after: "=A1*2",
+            reason: "Double the uncertain input.",
+            kind: "add",
+          },
+        ],
+      }),
+    ).resolves.toMatchObject({
+      title: "Add output",
+      changes: [
+        expect.objectContaining({
+          cell: "B1",
+          after: "=A1*2",
+        }),
+      ],
+    });
   });
 
   it("accepts assistant history containing step-start parts", async () => {

@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import {
   convertToModelMessages,
+  stepCountIs,
   streamText,
   type StreamTextResult,
   type ToolSet,
@@ -11,6 +12,7 @@ import {
   type AssistantRequestBody,
   type MaybeAssistantMessage,
 } from "../assistant/messages";
+import { createAssistantTools } from "../assistant/tools";
 import type { WorkbookSnapshot } from "../assistant/workbookSnapshot";
 
 const jsonResponse = (body: unknown, status: number): Response =>
@@ -34,28 +36,11 @@ const buildSystemPrompt = (workbookSnapshot: WorkbookSnapshot): string =>
     "The workbook can contain confidence intervals such as CI[10, 20], sampled distributions, formulas, scalar values, text, booleans, and errors.",
     "Do not use LaTeX. Use Maybe spreadsheet formulas such as =A1*B1, CI[10, 20], P10(A1), P50(A1), and P90(A1).",
     "Keep visible responses concise and readable: a short summary, the key formulas, and any caveats. Do not expose raw JSON to the user.",
-    "When the user asks you to add, update, or set up worksheet content, use the hidden proposal block. Return exactly one valid JSON object inside exactly one hidden block fenced as ```maybe-proposal.",
-    "The visible response should explain the recommendation. The proposed edits belong only in that hidden JSON block.",
-    "Each proposal change must use before fields that exactly match the current formula when a formula exists, otherwise the current display value.",
+    "Use getWorkbookContext when you need to inspect the workbook state, selected cell, formulas, or distribution summaries.",
+    "Use validateFormula before proposing any formula you invent or revise.",
+    "Use proposeCellChanges when the user asks you to add, update, or set up worksheet content. The tool returns a typed proposal for the UI to review; it does not mutate the workbook.",
+    "Each proposed change must use before fields that exactly match the current formula when a formula exists, otherwise the current display value.",
     "Do not say that you will implement changes, have implemented changes, or that the user should look for a hidden proposal. The user must click Apply before any proposed edit changes the workbook.",
-    "A proposal block must match this shape exactly:",
-    [
-      "```maybe-proposal",
-      JSON.stringify({
-        title: "Add cost review outputs",
-        summary: "Adds formulas that preserve uncertainty through the cost estimate.",
-        changes: [
-          {
-            cell: "B7",
-            before: "",
-            after: "=A1*A2",
-            reason: "Combine uncertain source inputs without flattening them.",
-            kind: "add",
-          },
-        ],
-      }),
-      "```",
-    ].join("\n"),
     "If the workbook snapshot is truncated, say that the recommendation is based on partial context and ask for confirmation before relying on omitted cells.",
     "Current workbook snapshot:",
     JSON.stringify(workbookSnapshot, null, 2),
@@ -129,6 +114,8 @@ export const createAssistantHandler = ({
       model: openaiProvider(process.env.OPENAI_MODEL ?? "gpt-4o-mini"),
       system: buildSystemPrompt(body.workbookSnapshot),
       messages: await convertToModelMessages(body.messages),
+      tools: createAssistantTools(body.workbookSnapshot),
+      stopWhen: stepCountIs(4),
     });
 
     return result.toUIMessageStreamResponse({
