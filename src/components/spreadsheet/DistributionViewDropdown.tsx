@@ -1,4 +1,5 @@
 import React from "react";
+import type { DistributionViewType } from "../../utils/distribution/distributionUtils";
 import styles from "./CellRenderer.module.css";
 
 const ChevronDownIcon: React.FC<{ size?: number; color?: string }> = ({
@@ -52,16 +53,27 @@ const DistributionIcon: React.FC = () => (
 );
 
 interface DistributionViewDropdownProps {
-  viewType: "normal" | "lognormal" | "uniform";
+  availableViews: DistributionViewType[];
+  viewType: DistributionViewType;
   showDropdown: boolean;
   onToggleDropdown: () => void;
-  onSelectView: (type: "normal" | "lognormal" | "uniform") => void;
+  onSelectView: (type: DistributionViewType) => void;
   dropdownRef: React.RefObject<HTMLDivElement | null>;
 }
+
+const distributionOptions: Array<{
+  type: DistributionViewType;
+  label: string;
+}> = [
+  { type: "normal", label: "Normal Distribution" },
+  { type: "lognormal", label: "Log-Normal Distribution" },
+  { type: "uniform", label: "Uniform Distribution" },
+];
 
 export const DistributionViewDropdown: React.FC<
   DistributionViewDropdownProps
 > = ({
+  availableViews,
   viewType,
   showDropdown,
   onToggleDropdown,
@@ -89,42 +101,23 @@ export const DistributionViewDropdown: React.FC<
         <div className={styles.dropdownPanel}>
           <div className={styles.dropdownInner}>
             <div className={styles.dropdownHeader}>View as:</div>
-            <button
-              onClick={() => onSelectView("normal")}
-              className={[
-                styles.dropdownOption,
-                viewType === "normal" && styles.dropdownOptionActive,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <DistributionIcon />
-              Normal Distribution
-            </button>
-            <button
-              onClick={() => onSelectView("lognormal")}
-              className={[
-                styles.dropdownOption,
-                viewType === "lognormal" && styles.dropdownOptionActive,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <DistributionIcon />
-              Log-Normal Distribution
-            </button>
-            <button
-              onClick={() => onSelectView("uniform")}
-              className={[
-                styles.dropdownOption,
-                viewType === "uniform" && styles.dropdownOptionActive,
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <DistributionIcon />
-              Uniform Distribution
-            </button>
+            {distributionOptions
+              .filter((option) => availableViews.includes(option.type))
+              .map((option) => (
+                <button
+                  key={option.type}
+                  onClick={() => onSelectView(option.type)}
+                  className={[
+                    styles.dropdownOption,
+                    viewType === option.type && styles.dropdownOptionActive,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  <DistributionIcon />
+                  {option.label}
+                </button>
+              ))}
           </div>
         </div>
       )}

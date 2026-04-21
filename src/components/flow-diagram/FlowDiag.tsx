@@ -14,6 +14,7 @@ import type {
   VisualDependencyNodeValue,
 } from "../../types/visualDependencyGraph";
 import {
+  getAvailableDistributionViews,
   isConfidenceIntervalValue,
   isSampledDistributionValue,
   parseSampledDistributionValue,
@@ -36,6 +37,8 @@ import {
   getLayoutedNodes,
   NODE_WIDTH,
   NODE_HEIGHT,
+  preserveExistingNodePositions,
+  shouldAutoFitAfterGraphRefresh,
   type LayoutNode,
   type LayoutEdge,
 } from "./useLayoutNodes";
@@ -52,6 +55,7 @@ interface FlowDiagramNodeData extends Record<string, unknown> {
   col: number;
   valueKind: "scalar" | "confidence_interval" | "sampled_distribution";
   interpretation?: "normal" | "uniform" | "lognormal" | "auto";
+  confidenceIntervalBounds?: { lower: number; upper: number };
   isSelected: boolean;
   focusState: GraphFocusState;
   onSelect: () => void;
@@ -79,6 +83,7 @@ interface PlainNodeData extends Record<string, unknown> {
   col: number;
   valueKind: "scalar" | "confidence_interval" | "sampled_distribution";
   interpretation?: "normal" | "uniform" | "lognormal" | "auto";
+  confidenceIntervalBounds?: { lower: number; upper: number };
 }
 
 interface PlainNode extends LayoutNode {
@@ -109,6 +114,10 @@ function buildPlainElements(graph: VisualDependencyGraph): {
     };
     if (node.value.kind === "confidence_interval") {
       data.interpretation = node.value.interpretation;
+      data.confidenceIntervalBounds = {
+        lower: node.value.lower,
+        upper: node.value.upper,
+      };
     }
     return {
       id: node.id,
@@ -224,9 +233,13 @@ function collectOrphanNodes(
         valueKind: nodeValue.kind,
       };
 
-      if (nodeValue.kind === "confidence_interval") {
-        data.interpretation = nodeValue.interpretation;
-      }
+    if (nodeValue.kind === "confidence_interval") {
+      data.interpretation = nodeValue.interpretation;
+      data.confidenceIntervalBounds = {
+        lower: nodeValue.lower,
+        upper: nodeValue.upper,
+      };
+    }
 
       orphans.push({
         id: nodeId,
@@ -494,8 +507,11 @@ const FlowNodeView: React.FC<{
     .join(" ");
 
   const handleNodePointerDown = (e: React.PointerEvent) => {
-    // Only left button, ignore if editing
-    if (e.button !== 0 || editing) return;
+    // Only left button; editing controls should not bubble into canvas panning.
+    if (e.button !== 0 || editing) {
+      e.stopPropagation();
+      return;
+    }
     e.stopPropagation();
     e.preventDefault();
     isDraggingRef.current = true;
@@ -605,6 +621,11 @@ const SelectedNodeInspector: React.FC<{
 }> = ({ details }) => {
   const { node, role, directInputs, directOutputs } = details;
   const { data } = node;
+  const { setDistributionView } = useContext(SpreadsheetContext);
+  const distributionOptions =
+    data.valueKind === "confidence_interval" && data.confidenceIntervalBounds
+      ? getAvailableDistributionViews(data.confidenceIntervalBounds)
+      : [];
 
   return (
     <aside className={styles.nodeInspector} aria-label="Selected node inspector">
@@ -627,6 +648,33 @@ const SelectedNodeInspector: React.FC<{
           <span>{getValueKindLabel(data.valueKind)}</span>
           {data.interpretation && <span>{data.interpretation}</span>}
         </div>
+        {data.valueKind === "confidence_interval" && data.interpretation && (
+          <div className={styles.inspectorDistributionRow}>
+            <span className={styles.inspectorLabel}>Distribution</span>
+            <div
+              className={styles.inspectorDistributionGroup}
+              aria-label="Cell distribution"
+            >
+              {distributionOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`${styles.inspectorDistributionButton} ${
+                    data.interpretation === option
+                      ? styles.inspectorDistributionButtonActive
+                      : ""
+                  }`}
+                  aria-pressed={data.interpretation === option}
+                  onClick={() =>
+                    setDistributionView(data.row, data.col, option)
+                  }
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <div className={styles.inspectorRelations}>
         <RelationshipList label="Direct inputs" nodes={directInputs} />
@@ -897,7 +945,11 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
       return;
     }
 
-    const layouted = getLayoutedNodes(plain, newEdges);
+    const previousNodeCount = plainNodesRef.current.length;
+    const layouted = preserveExistingNodePositions(
+      getLayoutedNodes(plain, newEdges),
+      plainNodesRef.current,
+    );
     const graphIndex = createGraphIndex(layouted, newEdges);
     const selectedNodeId = getSelectedNodeId(selectedCellRef.current);
     const nextFocusMode = resolveFocusMode(graphIndex, selectedNodeId);
@@ -929,13 +981,14 @@ export const FlowDiag: React.FC<FlowDiagProps> = ({
     setFocusCounts(getFocusCounts(graphIndex, selectedNodeId, focusScopeRef.current));
     setIsEmpty(false);
 
-    // Fit to view after layout
-    requestAnimationFrame(() => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setView(fitToView(enriched, rect.width, rect.height));
-      }
-    });
+    if (shouldAutoFitAfterGraphRefresh(previousNodeCount, enriched.length)) {
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          setView(fitToView(enriched, rect.width, rect.height));
+        }
+      });
+    }
   }, [formulaEngine, resolveFocusMode]);
 
   // ── Subscribe to formula engine ─────────────────────────────────────────

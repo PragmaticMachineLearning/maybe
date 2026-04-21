@@ -22,6 +22,30 @@ const VERTICAL_GAP = 40;
 
 export { NODE_WIDTH, NODE_HEIGHT };
 
+export const preserveExistingNodePositions = <T extends LayoutNode>(
+  nextNodes: T[],
+  previousNodes: LayoutNode[],
+): T[] => {
+  const previousPositionById = new Map(
+    previousNodes.map((node) => [node.id, node.position]),
+  );
+
+  return nextNodes.map((node) => {
+    const previousPosition = previousPositionById.get(node.id);
+    if (!previousPosition) return node;
+
+    return {
+      ...node,
+      position: { ...previousPosition },
+    };
+  });
+};
+
+export const shouldAutoFitAfterGraphRefresh = (
+  previousNodeCount: number,
+  nextNodeCount: number,
+): boolean => previousNodeCount === 0 && nextNodeCount > 0;
+
 /**
  * Synchronous DAG layout using Kahn's algorithm for topological layering.
  * Nodes are arranged left-to-right in layers, vertically centered.

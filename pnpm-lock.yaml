@@ -18,8 +18,8 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6(echarts@6.0.0)(react@19.2.5)
       gaussformula:
-        specifier: ^0.1.5
-        version: 0.1.5
+        specifier: ^0.1.6
+        version: 0.1.6
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -940,8 +940,8 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  gaussformula@0.1.5:
-    resolution: {integrity: sha512-xrOhAuKklXt5Z+kQ4zypbaVa7JBKd1sB1HrSfPmPJhOE0+Fz+E5pkbUCxclXgF5Rr1wto9QoNBvZCS+/G/un4g==}
+  gaussformula@0.1.6:
+    resolution: {integrity: sha512-cVx9S4UFr0w9z7NAlm5PkUH+aRMNH35hucVzg/NXkIh20lSVIAunPVbpDNLAr9BquYISfm+IRAw6YBC+adTh+A==}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -2233,7 +2233,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  gaussformula@0.1.5:
+  gaussformula@0.1.6:
     dependencies:
       chevrotain: 6.5.0
       tiny-emitter: 2.1.0

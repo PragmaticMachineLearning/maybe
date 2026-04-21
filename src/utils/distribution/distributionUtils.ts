@@ -1,4 +1,5 @@
 export type CIInterpretation = 'normal' | 'uniform' | 'lognormal' | 'auto'
+export type DistributionViewType = 'normal' | 'lognormal' | 'uniform'
 
 export interface ParsedConfidenceInterval {
   lower: number
@@ -100,6 +101,17 @@ export const getConfidenceIntervalMedian = (ci: Pick<ParsedConfidenceInterval, '
       return (ci.lower + ci.upper) / 2
   }
 }
+
+export const canUseLognormalInterpretation = (
+  ci: Pick<ParsedConfidenceInterval, 'lower' | 'upper'>,
+): boolean => ci.lower > 0 && ci.upper > 0
+
+export const getAvailableDistributionViews = (
+  ci: Pick<ParsedConfidenceInterval, 'lower' | 'upper'>,
+): DistributionViewType[] =>
+  canUseLognormalInterpretation(ci)
+    ? ['normal', 'lognormal', 'uniform']
+    : ['normal', 'uniform']
 
 export const zScoreForConfidence = (confidenceLevel: number): number => {
   if (confidenceLevel >= 99.9) return 3.29;
