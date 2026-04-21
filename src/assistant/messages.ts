@@ -6,11 +6,20 @@ import type { WorkbookSnapshot } from "./workbookSnapshot";
 export type MaybeAssistantMessage = UIMessage;
 
 const uiMessagePartSchema = z
-  .object({
-    type: z.literal("text"),
-    text: z.string(),
-  })
-  .passthrough();
+  .union([
+    z
+      .object({
+        type: z.literal("text"),
+        text: z.string(),
+      })
+      .passthrough(),
+    z
+      .object({
+        type: z.string().min(1),
+      })
+      .passthrough()
+      .refine((part) => part.type !== "text"),
+  ]);
 
 const maybeAssistantMessageSchema = z
   .object({

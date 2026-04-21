@@ -263,6 +263,43 @@ describe("assistant proposal parsing", () => {
     ]);
   });
 
+  it("rejects duplicate add and update target cells", () => {
+    const proposal = extractAssistantProposalFromText(
+      [
+        "```maybe-proposal",
+        JSON.stringify({
+          title: "Duplicate targets",
+          summary: "Two changes target the same normalized cell.",
+          changes: [
+            {
+              cell: " c1 ",
+              before: "",
+              after: "=B1",
+              reason: "Add the first output.",
+              kind: "add",
+            },
+            {
+              cell: "C1",
+              before: "",
+              after: "=B1+1",
+              reason: "Add the second output.",
+              kind: "update",
+            },
+          ],
+        }),
+        "```",
+      ].join("\n"),
+    );
+
+    expect(proposal).not.toBeNull();
+
+    const result = validateAssistantProposal(proposal, snapshot);
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("C1 has more than one proposed edit.");
+    expect(result.applyableChanges).toEqual([]);
+  });
+
   it("applies add and update changes to the formula engine while skipping review changes", () => {
     const engine = GaussFormulaEngine.buildEmpty({
       licenseKey: "gpl-v3",
@@ -395,6 +432,55 @@ describe("assistant proposal parsing", () => {
       expect(
         engine.getCellFormula({ sheet: 0, row: 0, col: 2 }) ?? null,
       ).toBeNull();
+    } finally {
+      engine.destroy();
+    }
+  });
+
+  it("rejects duplicate target cells before mutating the formula engine", () => {
+    const engine = GaussFormulaEngine.buildEmpty({
+      licenseKey: "gpl-v3",
+      language: "enGB",
+      useColumnIndex: true,
+    });
+
+    try {
+      engine.addSheet("Sheet1");
+      engine.setSheetContent(0, [[null, "=A1*2"]]);
+
+      let error: unknown;
+      try {
+        applyAssistantChangesToEngine(
+          engine,
+          { width: 2, height: 1 },
+          [
+            {
+              cell: "B1",
+              before: "=A1*2",
+              after: "=A1*3",
+              reason: "Update the sampled distribution.",
+              kind: "update",
+            },
+            {
+              cell: " b1 ",
+              before: "=A1*2",
+              after: "=A1*4",
+              reason: "Update the same cell again.",
+              kind: "update",
+            },
+          ],
+        );
+      } catch (caughtError) {
+        error = caughtError;
+      }
+
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe(
+        "B1 has more than one proposed edit.",
+      );
+      expect(engine.getCellFormula({ sheet: 0, row: 0, col: 1 })).toBe(
+        "=A1*2",
+      );
     } finally {
       engine.destroy();
     }

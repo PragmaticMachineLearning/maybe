@@ -256,4 +256,71 @@ describe("assistant route", () => {
     ]);
     expect(sentMessages[0]).not.toHaveProperty("parts");
   });
+
+  it("accepts assistant history containing step-start parts", async () => {
+    const toUIMessageStreamResponse = vi.fn(() => new Response("ok"));
+    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+      options,
+      toUIMessageStreamResponse,
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => "sk-test",
+      streamTextFn,
+    });
+
+    const response = await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validAssistantRequestBody,
+          messages: [
+            {
+              id: "previous-assistant",
+              role: "assistant",
+              parts: [
+                { type: "step-start" },
+                { type: "text", text: "Earlier workbook summary." },
+              ],
+            },
+            {
+              id: "new-user-message",
+              role: "user",
+              parts: [{ type: "text", text: "What should I change next?" }],
+            },
+          ],
+        }),
+      }),
+    );
+
+    await expect(response.text()).resolves.toBe("ok");
+    expect(response.status).toBe(200);
+    expect(streamTextFn).toHaveBeenCalledOnce();
+
+    const options = streamTextFn.mock.calls[0]?.[0];
+    expect(options).toBeDefined();
+    if (!options) {
+      throw new Error("streamTextFn was not called with options.");
+    }
+
+    expect(options.messages).toEqual([
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "text",
+            text: "Earlier workbook summary.",
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "What should I change next?",
+          },
+        ],
+      },
+    ]);
+  });
 });

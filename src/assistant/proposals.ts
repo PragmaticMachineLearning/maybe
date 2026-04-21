@@ -60,6 +60,29 @@ const normalizeProposal = (proposal: AssistantProposal): AssistantProposal => ({
   })),
 });
 
+const getDuplicateNonReviewCells = (
+  changes: AssistantCellChange[],
+): Set<string> => {
+  const seenCells = new Set<string>();
+  const duplicateCells = new Set<string>();
+
+  for (const change of changes) {
+    if (change.kind === "review") {
+      continue;
+    }
+
+    const normalizedCell = normalizeCellAddress(change.cell);
+
+    if (seenCells.has(normalizedCell)) {
+      duplicateCells.add(normalizedCell);
+    }
+
+    seenCells.add(normalizedCell);
+  }
+
+  return duplicateCells;
+};
+
 export const extractAssistantProposalFromText = (
   text: string,
 ): AssistantProposal | null => {
@@ -100,10 +123,24 @@ export const validateAssistantProposal = (
   const normalizedProposal = normalizeProposal(proposal);
   const applyableChanges: AssistantCellChange[] = [];
   const errors: string[] = [];
+  const duplicateNonReviewCells = getDuplicateNonReviewCells(
+    normalizedProposal.changes,
+  );
+
+  for (const duplicateCell of duplicateNonReviewCells) {
+    errors.push(`${duplicateCell} has more than one proposed edit.`);
+  }
 
   for (const change of normalizedProposal.changes) {
     const normalizedCell = normalizeCellAddress(change.cell);
     const cellAddress = cellAddressFromA1(normalizedCell, snapshot.dimensions);
+
+    if (
+      change.kind !== "review" &&
+      duplicateNonReviewCells.has(normalizedCell)
+    ) {
+      continue;
+    }
 
     if (!cellAddress) {
       errors.push(`${normalizedCell} is outside the current sheet.`);

@@ -332,8 +332,11 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         {showProposal && displayProposal && (
           <div className={styles.results}>
             <div className={styles.changeList}>
-              {displayProposal.changes.map((row) => (
-                <ChangeRow key={`${row.cell}:${row.kind}`} row={row} />
+              {displayProposal.changes.map((row, index) => (
+                <ChangeRow
+                  key={`${row.cell}:${row.kind}:${index}`}
+                  row={row}
+                />
               ))}
             </div>
 
