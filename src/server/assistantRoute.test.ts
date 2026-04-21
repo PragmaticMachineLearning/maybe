@@ -236,6 +236,24 @@ describe("assistant route", () => {
 
     expect(options.system).toContain("Current workbook snapshot");
     expect(options.system).toContain("CI[10, 20]");
-    expect(Array.isArray(options.messages)).toBe(true);
+
+    const sentMessages = options.messages;
+    expect(sentMessages).toBeDefined();
+    if (!sentMessages) {
+      throw new Error("streamTextFn was not called with messages.");
+    }
+
+    expect(sentMessages).toEqual([
+      expect.objectContaining({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Summarize the uncertainty.",
+          },
+        ],
+      }),
+    ]);
+    expect(sentMessages[0]).not.toHaveProperty("parts");
   });
 });
