@@ -9,13 +9,13 @@ export const assistantCellChangeSchema = z.object({
   after: z.string(),
   reason: z.string(),
   kind: z.enum(["add", "update", "review"]),
-});
+}).strict();
 
 export const assistantProposalSchema = z.object({
   title: z.string(),
   summary: z.string(),
   changes: z.array(assistantCellChangeSchema),
-});
+}).strict();
 
 export type AssistantCellChange = z.infer<typeof assistantCellChangeSchema>;
 export type AssistantProposal = z.infer<typeof assistantProposalSchema>;
@@ -27,7 +27,7 @@ export interface AssistantProposalValidationResult {
   errors: string[];
 }
 
-const maybeProposalBlockPattern = /```maybe-proposal\s*([\s\S]*?)```/;
+const maybeProposalBlockPattern = /```maybe-proposal\s*([\s\S]*?)```/g;
 
 const normalizeCellAddress = (cell: string): string => cell.trim().toUpperCase();
 
@@ -59,26 +59,22 @@ const normalizeProposal = (proposal: AssistantProposal): AssistantProposal => ({
 export const extractAssistantProposalFromText = (
   text: string,
 ): AssistantProposal | null => {
-  const match = text.match(maybeProposalBlockPattern);
+  for (const match of text.matchAll(maybeProposalBlockPattern)) {
+    const jsonText = match[1].trim();
 
-  if (!match) {
-    return null;
-  }
+    try {
+      const parsed = JSON.parse(jsonText);
+      const result = assistantProposalSchema.safeParse(parsed);
 
-  const jsonText = match[1].trim();
-
-  try {
-    const parsed = JSON.parse(jsonText);
-    const result = assistantProposalSchema.safeParse(parsed);
-
-    if (!result.success) {
-      return null;
+      if (result.success) {
+        return normalizeProposal(result.data);
+      }
+    } catch {
+      continue;
     }
-
-    return normalizeProposal(result.data);
-  } catch {
-    return null;
   }
+
+  return null;
 };
 
 export const stripAssistantProposalFromText = (text: string): string =>
@@ -112,6 +108,7 @@ export const validateAssistantProposal = (
 
     if (change.reason.trim().length === 0) {
       errors.push(`${normalizedCell} needs a reason before it can be applied.`);
+      continue;
     }
 
     const currentCellText = getCellTextFromSnapshot(snapshot, normalizedCell);

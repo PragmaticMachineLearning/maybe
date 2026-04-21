@@ -92,6 +92,127 @@ describe("assistant proposal parsing", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("rejects blank reasons and omits those changes from applyable changes", () => {
+    const proposal = extractAssistantProposalFromText(
+      [
+        "```maybe-proposal",
+        JSON.stringify({
+          title: "Blank reason proposal",
+          summary: "One change is missing a reason.",
+          changes: [
+            {
+              cell: "C1",
+              before: "",
+              after: "=B1",
+              reason: "   ",
+              kind: "add",
+            },
+            {
+              cell: "B1",
+              before: "=A1*2",
+              after: "=A1*3",
+              reason: "Expand the sampled output.",
+              kind: "update",
+            },
+          ],
+        }),
+        "```",
+      ].join("\n"),
+    );
+
+    expect(proposal).not.toBeNull();
+
+    const result = validateAssistantProposal(proposal, snapshot);
+
+    expect(result.valid).toBe(false);
+    expect(result.applyableChanges.map((change) => change.cell)).toEqual([
+      "B1",
+    ]);
+    expect(result.errors).toEqual([
+      "C1 needs a reason before it can be applied.",
+    ]);
+  });
+
+  it("finds the first valid proposal among multiple maybe-proposal blocks", () => {
+    const textWithMultipleBlocks = [
+      "Intro text.",
+      "```maybe-proposal",
+      "{not valid json",
+      "```",
+      "Middle text.",
+      "```maybe-proposal",
+      JSON.stringify({
+        title: "Second proposal",
+        summary: "The first block is invalid, so this one should win.",
+        changes: [
+          {
+            cell: "C1",
+            before: "",
+            after: "=B1",
+            reason: "Add the visible summary output.",
+            kind: "add",
+          },
+        ],
+      }),
+      "```",
+    ].join("\n");
+
+    expect(extractAssistantProposalFromText(textWithMultipleBlocks)?.title).toBe(
+      "Second proposal",
+    );
+  });
+
+  it("removes multiple maybe-proposal blocks from visible text", () => {
+    const stripped = stripAssistantProposalFromText(
+      [
+        "Keep this.",
+        "```maybe-proposal",
+        JSON.stringify({
+          title: "Hidden one",
+          summary: "First hidden block.",
+          changes: [],
+        }),
+        "```",
+        "And this.",
+        "```maybe-proposal",
+        JSON.stringify({
+          title: "Hidden two",
+          summary: "Second hidden block.",
+          changes: [],
+        }),
+        "```",
+      ].join("\n"),
+    );
+
+    expect(stripped).toBe("Keep this.\n\nAnd this.");
+  });
+
+  it("rejects extra keys in proposal and change JSON", () => {
+    expect(
+      extractAssistantProposalFromText(
+        [
+          "```maybe-proposal",
+          JSON.stringify({
+            title: "Extra keys",
+            summary: "Should fail strict parsing.",
+            changes: [
+              {
+                cell: "C1",
+                before: "",
+                after: "=B1",
+                reason: "Valid body.",
+                kind: "add",
+                extra: true,
+              },
+            ],
+            extra: "nope",
+          }),
+          "```",
+        ].join("\n"),
+      ),
+    ).toBeNull();
+  });
+
   it("rejects stale before values, out-of-bounds cells, and empty reasons", () => {
     const proposal = extractAssistantProposalFromText(
       [
