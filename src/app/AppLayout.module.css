@@ -3,6 +3,7 @@
     min-height: 100vh;
     box-sizing: border-box;
     padding: 18px;
+    overflow: hidden;
     background:
         radial-gradient(
             circle at 18% 0%,
@@ -14,6 +15,8 @@
 
 .toolbarRow {
     margin-bottom: 8px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .workspace {
