@@ -1,4 +1,5 @@
 /* ── Container ───────────────────────────────────────────────────────── */
+
 .container {
     width: 100%;
     height: 100%;
@@ -7,15 +8,102 @@
     overflow: hidden;
     background: var(--bg-surface);
     border-left: 1px solid var(--border-color);
-}
-
-.flowContent {
-    flex: 1 1 auto;
-    min-height: 0;
     position: relative;
 }
 
+/* ── Canvas ───────────────────────────────────────────────────────────── */
+
+.canvas {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    cursor: grab;
+    touch-action: none;
+    position: relative;
+}
+
+.canvas:active {
+    cursor: grabbing;
+}
+
+.canvasInner {
+    position: absolute;
+    transform-origin: 0 0;
+    will-change: transform;
+    overflow: visible;
+    background: var(--bg-surface);
+}
+
+/* ── Edge SVG layer ──────────────────────────────────────────────────── */
+
+.edgeSvg {
+    position: absolute;
+    overflow: visible;
+    pointer-events: none;
+}
+
+@keyframes dashFlow {
+    to {
+        stroke-dashoffset: -20;
+    }
+}
+
+.animatedEdge {
+    animation: dashFlow 0.8s linear infinite;
+}
+
+/* ── Zoom controls ───────────────────────────────────────────────────── */
+
+.zoomControls {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 5;
+}
+
+.zoomBtn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.zoomBtn:first-child {
+    border-radius: var(--radius-sm, 6px) var(--radius-sm, 6px) 0 0;
+}
+
+.zoomBtn:last-child {
+    border-radius: 0 0 var(--radius-sm, 6px) var(--radius-sm, 6px);
+}
+
+.zoomBtn:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}
+
+.zoomBtn:not(:first-child) {
+    border-top: none;
+}
+
+.zoomBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
 /* ── Empty state ─────────────────────────────────────────────────────── */
+
 .emptyState {
     display: flex;
     flex-direction: column;
@@ -30,50 +118,62 @@
 }
 
 .emptyStateIcon {
-    opacity: 0.4;
+    opacity: 0.3;
 }
 
 /* ── Node base ───────────────────────────────────────────────────────── */
+
 .nodeBase {
     padding: 12px 16px;
-    border-radius: 10px;
+    border-radius: var(--radius-md, 10px);
     border: 1.5px solid var(--border-color);
     background: var(--bg-surface);
-    min-width: 180px;
-    max-width: 260px;
-    box-shadow: 0 2px 8px var(--shadow);
+    box-shadow: var(--shadow-sm, 0 1px 2px var(--shadow));
     cursor: pointer;
     transition:
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
 .nodeBase:hover {
-    box-shadow: 0 4px 16px var(--shadow-hover);
+    box-shadow: var(--shadow-md, 0 4px 12px var(--shadow));
+    cursor: grab;
+}
+
+.nodeDragging {
+    cursor: grabbing;
+    box-shadow:
+        0 0 0 2px var(--resize-handle-bg),
+        var(--shadow-lg, 0 12px 32px var(--shadow));
+    z-index: 10;
+    opacity: 0.95;
 }
 
 .nodeSelected {
     border-color: var(--resize-handle-active);
     box-shadow:
         0 0 0 2px var(--resize-handle-bg),
-        0 4px 16px var(--shadow-hover);
+        var(--shadow-md, 0 4px 12px var(--shadow));
 }
 
 /* ── Formula node ────────────────────────────────────────────────────── */
+
 .formulaNode {
     composes: nodeBase;
     border-left: 3px solid var(--resize-handle-active);
 }
 
 /* ── Value node ──────────────────────────────────────────────────────── */
+
 .valueNode {
     composes: nodeBase;
     background: var(--bg-hover);
 }
 
-/* ── Distribution-specific node tinting ──────────────────────────────── */
+/* ── Distribution tinting ────────────────────────────────────────────── */
+
 .nodeDistNormal {
     border-left-color: var(--dist-normal-border);
     background: var(--dist-normal-bg);
@@ -95,6 +195,7 @@
 }
 
 /* ── Node internals ──────────────────────────────────────────────────── */
+
 .nodeHeader {
     display: flex;
     align-items: center;
@@ -137,7 +238,13 @@
 }
 
 .nodeFormula {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+    );
     font-size: 11px;
     color: var(--text-muted);
     background: var(--bg-muted);
@@ -150,53 +257,23 @@
 }
 
 /* ── Inline edit ─────────────────────────────────────────────────────── */
+
 .nodeEditInput {
     width: 100%;
     border: 1.5px solid var(--resize-handle-active);
-    border-radius: 6px;
+    border-radius: var(--radius-sm, 6px);
     padding: 6px 8px;
     font-size: 13px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+    );
     background: var(--bg-surface);
     color: var(--text-primary);
     outline: none;
     box-shadow: 0 0 0 3px var(--resize-handle-bg);
     margin-top: 6px;
-    box-sizing: border-box;
-}
-
-/* ── Edge styling ────────────────────────────────────────────────────── */
-.container :global(.react-flow__edge-path) {
-    stroke: var(--border-header);
-    stroke-width: 1.5;
-}
-
-.container :global(.react-flow__edge.animated path) {
-    stroke: var(--resize-handle-active);
-    stroke-width: 1.5;
-}
-
-/* ── MiniMap ─────────────────────────────────────────────────────────── */
-.container :global(.react-flow__minimap) {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-}
-
-/* ── Controls ────────────────────────────────────────────────────────── */
-.container :global(.react-flow__controls) {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px var(--shadow);
-}
-
-.container :global(.react-flow__controls-button) {
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border-color);
-    fill: var(--text-secondary);
-}
-
-.container :global(.react-flow__controls-button:hover) {
-    background: var(--bg-hover);
 }

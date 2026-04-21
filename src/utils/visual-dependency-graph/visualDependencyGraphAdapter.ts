@@ -1,6 +1,7 @@
-import { Position } from "@xyflow/react";
-import type { Edge, Node } from "@xyflow/react";
-
+import type {
+  LayoutNode,
+  LayoutEdge,
+} from "../../components/flow-diagram/useLayoutNodes";
 import type { VisualDependencyGraph } from "../../types/visualDependencyGraph";
 import { formatVisualDependencyValue } from "./visualDependencyGraphFormatter";
 
@@ -12,14 +13,14 @@ interface FlowDiagramNodeData extends Record<string, unknown> {
 }
 
 interface FlowDiagramElements {
-  nodes: Node<FlowDiagramNodeData>[];
-  edges: Edge[];
+  nodes: LayoutNode[];
+  edges: LayoutEdge[];
 }
 
 export const toFlowDiagramElements = (
   graph: VisualDependencyGraph,
 ): FlowDiagramElements => {
-  const nodes: Node<FlowDiagramNodeData>[] = graph.nodes.map((node) => ({
+  const nodes: LayoutNode[] = graph.nodes.map((node) => ({
     id: node.id,
     type: node.formula ? "formula" : "value",
     position: { x: 0, y: 0 },
@@ -28,12 +29,10 @@ export const toFlowDiagramElements = (
       value: formatVisualDependencyValue(node.value),
       type: node.formula ? "formula" : "value",
       formula: node.formula ?? "",
-    },
-    sourcePosition: Position.Right,
-    targetPosition: Position.Left,
+    } satisfies FlowDiagramNodeData,
   }));
 
-  const edges: Edge[] = graph.edges.map((edge) => ({
+  const edges: LayoutEdge[] = graph.edges.map((edge) => ({
     id: `${edge.sourceId}->${edge.targetId}`,
     source: edge.sourceId,
     target: edge.targetId,
