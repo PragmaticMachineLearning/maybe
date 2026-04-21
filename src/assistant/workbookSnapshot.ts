@@ -63,6 +63,7 @@ interface BuildWorkbookSnapshotInput {
   formulaEngine: FormulaEngine;
   selectedCell: SelectedCell | null;
   maxCells?: number;
+  minimumDimensions?: SheetDimensions;
 }
 
 const DEFAULT_MAX_CELLS = 200;
@@ -190,8 +191,15 @@ export const buildWorkbookSnapshot = ({
   formulaEngine,
   selectedCell,
   maxCells = DEFAULT_MAX_CELLS,
+  minimumDimensions,
 }: BuildWorkbookSnapshotInput): WorkbookSnapshot => {
-  const dimensions = formulaEngine.getSheetDimensions(0);
+  const engineDimensions = formulaEngine.getSheetDimensions(0);
+  const dimensions = minimumDimensions
+    ? {
+        width: Math.max(engineDimensions.width, minimumDimensions.width),
+        height: Math.max(engineDimensions.height, minimumDimensions.height),
+      }
+    : engineDimensions;
   const cells: WorkbookCellSnapshot[] = [];
   let totalNonEmptyCellCount = 0;
   const cellLimit = Math.max(0, Math.floor(maxCells));

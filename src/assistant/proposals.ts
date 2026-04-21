@@ -31,7 +31,7 @@ interface AssistantProposalValidationResult {
   errors: string[];
 }
 
-const maybeProposalBlockPattern = /```maybe-proposal\s*([\s\S]*?)```/g;
+const proposalBlockPattern = /```(maybe-proposal|json)\s*([\s\S]*?)```/g;
 
 const normalizeCellAddress = (cell: string): string => cell.trim().toUpperCase();
 
@@ -60,6 +60,17 @@ const normalizeProposal = (proposal: AssistantProposal): AssistantProposal => ({
   })),
 });
 
+const parseProposalJson = (jsonText: string): AssistantProposal | null => {
+  try {
+    const parsed = JSON.parse(jsonText);
+    const result = assistantProposalSchema.safeParse(parsed);
+
+    return result.success ? normalizeProposal(result.data) : null;
+  } catch {
+    return null;
+  }
+};
+
 const getDuplicateNonReviewCells = (
   changes: AssistantCellChange[],
 ): Set<string> => {
@@ -86,18 +97,11 @@ const getDuplicateNonReviewCells = (
 export const extractAssistantProposalFromText = (
   text: string,
 ): AssistantProposal | null => {
-  for (const match of text.matchAll(maybeProposalBlockPattern)) {
-    const jsonText = match[1].trim();
+  for (const match of text.matchAll(proposalBlockPattern)) {
+    const proposal = parseProposalJson(match[2].trim());
 
-    try {
-      const parsed = JSON.parse(jsonText);
-      const result = assistantProposalSchema.safeParse(parsed);
-
-      if (result.success) {
-        return normalizeProposal(result.data);
-      }
-    } catch {
-      continue;
+    if (proposal !== null) {
+      return proposal;
     }
   }
 
@@ -105,7 +109,15 @@ export const extractAssistantProposalFromText = (
 };
 
 export const stripAssistantProposalFromText = (text: string): string =>
-  text.replace(maybeProposalBlockPattern, "").trim();
+  text
+    .replace(proposalBlockPattern, (block, fenceType: string, jsonText: string) => {
+      if (fenceType === "maybe-proposal") {
+        return "";
+      }
+
+      return parseProposalJson(jsonText.trim()) === null ? block : "";
+    })
+    .trim();
 
 export const validateAssistantProposal = (
   proposal: AssistantProposal | null,

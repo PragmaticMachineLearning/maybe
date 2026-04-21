@@ -80,6 +80,34 @@ describe("assistant proposal parsing", () => {
     );
   });
 
+  it("extracts and strips proposal JSON when the model labels the fence as json", () => {
+    const jsonFenceText = [
+      "I prepared the workbook changes for review.",
+      "```json",
+      JSON.stringify({
+        title: "JSON fence proposal",
+        summary: "Accept valid proposal JSON from a generic code fence.",
+        changes: [
+          {
+            cell: "C1",
+            before: "",
+            after: "=B1",
+            reason: "Add the visible summary output.",
+            kind: "add",
+          },
+        ],
+      }),
+      "```",
+    ].join("\n");
+
+    expect(extractAssistantProposalFromText(jsonFenceText)?.title).toBe(
+      "JSON fence proposal",
+    );
+    expect(stripAssistantProposalFromText(jsonFenceText)).toBe(
+      "I prepared the workbook changes for review.",
+    );
+  });
+
   it("validates add, update, and review changes", () => {
     const proposal = extractAssistantProposalFromText(text);
 

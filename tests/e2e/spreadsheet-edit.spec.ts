@@ -166,6 +166,102 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   await expect(page.getByText("Applied")).toBeVisible();
 });
 
+test("resized Sage panel fills its allocated slot", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /Sage/i }).click();
+  const sageSlot = page.locator("#ai-copilot-panel");
+  const sagePanel = page.getByRole("complementary", { name: "Sage" });
+  await expect(sagePanel).toBeVisible();
+
+  const handle = page.getByRole("separator", { name: "Resize Sage panel" });
+  const handleBox = await handle.boundingBox();
+  expect(handleBox).not.toBeNull();
+
+  await page.mouse.move(
+    handleBox!.x + handleBox!.width / 2,
+    handleBox!.y + handleBox!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    handleBox!.x - 220,
+    handleBox!.y + handleBox!.height / 2,
+  );
+  await page.mouse.up();
+
+  await expect
+    .poll(async () => {
+      const slotBox = await sageSlot.boundingBox();
+      const panelBox = await sagePanel.boundingBox();
+
+      if (!slotBox || !panelBox) {
+        return Number.POSITIVE_INFINITY;
+      }
+
+      return Math.abs(slotBox.width - panelBox.width);
+    })
+    .toBeLessThanOrEqual(2);
+});
+
+test("renders Sage prose readably and applies proposals from json fences", async ({
+  page,
+}) => {
+  const assistantText = [
+    "**Inputs**",
+    "",
+    "- Add an uncertainty-preserving input in `A1`.",
+    "",
+    "```json",
+    JSON.stringify({
+      title: "Add uncertain input",
+      summary: "Adds a starter confidence interval.",
+      changes: [
+        {
+          cell: "A1",
+          before: "",
+          after: "CI[100, 200]",
+          reason: "Capture the uncertain source estimate as a distribution.",
+          kind: "add",
+        },
+      ],
+    }),
+    "```",
+  ].join("\n");
+
+  await page.route("**/api/assistant", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: [
+        { type: "start", messageId: "sage-json-proposal" },
+        { type: "start-step" },
+        { type: "text-start", id: "text-1" },
+        { type: "text-delta", id: "text-1", delta: assistantText },
+        { type: "text-end", id: "text-1" },
+        { type: "finish-step" },
+        { type: "finish", finishReason: "stop" },
+      ]
+        .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
+        .join(""),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /Sage/i }).click();
+
+  await page
+    .getByPlaceholder("Describe what to change…")
+    .fill("Set up a simple uncertain input");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("Inputs", { exact: true })).toBeVisible();
+  await expect(page.getByText("**Inputs**")).toHaveCount(0);
+  await expect(page.getByText("```json")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Apply 1 change" }))
+    .toBeVisible();
+});
+
 test("shows a setup error when the assistant server has no OpenAI key", async ({
   page,
 }) => {

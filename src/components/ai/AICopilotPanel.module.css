@@ -1,9 +1,9 @@
 /* ── Panel ────────────────────────────────────────────────────────────── */
 
 .panel {
-    width: 340px;
-    max-width: 380px;
-    min-width: 300px;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -162,7 +162,59 @@
     font-size: 13px;
     line-height: 1.5;
     color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.assistantParagraph {
+    margin: 0;
+}
+
+.assistantList {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.assistantList li + li {
+    margin-top: 4px;
+}
+
+.assistantStrong {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.assistantInlineCode,
+.assistantCodeBlock {
+    font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+    );
+}
+
+.assistantInlineCode {
+    padding: 1px 4px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--bg-muted);
+    color: var(--resize-handle-active);
+    font-size: 12px;
+}
+
+.assistantCodeBlock {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+    overflow-x: auto;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 .errorBox {

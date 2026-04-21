@@ -236,6 +236,9 @@ describe("assistant route", () => {
 
     expect(options.system).toContain("Current workbook snapshot");
     expect(options.system).toContain("CI[10, 20]");
+    expect(options.system).toContain("Do not use LaTeX");
+    expect(options.system).toContain("Return exactly one valid JSON object");
+    expect(options.system).toContain("```maybe-proposal");
 
     const sentMessages = options.messages;
     expect(sentMessages).toBeDefined();

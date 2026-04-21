@@ -21,6 +21,9 @@ type SheetData = CellContent[][];
 
 export type { DistributionViewType };
 
+const VISIBLE_SHEET_ROWS = 50;
+const VISIBLE_SHEET_COLUMNS = 26;
+
 interface SpreadsheetContextValue {
   formulaEngine: FormulaEngine | null;
   updateCell: (row: number, col: number, value: string) => void;
@@ -76,11 +79,9 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Initialize sheet
     engine.addSheet("Sheet1");
-    const initialRows = 50;
-    const initialCols = 26;
-    const initialData: SheetData = Array(initialRows)
+    const initialData: SheetData = Array(VISIBLE_SHEET_ROWS)
       .fill(null)
-      .map(() => Array(initialCols).fill(null));
+      .map(() => Array(VISIBLE_SHEET_COLUMNS).fill(null));
 
     engine.setSheetContent(0, initialData);
     setFormulaEngine(engine);
@@ -203,10 +204,18 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!formulaEngine) return null;
 
       const dimensions = formulaEngine.getSheetDimensions(0);
+      const minimumDimensions = {
+        width: VISIBLE_SHEET_COLUMNS,
+        height: VISIBLE_SHEET_ROWS,
+      };
+
       return buildWorkbookSnapshot({
         formulaEngine,
         selectedCell,
-        maxCells: dimensions.width * dimensions.height,
+        maxCells:
+          Math.max(dimensions.width, minimumDimensions.width) *
+          Math.max(dimensions.height, minimumDimensions.height),
+        minimumDimensions,
       });
     },
     [formulaEngine],
@@ -216,7 +225,11 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     (changes: AssistantCellChange[]) => {
       if (!formulaEngine) return;
 
-      const dimensions = formulaEngine.getSheetDimensions(0);
+      const engineDimensions = formulaEngine.getSheetDimensions(0);
+      const dimensions = {
+        width: Math.max(engineDimensions.width, VISIBLE_SHEET_COLUMNS),
+        height: Math.max(engineDimensions.height, VISIBLE_SHEET_ROWS),
+      };
       applyAssistantChangesToEngine(formulaEngine, dimensions, changes);
     },
     [formulaEngine],

@@ -55,15 +55,17 @@ const getMessageText = (message: UIMessage): string =>
     .map((part) => part.text)
     .join("");
 
-const proposalFence = "```maybe-proposal";
+const proposalFencePattern = /```(?:maybe-proposal|json)/g;
 
 const getVisibleAssistantText = (rawText: string): string => {
-  const proposalStartIndex = rawText.lastIndexOf(proposalFence);
+  const proposalStarts = [...rawText.matchAll(proposalFencePattern)];
+  const latestProposalStart = proposalStarts[proposalStarts.length - 1];
+  const proposalStartIndex = latestProposalStart?.index ?? -1;
 
-  if (proposalStartIndex !== -1) {
+  if (proposalStartIndex !== -1 && latestProposalStart) {
     const proposalEndIndex = rawText.indexOf(
       "```",
-      proposalStartIndex + proposalFence.length,
+      proposalStartIndex + latestProposalStart[0].length,
     );
 
     if (proposalEndIndex === -1) {
@@ -72,6 +74,159 @@ const getVisibleAssistantText = (rawText: string): string => {
   }
 
   return stripAssistantProposalFromText(rawText);
+};
+
+const renderInlineText = (
+  text: string,
+  keyPrefix: string,
+): React.ReactNode[] =>
+  text
+    .split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/g)
+    .filter((token) => token.length > 0)
+    .map((token, index) => {
+      const key = `${keyPrefix}-${index}`;
+
+      if (token.startsWith("**") && token.endsWith("**")) {
+        return (
+          <strong key={key} className={styles.assistantStrong}>
+            {token.slice(2, -2)}
+          </strong>
+        );
+      }
+
+      if (token.startsWith("`") && token.endsWith("`")) {
+        return (
+          <code key={key} className={styles.assistantInlineCode}>
+            {token.slice(1, -1)}
+          </code>
+        );
+      }
+
+      return <React.Fragment key={key}>{token}</React.Fragment>;
+    });
+
+const FormattedAssistantText: React.FC<{ text: string }> = ({ text }) => {
+  const elements: React.ReactNode[] = [];
+  let paragraphLines: string[] = [];
+  let bulletItems: string[] = [];
+  let numberedItems: string[] = [];
+  let codeLines: string[] = [];
+  let inCodeBlock = false;
+
+  const flushParagraph = () => {
+    if (paragraphLines.length === 0) return;
+
+    const elementIndex = elements.length;
+    elements.push(
+      <p key={`paragraph-${elementIndex}`} className={styles.assistantParagraph}>
+        {renderInlineText(paragraphLines.join(" "), `paragraph-${elementIndex}`)}
+      </p>,
+    );
+    paragraphLines = [];
+  };
+
+  const flushBulletList = () => {
+    if (bulletItems.length === 0) return;
+
+    const elementIndex = elements.length;
+    elements.push(
+      <ul key={`bullets-${elementIndex}`} className={styles.assistantList}>
+        {bulletItems.map((item, itemIndex) => (
+          <li key={`bullet-${elementIndex}-${itemIndex}`}>
+            {renderInlineText(item, `bullet-${elementIndex}-${itemIndex}`)}
+          </li>
+        ))}
+      </ul>,
+    );
+    bulletItems = [];
+  };
+
+  const flushNumberedList = () => {
+    if (numberedItems.length === 0) return;
+
+    const elementIndex = elements.length;
+    elements.push(
+      <ol key={`numbers-${elementIndex}`} className={styles.assistantList}>
+        {numberedItems.map((item, itemIndex) => (
+          <li key={`number-${elementIndex}-${itemIndex}`}>
+            {renderInlineText(item, `number-${elementIndex}-${itemIndex}`)}
+          </li>
+        ))}
+      </ol>,
+    );
+    numberedItems = [];
+  };
+
+  const flushLists = () => {
+    flushBulletList();
+    flushNumberedList();
+  };
+
+  const flushCodeBlock = () => {
+    if (codeLines.length === 0) return;
+
+    const elementIndex = elements.length;
+    elements.push(
+      <pre key={`code-${elementIndex}`} className={styles.assistantCodeBlock}>
+        <code>{codeLines.join("\n")}</code>
+      </pre>,
+    );
+    codeLines = [];
+  };
+
+  for (const line of text.split(/\r?\n/)) {
+    const trimmedLine = line.trim();
+
+    if (trimmedLine.startsWith("```")) {
+      flushParagraph();
+      flushLists();
+
+      if (inCodeBlock) {
+        flushCodeBlock();
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+      }
+
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
+
+    if (trimmedLine.length === 0) {
+      flushParagraph();
+      flushLists();
+      continue;
+    }
+
+    const bulletMatch = trimmedLine.match(/^[-*]\s+(.+)$/);
+    if (bulletMatch) {
+      flushParagraph();
+      flushNumberedList();
+      bulletItems.push(bulletMatch[1]);
+      continue;
+    }
+
+    const numberedMatch = trimmedLine.match(/^\d+[.)]\s+(.+)$/);
+    if (numberedMatch) {
+      flushParagraph();
+      flushBulletList();
+      numberedItems.push(numberedMatch[1]);
+      continue;
+    }
+
+    flushLists();
+    paragraphLines.push(trimmedLine);
+  }
+
+  flushParagraph();
+  flushLists();
+  flushCodeBlock();
+
+  return <>{elements}</>;
 };
 
 const getReadableError = (error: Error | undefined): string | null => {
@@ -300,7 +455,13 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
                       : styles.assistantMessage
                   }
                 >
-                  <span className={styles.userPromptText}>{visibleText}</span>
+                  {message.role === "assistant" ? (
+                    <FormattedAssistantText text={visibleText} />
+                  ) : (
+                    <span className={styles.userPromptText}>
+                      {visibleText}
+                    </span>
+                  )}
                 </div>
               );
             })}
