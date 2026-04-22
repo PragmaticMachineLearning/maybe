@@ -42,8 +42,8 @@ const buildSystemPrompt = (
     "Use getWorkbookContext when you need to inspect the workbook state, selected cell, formulas, or distribution summaries.",
     "Use validateFormula before proposing or applying any formula you invent or revise.",
     allowDirectCellChanges
-      ? "Always allow is enabled for this request. Use applyCellChanges instead of proposeCellChanges when the requested edit is clear, validated, and safe to apply directly."
-      : "Always allow is disabled for this request. Do not apply changes directly. Use proposeCellChanges for workbook edits. The tool returns a typed proposal for the UI to review; it does not mutate the workbook.",
+      ? "Write mode is enabled for this request. Use applyCellChanges instead of proposeCellChanges when the requested edit is clear, validated, and safe to apply directly."
+      : "Ask mode is enabled for this request. Do not apply changes directly. Use proposeCellChanges for workbook edits. The tool returns a typed proposal for the UI to review; it does not mutate the workbook.",
     "Each changed cell must use a before field that exactly matches the current formula when a formula exists, otherwise the current display value.",
     allowDirectCellChanges
       ? "Do not say a change was applied until applyCellChanges returns successfully. If you only propose or discuss a change, do not claim it was applied."
@@ -87,6 +87,7 @@ const parseAssistantRequest = async (
     messages: result.data.messages as MaybeAssistantMessage[],
     workbookSnapshot: result.data.workbookSnapshot,
     allowDirectCellChanges: result.data.allowDirectCellChanges,
+    selectedModel: result.data.selectedModel,
   };
 };
 
@@ -119,7 +120,7 @@ export const createAssistantHandler = ({
 
     const openaiProvider = createOpenAI({ apiKey });
     const result = streamTextFn({
-      model: openaiProvider(process.env.OPENAI_MODEL ?? "gpt-4o-mini"),
+      model: openaiProvider(body.selectedModel),
       system: buildSystemPrompt(
         body.workbookSnapshot,
         body.allowDirectCellChanges,

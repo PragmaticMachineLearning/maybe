@@ -144,8 +144,7 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   await page.getByRole("button", { name: /Sage/i }).click();
   await expect(page.getByRole("complementary", { name: "Sage" })).toBeVisible();
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill(promptText);
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -209,7 +208,22 @@ test("focuses the Sage input when the panel opens", async ({ page }) => {
 
   await page.getByRole("button", { name: /Sage/i }).click();
 
-  await expect(page.getByPlaceholder("Describe what to change…")).toBeFocused();
+  const sageInput = page.getByLabel("Message Sage");
+  await expect(sageInput).toBeFocused();
+  await expect(sageInput).toHaveAttribute(
+    "placeholder",
+    "Ask Sage about formulas, uncertainty, or what to change next...",
+  );
+  await expect(page.getByLabel("Sage mode", { exact: true }))
+    .toHaveValue("ask");
+  await expect(page.getByLabel("Sage model", { exact: true }))
+    .toHaveValue("gpt-5.4-mini");
+
+  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
+  await expect(sageInput).toHaveAttribute(
+    "placeholder",
+    "Tell Sage what to change. Write mode can apply safe workbook edits directly...",
+  );
 });
 
 test("renders Sage prose readably and applies proposals from json fences", async ({
@@ -258,8 +272,7 @@ test("renders Sage prose readably and applies proposals from json fences", async
   await page.goto("/");
   await page.getByRole("button", { name: /Sage/i }).click();
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("Set up a simple uncertain input");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -321,8 +334,7 @@ test("renders and applies proposals produced by Sage tools", async ({ page }) =>
   await page.goto("/");
   await page.getByRole("button", { name: /Sage/i }).click();
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("Use the proposal tool to set up A1");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -413,15 +425,13 @@ test("keeps proposal cards with the assistant messages that produced them", asyn
   await page.goto("/");
   await page.getByRole("button", { name: /Sage/i }).click();
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("Prepare the first change");
   await page.getByRole("button", { name: "Send" }).click();
 
   await expect(page.getByText("CI[100, 200]")).toBeVisible();
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("Prepare a second change");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -433,7 +443,7 @@ test("keeps proposal cards with the assistant messages that produced them", asyn
   ).toHaveCount(2);
 });
 
-test("auto-applies direct apply tool results after Always allow is enabled", async ({
+test("auto-applies direct apply tool results in Write mode", async ({
   page,
 }) => {
   const proposal = {
@@ -453,9 +463,11 @@ test("auto-applies direct apply tool results after Always allow is enabled", asy
   await page.route("**/api/assistant", async (route) => {
     const requestBody = route.request().postDataJSON() as {
       allowDirectCellChanges?: boolean;
+      selectedModel?: string;
     };
 
     expect(requestBody.allowDirectCellChanges).toBe(true);
+    expect(requestBody.selectedModel).toBe("gpt-5.4");
 
     await route.fulfill({
       status: 200,
@@ -491,11 +503,10 @@ test("auto-applies direct apply tool results after Always allow is enabled", asy
 
   await page.goto("/");
   await page.getByRole("button", { name: /Sage/i }).click();
-  await page.getByRole("checkbox", { name: "Always allow Sage to apply changes" })
-    .check();
+  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
+  await page.getByLabel("Sage model", { exact: true }).selectOption("gpt-5.4");
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("Apply the setup directly");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -506,7 +517,7 @@ test("auto-applies direct apply tool results after Always allow is enabled", asy
   );
 });
 
-test("auto-applies proposal tool results after Always allow is enabled", async ({
+test("auto-applies proposal tool results in Write mode", async ({
   page,
 }) => {
   const proposal = {
@@ -526,9 +537,11 @@ test("auto-applies proposal tool results after Always allow is enabled", async (
   await page.route("**/api/assistant", async (route) => {
     const requestBody = route.request().postDataJSON() as {
       allowDirectCellChanges?: boolean;
+      selectedModel?: string;
     };
 
     expect(requestBody.allowDirectCellChanges).toBe(true);
+    expect(requestBody.selectedModel).toBe("gpt-5.4-mini");
 
     await route.fulfill({
       status: 200,
@@ -564,11 +577,9 @@ test("auto-applies proposal tool results after Always allow is enabled", async (
 
   await page.goto("/");
   await page.getByRole("button", { name: /Sage/i }).click();
-  await page.getByRole("checkbox", { name: "Always allow Sage to apply changes" })
-    .check();
+  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("Apply the setup directly");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -582,7 +593,7 @@ test("auto-applies proposal tool results after Always allow is enabled", async (
   );
 });
 
-test("does not show proposal action buttons while Always allow is enabled", async ({
+test("does not show proposal action buttons in Write mode", async ({
   page,
 }) => {
   const proposal = {
@@ -640,11 +651,9 @@ test("does not show proposal action buttons while Always allow is enabled", asyn
 
   await page.goto("/");
   await page.getByRole("button", { name: /Sage/i }).click();
-  await page.getByRole("checkbox", { name: "Always allow Sage to apply changes" })
-    .check();
+  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("Apply the setup directly");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -672,8 +681,7 @@ test("shows a setup error when the assistant server has no OpenAI key", async ({
   await page.getByRole("button", { name: /Sage/i }).click();
   await expect(page.getByRole("complementary", { name: "Sage" })).toBeVisible();
 
-  await page
-    .getByPlaceholder("Describe what to change…")
+  await page.getByLabel("Message Sage")
     .fill("What formulas should I add?");
   await page.getByRole("button", { name: "Send" }).click();
 

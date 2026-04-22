@@ -68,7 +68,7 @@ export const createAssistantTools = (
     ...reviewTools,
     applyCellChanges: tool({
       description:
-        "Return validated spreadsheet cell changes for immediate client-side application. Only use this when Always allow is enabled.",
+        "Return validated spreadsheet cell changes for immediate client-side application. Only use this when Write mode is enabled.",
       inputSchema: assistantProposalSchema,
       execute: async (proposal) =>
         assertApplyableProposal(workbookSnapshot, proposal),

@@ -1,6 +1,11 @@
 import type { UIMessage } from "ai";
 import { z } from "zod";
 
+import {
+  ASSISTANT_MODEL_IDS,
+  DEFAULT_ASSISTANT_MODEL_ID,
+  type AssistantModelId,
+} from "./modelOptions";
 import type { WorkbookSnapshot } from "./workbookSnapshot";
 
 export type MaybeAssistantMessage = UIMessage;
@@ -83,10 +88,15 @@ export const assistantRequestSchema = z.object({
   messages: z.array(maybeAssistantMessageSchema),
   workbookSnapshot: workbookSnapshotSchema,
   allowDirectCellChanges: z.boolean().optional().default(false),
+  selectedModel: z
+    .enum(ASSISTANT_MODEL_IDS)
+    .optional()
+    .default(DEFAULT_ASSISTANT_MODEL_ID),
 });
 
 export interface AssistantRequestBody {
   messages: MaybeAssistantMessage[];
   workbookSnapshot: WorkbookSnapshot;
   allowDirectCellChanges: boolean;
+  selectedModel: AssistantModelId;
 }

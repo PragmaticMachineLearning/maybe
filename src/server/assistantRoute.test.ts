@@ -1,6 +1,7 @@
 import type { streamText } from "ai";
 import { describe, expect, it, vi } from "vitest";
 
+import { DEFAULT_ASSISTANT_MODEL_ID } from "../assistant/modelOptions";
 import { createAssistantHandler } from "./assistantRoute";
 
 type StreamTextOptions = Parameters<typeof streamText>[0];
@@ -111,6 +112,32 @@ describe("assistant route", () => {
         body: JSON.stringify({
           ...validAssistantRequestBody,
           messages: "not an array",
+        }),
+      }),
+    );
+
+    await expect(response.json()).resolves.toEqual({
+      error: "Invalid assistant request.",
+    });
+    expect(response.status).toBe(400);
+    expect(streamTextFn).not.toHaveBeenCalled();
+  });
+
+  it("returns a 400 error when the selected model is not allowed", async () => {
+    const streamTextFn = vi.fn(() => ({
+      toUIMessageStreamResponse: () => new Response(),
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => "sk-test",
+      streamTextFn,
+    });
+
+    const response = await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        body: JSON.stringify({
+          ...validAssistantRequestBody,
+          selectedModel: "not-a-real-model",
         }),
       }),
     );
@@ -240,6 +267,9 @@ describe("assistant route", () => {
       "proposeCellChanges",
     ]);
     expect(options.stopWhen).toBeDefined();
+    expect(options.model).toMatchObject({
+      modelId: DEFAULT_ASSISTANT_MODEL_ID,
+    });
     expect(options.system).toContain("Current workbook snapshot");
     expect(options.system).toContain("CI[10, 20]");
     expect(options.system).toContain("Do not use LaTeX");
@@ -337,7 +367,7 @@ describe("assistant route", () => {
     });
   });
 
-  it("only exposes the direct apply tool when Always allow is enabled", async () => {
+  it("uses the selected model and exposes the direct apply tool in Write mode", async () => {
     const streamTextFn = vi.fn((options: StreamTextOptions) => ({
       options,
       toUIMessageStreamResponse: () => new Response("ok"),
@@ -353,18 +383,20 @@ describe("assistant route", () => {
         body: JSON.stringify({
           ...requestBodyWithWorkbookContext,
           allowDirectCellChanges: true,
+          selectedModel: "gpt-5.4",
         }),
       }),
     );
 
     const options = streamTextFn.mock.calls[0]?.[0];
+    expect(options?.model).toMatchObject({ modelId: "gpt-5.4" });
     expect(Object.keys(options?.tools ?? {})).toEqual([
       "getWorkbookContext",
       "validateFormula",
       "proposeCellChanges",
       "applyCellChanges",
     ]);
-    expect(options?.system).toContain("Always allow");
+    expect(options?.system).toContain("Write mode");
     expect(options?.system).toContain("applyCellChanges");
     expect(options?.system).toContain(
       "Use applyCellChanges instead of proposeCellChanges",

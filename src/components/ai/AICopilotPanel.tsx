@@ -17,10 +17,29 @@ import {
   type AssistantCellChange,
   type AssistantProposalResult,
 } from "../../assistant/proposals";
+import {
+  ASSISTANT_MODEL_OPTIONS,
+  DEFAULT_ASSISTANT_MODEL_ID,
+  type AssistantModelId,
+} from "../../assistant/modelOptions";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./AICopilotPanel.module.css";
 
 type ProposalValidationResult = ReturnType<typeof validateAssistantProposal>;
+type AssistantMode = "ask" | "write";
+
+const ASSISTANT_MODE_OPTIONS: Array<{
+  id: AssistantMode;
+  label: string;
+}> = [
+  { id: "ask", label: "Ask" },
+  { id: "write", label: "Write" },
+];
+
+const getPromptPlaceholder = (mode: AssistantMode): string =>
+  mode === "write"
+    ? "Tell Sage what to change. Write mode can apply safe workbook edits directly..."
+    : "Ask Sage about formulas, uncertainty, or what to change next...";
 
 interface AssistantMessageProposalEntry {
   key: string;
@@ -302,7 +321,10 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const [dismissedProposalKeys, setDismissedProposalKeys] = useState<
     ReadonlySet<string>
   >(() => new Set());
-  const [allowDirectCellChanges, setAllowDirectCellChanges] = useState(false);
+  const [assistantMode, setAssistantMode] = useState<AssistantMode>("ask");
+  const [selectedModel, setSelectedModel] = useState<AssistantModelId>(
+    DEFAULT_ASSISTANT_MODEL_ID,
+  );
   const [appliedProposalKeys, setAppliedProposalKeys] = useState<
     ReadonlySet<string>
   >(() => new Set());
@@ -337,10 +359,11 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     setRequestError(null);
     clearError();
     const workbookSnapshot = getWorkbookSnapshot(selectedCell ?? null);
+    const allowDirectCellChanges = assistantMode === "write";
     try {
       await sendMessage(
         { text },
-        { body: { workbookSnapshot, allowDirectCellChanges } },
+        { body: { workbookSnapshot, allowDirectCellChanges, selectedModel } },
       );
     } catch (caughtError) {
       setRequestError(getUnknownErrorMessage(caughtError));
@@ -412,6 +435,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     .join("|");
   const transportError = getReadableError(error) ?? requestError;
   const isBusy = status === "submitted" || status === "streaming";
+  const allowDirectCellChanges = assistantMode === "write";
 
   const markProposalApplied = useCallback((proposalKey: string) => {
     setAppliedProposalKeys((currentKeys) => {
@@ -572,20 +596,6 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
           <span className={styles.title}>Sage</span>
         </div>
         <div className={styles.headerActions}>
-          <label className={styles.allowToggle}>
-            <input
-              type="checkbox"
-              checked={allowDirectCellChanges}
-              onChange={(event) =>
-                setAllowDirectCellChanges(event.target.checked)
-              }
-              aria-label="Always allow Sage to apply changes"
-            />
-            <span className={styles.allowToggleTrack} aria-hidden="true">
-              <span className={styles.allowToggleThumb} />
-            </span>
-            <span className={styles.allowToggleText}>Always allow</span>
-          </label>
           <button
             type="button"
             onClick={onClose}
@@ -679,34 +689,68 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         <textarea
           ref={inputRef}
           className={styles.input}
+          aria-label="Message Sage"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe what to change…"
+          placeholder={getPromptPlaceholder(assistantMode)}
           rows={1}
           disabled={isBusy}
         />
-        <button
-          type="submit"
-          className={styles.sendBtn}
-          disabled={!prompt.trim() || isBusy}
-          title="Send"
-          aria-label="Send"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className={styles.composerControls}>
+          <select
+            aria-label="Sage mode"
+            className={styles.composerSelect}
+            value={assistantMode}
+            onChange={(event) =>
+              setAssistantMode(event.target.value as AssistantMode)
+            }
+            disabled={isBusy}
           >
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-        </button>
+            {ASSISTANT_MODE_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Sage model"
+            className={styles.composerSelect}
+            value={selectedModel}
+            onChange={(event) =>
+              setSelectedModel(event.target.value as AssistantModelId)
+            }
+            disabled={isBusy}
+          >
+            {ASSISTANT_MODEL_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <span className={styles.composerSpacer} />
+          <button
+            type="submit"
+            className={styles.sendBtn}
+            disabled={!prompt.trim() || isBusy}
+            title="Send"
+            aria-label="Send"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
       </form>
     </aside>
   );
