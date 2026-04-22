@@ -6,10 +6,14 @@ import type {
 } from "node:http";
 import type { Plugin } from "vite";
 
-import { handleAssistantRequest } from "./assistantRoute";
+import { createAssistantHandler } from "./assistantRoute";
 
 interface RequestInitWithDuplex extends RequestInit {
   duplex?: "half";
+}
+
+interface AssistantApiPluginOptions {
+  getApiKey?: () => string | undefined;
 }
 
 const assistantPath = "/api/assistant";
@@ -161,27 +165,35 @@ const writeMiddlewareError = (
   serverResponse.end(JSON.stringify({ error: "Assistant middleware failed." }));
 };
 
-const assistantMiddleware = (
-  request: IncomingMessage,
-  response: ServerResponse,
-): void => {
-  void (async () => {
-    try {
-      const webRequest = toWebRequest(request);
-      const webResponse = await handleAssistantRequest(webRequest);
-      await writeWebResponse(webResponse, response);
-    } catch (error) {
-      writeMiddlewareError(error, response);
-    }
-  })();
-};
+const createAssistantMiddleware =
+  (
+    handleAssistantRequest: (request: Request) => Promise<Response>,
+  ): ((request: IncomingMessage, response: ServerResponse) => void) =>
+  (request, response) => {
+    void (async () => {
+      try {
+        const webRequest = toWebRequest(request);
+        const webResponse = await handleAssistantRequest(webRequest);
+        await writeWebResponse(webResponse, response);
+      } catch (error) {
+        writeMiddlewareError(error, response);
+      }
+    })();
+  };
 
-export const assistantApiPlugin = (): Plugin => ({
-  name: "maybe-assistant-api",
-  configureServer(server) {
-    server.middlewares.use(assistantPath, assistantMiddleware);
-  },
-  configurePreviewServer(server) {
-    server.middlewares.use(assistantPath, assistantMiddleware);
-  },
-});
+export const assistantApiPlugin = ({
+  getApiKey,
+}: AssistantApiPluginOptions = {}): Plugin => {
+  const handleAssistantRequest = createAssistantHandler({ getApiKey });
+  const assistantMiddleware = createAssistantMiddleware(handleAssistantRequest);
+
+  return {
+    name: "maybe-assistant-api",
+    configureServer(server) {
+      server.middlewares.use(assistantPath, assistantMiddleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(assistantPath, assistantMiddleware);
+    },
+  };
+};
