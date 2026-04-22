@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deriveAnalysisState, getColumnName } from './analysisState'
+import { deriveAnalysisState, getColumnName } from '../../../src/app/analysisState'
 
 describe('analysisState', () => {
   it('formats spreadsheet column labels', () => {

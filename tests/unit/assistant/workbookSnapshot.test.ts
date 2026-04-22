@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { GaussFormulaEngine } from "../lib/formulaEngine";
-import { cellAddressFromA1, cellAddressToA1 } from "./address";
-import { buildWorkbookSnapshot } from "./workbookSnapshot";
+import {
+  cellAddressFromA1,
+  cellAddressToA1,
+} from "../../../src/assistant/address";
+import { buildWorkbookSnapshot } from "../../../src/assistant/workbookSnapshot";
+import { GaussFormulaEngine } from "../../../src/lib/formulaEngine";
 
 describe("assistant workbook snapshot", () => {
   it("converts between zero-based coordinates and A1 addresses", () => {

@@ -1,8 +1,8 @@
 import type { streamText } from "ai";
 import { describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_ASSISTANT_MODEL_ID } from "../assistant/modelOptions";
-import { createAssistantHandler } from "./assistantRoute";
+import { DEFAULT_ASSISTANT_MODEL_ID } from "../../../src/assistant/modelOptions";
+import { createAssistantHandler } from "../../../src/server/assistantRoute";
 
 type StreamTextOptions = Parameters<typeof streamText>[0];
 

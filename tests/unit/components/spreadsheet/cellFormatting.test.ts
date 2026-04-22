@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatCellValue } from './cellFormatting'
+import { formatCellValue } from '../../../../src/components/spreadsheet/cellFormatting'
 
 const sampledValue = {
   samples: [1, 2, 3],

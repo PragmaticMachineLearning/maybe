@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { VisualDependencyGraph } from "../../types/visualDependencyGraph";
+import type { VisualDependencyGraph } from "../../../../src/types/visualDependencyGraph";
 import {
   buildVisualGraphIndex,
   getDefaultFocusMode,
   getEdgeFocusState,
   getFocusCounts,
   getFocusState,
-} from "./graphQueries";
+} from "../../../../src/utils/visual-dependency-graph/graphQueries";
 
 const graph: VisualDependencyGraph = {
   nodes: [

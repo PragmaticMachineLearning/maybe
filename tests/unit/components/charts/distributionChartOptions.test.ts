@@ -12,7 +12,7 @@ import {
   type DistributionChartModelFromDataInput,
   type DistributionChartModelInput,
   type DistributionQueryState,
-} from './distributionChartOptions'
+} from '../../../../src/components/charts/distributionChartOptions'
 
 const themeColors: ChartThemeColors = {
   textPrimary: '#1f2d2d',

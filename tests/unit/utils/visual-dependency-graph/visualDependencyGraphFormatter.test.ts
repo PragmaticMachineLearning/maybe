@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatVisualDependencyValue } from './visualDependencyGraphFormatter'
+import { formatVisualDependencyValue } from '../../../../src/utils/visual-dependency-graph/visualDependencyGraphFormatter'
 
 describe('formatVisualDependencyValue', () => {
   it('formats scalar values', () => {

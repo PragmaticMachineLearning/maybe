@@ -6,7 +6,7 @@ import {
   shouldAutoFitAfterGraphRefresh,
   type LayoutEdge,
   type LayoutNode,
-} from "./useLayoutNodes";
+} from "../../../../src/components/flow-diagram/useLayoutNodes";
 
 const node = (id: string): LayoutNode => ({
   id,

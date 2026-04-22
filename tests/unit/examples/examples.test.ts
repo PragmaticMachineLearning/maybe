@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { spreadsheetExamples } from "./examples";
-import { GaussFormulaEngine } from "../lib/formulaEngine";
+import { spreadsheetExamples } from "../../../src/examples/examples";
+import { GaussFormulaEngine } from "../../../src/lib/formulaEngine";
 
 const a1ToAddress = (address: string) => {
   const match = address.match(/^([A-Z]+)(\d+)$/);
