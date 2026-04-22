@@ -26,6 +26,6 @@ describe('formatVisualDependencyValue', () => {
         mean: 5,
         variance: 4,
       }),
-    ).toBe('S(μ=5.00, σ²=4.00)')
+    ).toBe('S(μ=5.00, σ=2.00)')
   })
 })
