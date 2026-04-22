@@ -106,4 +106,29 @@ describe('distributionChartOptions', () => {
       }),
     )
   })
+
+  it('uses engine-derived chart parameters when provided', () => {
+    const chartData = createDistributionChartData({
+      samples: [18, 19, 20, 21, 22],
+      distributionKind: 'normal',
+      distributionParams: {
+        type: 'normal',
+        mean: 20,
+        std: 1.103807174302308,
+      },
+      confidenceInterval: {
+        lower: 18,
+        upper: 22,
+        confidenceLevel: 93,
+      },
+    })
+
+    expect(chartData.distributionParams).toEqual(
+      expect.objectContaining({
+        type: 'normal',
+        mean: 20,
+        std: 1.103807174302308,
+      }),
+    )
+  })
 })

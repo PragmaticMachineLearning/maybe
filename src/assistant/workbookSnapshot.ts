@@ -1,8 +1,9 @@
 import type { FormulaEngine } from "../lib/formulaEngine";
 import {
+  confidenceLevelToFormulaArgument,
   getSamplesFromDistribution,
   isSampledDistributionValue,
-  parseConfidenceIntervalValue,
+  parseDistributionValue,
   parseSampledDistributionValue,
 } from "../utils/distribution/distributionUtils";
 import { percentileFromSorted } from "../utils/distribution/distributionMath";
@@ -17,16 +18,23 @@ export type WorkbookCellKind =
   | "scalar"
   | "text"
   | "boolean"
-  | "confidence_interval"
+  | "distribution"
   | "sampled_distribution"
   | "error"
   | "unknown_object";
 
-export interface WorkbookConfidenceIntervalSummary {
-  lower: number;
-  upper: number;
-  confidenceLevel: number;
-  interpretation: string;
+export interface WorkbookDistributionSummary {
+  kind: "normal" | "lognormal" | "uniform";
+  source: "parameters" | "ci";
+  mean?: number;
+  variance?: number;
+  mu?: number;
+  sigma?: number;
+  min?: number;
+  max?: number;
+  lower?: number;
+  upper?: number;
+  confidenceLevel?: number;
 }
 
 export interface WorkbookSampleSummary {
@@ -45,7 +53,7 @@ export interface WorkbookCellSnapshot {
   formula: string | null;
   displayValue: string;
   kind: WorkbookCellKind;
-  confidenceInterval?: WorkbookConfidenceIntervalSummary;
+  distribution?: WorkbookDistributionSummary;
   sampleSummary?: WorkbookSampleSummary;
 }
 
@@ -109,15 +117,19 @@ const summarizeSamples = (value: unknown): WorkbookSampleSummary | undefined => 
 
   const sorted = [...samples].sort((a, b) => a - b);
   const mean =
+    parsed?.mean ??
     samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
-  const variance =
-    samples.reduce((sum, sample) => sum + Math.pow(sample - mean, 2), 0) /
-    samples.length;
+  const standardDeviation =
+    parsed?.std ??
+    Math.sqrt(
+      samples.reduce((sum, sample) => sum + Math.pow(sample - mean, 2), 0) /
+        samples.length,
+    );
 
   return {
     sampleCount: samples.length,
     mean: round6(mean),
-    standardDeviation: round6(Math.sqrt(variance)),
+    standardDeviation: round6(standardDeviation),
     p10: round6(percentileFromSorted(sorted, 10)),
     p50: round6(percentileFromSorted(sorted, 50)),
     p90: round6(percentileFromSorted(sorted, 90)),
@@ -126,11 +138,11 @@ const summarizeSamples = (value: unknown): WorkbookSampleSummary | undefined => 
 
 const getCellKind = (
   value: unknown,
-  confidenceInterval: ReturnType<typeof parseConfidenceIntervalValue>,
+  distribution: ReturnType<typeof parseDistributionValue>,
   sampleSummary: WorkbookSampleSummary | undefined,
 ): WorkbookCellKind => {
-  if (confidenceInterval) {
-    return "confidence_interval";
+  if (distribution) {
+    return "distribution";
   }
   if (isSampledDistributionValue(value) || sampleSummary) {
     return "sampled_distribution";
@@ -161,7 +173,7 @@ const getCellKind = (
 
 const serializeCellValue = (
   value: unknown,
-  confidenceInterval: ReturnType<typeof parseConfidenceIntervalValue>,
+  distribution: ReturnType<typeof parseDistributionValue>,
   sampleSummary: WorkbookSampleSummary | undefined,
 ): string => {
   if (value === null || value === undefined) {
@@ -173,8 +185,19 @@ const serializeCellValue = (
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
-  if (confidenceInterval) {
-    return `CI[${confidenceInterval.lower}, ${confidenceInterval.upper}]`;
+  if (distribution) {
+    switch (distribution.kind) {
+      case "normal":
+        return distribution.source === "ci"
+          ? `N.CI(${distribution.lower}, ${distribution.upper}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel ?? 95)})`
+          : `N(${distribution.mean}, ${distribution.variance})`;
+      case "lognormal":
+        return distribution.source === "ci"
+          ? `LN.CI(${distribution.lower}, ${distribution.upper}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel ?? 95)})`
+          : `LN(${distribution.mu}, ${distribution.sigma})`;
+      case "uniform":
+        return `U(${distribution.min}, ${distribution.max})`;
+    }
   }
   if (sampleSummary) {
     return `samples(mean=${sampleSummary.mean}, p10=${sampleSummary.p10}, p90=${sampleSummary.p90})`;
@@ -219,7 +242,7 @@ export const buildWorkbookSnapshot = ({
         continue;
       }
 
-      const confidenceInterval = parseConfidenceIntervalValue(value);
+      const distribution = parseDistributionValue(value);
       const sampleSummary = summarizeSamples(value);
 
       cells.push({
@@ -227,14 +250,21 @@ export const buildWorkbookSnapshot = ({
         row,
         col,
         formula,
-        displayValue: serializeCellValue(value, confidenceInterval, sampleSummary),
-        kind: getCellKind(value, confidenceInterval, sampleSummary),
-        confidenceInterval: confidenceInterval
+        displayValue: serializeCellValue(value, distribution, sampleSummary),
+        kind: getCellKind(value, distribution, sampleSummary),
+        distribution: distribution
           ? {
-              lower: confidenceInterval.lower,
-              upper: confidenceInterval.upper,
-              confidenceLevel: confidenceInterval.confidenceLevel,
-              interpretation: confidenceInterval.interpretation ?? "normal",
+              kind: distribution.kind,
+              source: distribution.source,
+              mean: distribution.mean,
+              variance: distribution.variance,
+              mu: distribution.mu,
+              sigma: distribution.sigma,
+              min: distribution.min,
+              max: distribution.max,
+              lower: distribution.lower,
+              upper: distribution.upper,
+              confidenceLevel: distribution.confidenceLevel,
             }
           : undefined,
         sampleSummary,

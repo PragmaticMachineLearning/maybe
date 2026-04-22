@@ -1,11 +1,9 @@
 import {
   getSamplesFromDistribution,
-  isConfidenceIntervalValue,
+  isDistributionValue,
   isSampledDistributionValue,
-  parseConfidenceIntervalValue,
-  type ParsedConfidenceInterval,
+  parseDistributionValue,
 } from "../utils/distribution/distributionUtils";
-import type { DistributionViewType } from "../context/SpreadsheetContext";
 
 type DistributionType = "normal" | "lognormal" | "uniform" | "sampled";
 
@@ -18,7 +16,6 @@ interface AnalysisState {
   cellLabel: string;
   samples: number[] | null;
   distributionType: DistributionType;
-  confidenceInterval?: ParsedConfidenceInterval | null;
   message?: string;
 }
 
@@ -30,10 +27,6 @@ interface DeriveAnalysisStateInput {
   analysisMode: boolean;
   formulaEngine: FormulaValueReader | null;
   selectedCell: SelectedCell | null;
-  getDistributionView: (
-    row: number,
-    col: number,
-  ) => DistributionViewType | null;
 }
 
 export const getColumnName = (index: number): string => {
@@ -50,7 +43,6 @@ export const deriveAnalysisState = ({
   analysisMode,
   formulaEngine,
   selectedCell,
-  getDistributionView,
 }: DeriveAnalysisStateInput): AnalysisState | null => {
   if (!analysisMode || !formulaEngine || !selectedCell) {
     return null;
@@ -64,31 +56,26 @@ export const deriveAnalysisState = ({
   });
 
   const hasDistribution =
-    isConfidenceIntervalValue(value) || isSampledDistributionValue(value);
+    isDistributionValue(value) ||
+    isSampledDistributionValue(value);
 
   if (!hasDistribution) {
     return {
       cellLabel,
       samples: null,
       distributionType: "normal",
-      confidenceInterval: null,
       message:
-        "Select a cell containing uncertainty (CI[lower, upper] inputs or simulated outputs) to inspect its distribution.",
+        "Select a cell containing uncertainty (N, LN, U, N.CI, LN.CI, or simulated outputs) to inspect its distribution.",
     };
   }
 
-  const confidenceInterval = parseConfidenceIntervalValue(value);
+  const distribution = parseDistributionValue(value);
   const samples = getSamplesFromDistribution(value);
-  const viewOverride = getDistributionView(selectedCell.row, selectedCell.col);
 
   let distributionType: DistributionType = "normal";
-  if (viewOverride) {
-    distributionType = viewOverride;
-  } else if (confidenceInterval?.interpretation === "lognormal") {
-    distributionType = "lognormal";
-  } else if (confidenceInterval?.interpretation === "uniform") {
-    distributionType = "uniform";
-  } else if (!confidenceInterval && isSampledDistributionValue(value)) {
+  if (distribution) {
+    distributionType = distribution.kind;
+  } else if (isSampledDistributionValue(value)) {
     distributionType = "sampled";
   }
 
@@ -97,9 +84,8 @@ export const deriveAnalysisState = ({
       cellLabel,
       samples: null,
       distributionType,
-      confidenceInterval,
       message:
-        "Unable to generate samples for this cell. Ensure the value exposes samples or a confidence interval.",
+        "Unable to generate samples for this cell. Ensure the value exposes samples or an explicit distribution.",
     };
   }
 
@@ -107,6 +93,5 @@ export const deriveAnalysisState = ({
     cellLabel,
     samples,
     distributionType,
-    confidenceInterval,
   };
 };

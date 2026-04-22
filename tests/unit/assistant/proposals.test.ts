@@ -23,8 +23,15 @@ const snapshot: WorkbookSnapshot = {
       row: 0,
       col: 0,
       formula: null,
-      displayValue: "CI[10, 20]",
-      kind: "confidence_interval",
+      displayValue: "N.CI(10, 20, 0.95)",
+      kind: "distribution",
+      distribution: {
+        kind: "normal",
+        source: "ci",
+        lower: 10,
+        upper: 20,
+        confidenceLevel: 95,
+      },
     },
     {
       address: "B1",
@@ -61,8 +68,8 @@ const text = [
       {
         cell: "A1",
         before: "stale value",
-        after: "CI[10, 20]",
-        reason: "Document the confidence interval for reviewers.",
+        after: "N.CI(10, 20, 0.95)",
+        reason: "Document the uncertainty for reviewers.",
         kind: "review",
       },
     ],
@@ -337,7 +344,7 @@ describe("assistant proposal parsing", () => {
 
     try {
       engine.addSheet("Sheet1");
-      engine.setSheetContent(0, [["CI[10, 20]", "=A1*2", null]]);
+      engine.setSheetContent(0, [[10, "=A1*2", null]]);
 
       applyAssistantChangesToEngine(
         engine,
@@ -359,8 +366,8 @@ describe("assistant proposal parsing", () => {
           },
           {
             cell: "A1",
-            before: "CI[10, 20]",
-            after: "CI[15, 25]",
+            before: "10",
+            after: "N.CI(15, 25, 0.95)",
             reason: "Flag for manual review.",
             kind: "review",
           },
@@ -390,7 +397,7 @@ describe("assistant proposal parsing", () => {
 
     try {
       engine.addSheet("Sheet1");
-      engine.setSheetContent(0, [["CI[10, 20]", "=A1*2"]]);
+      engine.setSheetContent(0, [[10, "=A1*2"]]);
 
       let error: unknown;
       try {
@@ -432,7 +439,7 @@ describe("assistant proposal parsing", () => {
 
     try {
       engine.addSheet("Sheet1");
-      engine.setSheetContent(0, [["CI[10, 20]", "=A1*2", null]]);
+      engine.setSheetContent(0, [[10, "=A1*2", null]]);
 
       let error: unknown;
       try {

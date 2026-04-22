@@ -1,6 +1,10 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { SpreadsheetContext } from "../context/SpreadsheetContext";
-import { parseSampledDistributionValue } from "../utils/distribution/distributionUtils";
+import {
+  confidenceLevelToFormulaArgument,
+  parseDistributionValue,
+  parseSampledDistributionValue,
+} from "../utils/distribution/distributionUtils";
 
 interface SelectedCell {
   row: number;
@@ -12,6 +16,34 @@ export const formatFormulaBarCellValue = (value: unknown): string => {
   if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
 
   if (typeof value === "object" && value !== null) {
+    const distribution = parseDistributionValue(value);
+    if (distribution) {
+      switch (distribution.kind) {
+        case "normal":
+          if (
+            distribution.source === "ci" &&
+            distribution.lower !== undefined &&
+            distribution.upper !== undefined &&
+            distribution.confidenceLevel !== undefined
+          ) {
+            return `N.CI(${distribution.lower.toFixed(2)}, ${distribution.upper.toFixed(2)}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel).toFixed(2)})`;
+          }
+          return `N(${(distribution.mean ?? 0).toFixed(2)}, ${(distribution.variance ?? 0).toFixed(2)})`;
+        case "lognormal":
+          if (
+            distribution.source === "ci" &&
+            distribution.lower !== undefined &&
+            distribution.upper !== undefined &&
+            distribution.confidenceLevel !== undefined
+          ) {
+            return `LN.CI(${distribution.lower.toFixed(2)}, ${distribution.upper.toFixed(2)}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel).toFixed(2)})`;
+          }
+          return `LN(${(distribution.mu ?? 0).toFixed(2)}, ${(distribution.sigma ?? 0).toFixed(2)})`;
+        case "uniform":
+          return `U(${(distribution.min ?? 0).toFixed(2)}, ${(distribution.max ?? 0).toFixed(2)})`;
+      }
+    }
+
     const sampled = parseSampledDistributionValue(value);
     if (sampled) {
       return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
@@ -22,10 +54,6 @@ export const formatFormulaBarCellValue = (value: unknown): string => {
       return `S(μ=${v.mean.toFixed(2)}, σ=${Math.sqrt(v.variance).toFixed(2)})`;
     if (typeof v.mu === "number" && typeof v.sigma2 === "number")
       return `LN(μ=${v.mu.toFixed(2)}, σ=${Math.sqrt(v.sigma2).toFixed(2)})`;
-    if (typeof v.a === "number" && typeof v.b === "number")
-      return `U[${v.a.toFixed(2)}, ${v.b.toFixed(2)}]`;
-    if (typeof v.lower === "number" && typeof v.upper === "number" && typeof v.confidenceLevel === "number")
-      return `CI[${v.lower.toFixed(2)}, ${v.upper.toFixed(2)}]`;
   }
 
   return String(value);

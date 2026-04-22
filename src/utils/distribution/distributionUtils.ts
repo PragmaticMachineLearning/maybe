@@ -1,125 +1,133 @@
-export type CIInterpretation = 'normal' | 'uniform' | 'lognormal' | 'auto'
-export type DistributionViewType = 'normal' | 'lognormal' | 'uniform'
+export type DistributionKind = 'normal' | 'lognormal' | 'uniform'
 
-export interface ParsedConfidenceInterval {
-  lower: number
-  upper: number
-  confidenceLevel: number
-  interpretation?: CIInterpretation
+export interface ParsedDistribution {
+  kind: DistributionKind
+  source: 'parameters' | 'ci'
+  mean?: number
+  variance?: number
+  mu?: number
+  sigma?: number
+  min?: number
+  max?: number
+  lower?: number
+  upper?: number
+  confidenceLevel?: number
 }
 
-export const isConfidenceIntervalValue = (val: unknown): boolean => {
-  if (val && typeof val === 'object' && 'lower' in (val as Record<string, unknown>) && 'upper' in (val as Record<string, unknown>) && 'confidenceLevel' in (val as Record<string, unknown>)) {
-    return true
+const isDistributionKind = (value: unknown): value is DistributionKind =>
+  value === 'normal' || value === 'lognormal' || value === 'uniform'
+
+export const parseDistributionValue = (val: unknown): ParsedDistribution | null => {
+  if (!val || typeof val !== 'object') {
+    return null
   }
 
-  if (typeof val === 'string') {
-    return /^\d+\.?\d*\s+to\s+\d+\.?\d*$/.test(val) || (val.startsWith('CI[') && val.endsWith(']'))
-  }
+  const obj = val as Record<string, unknown>
 
-  return false
-}
-
-export const parseConfidenceIntervalValue = (val: unknown): ParsedConfidenceInterval | null => {
-  if (val && typeof val === 'object' && 'lower' in val && 'upper' in val && 'confidenceLevel' in val) {
-    const ciVal = val as { lower: number; upper: number; confidenceLevel: number; interpretation?: CIInterpretation }
+  if (isDistributionKind(obj.kind)) {
     return {
-      lower: ciVal.lower,
-      upper: ciVal.upper,
-      confidenceLevel: ciVal.confidenceLevel,
-      interpretation: ciVal.interpretation ?? 'normal',
+      kind: obj.kind,
+      source: obj.source === 'ci' ? 'ci' : 'parameters',
+      mean: typeof obj.mean === 'number' ? obj.mean : undefined,
+      variance: typeof obj.variance === 'number' ? obj.variance : undefined,
+      mu: typeof obj.mu === 'number' ? obj.mu : undefined,
+      sigma: typeof obj.sigma === 'number' ? obj.sigma : undefined,
+      min: typeof obj.min === 'number' ? obj.min : undefined,
+      max: typeof obj.max === 'number' ? obj.max : undefined,
+      lower: typeof obj.lower === 'number' ? obj.lower : undefined,
+      upper: typeof obj.upper === 'number' ? obj.upper : undefined,
+      confidenceLevel: typeof obj.confidenceLevel === 'number'
+        ? obj.confidenceLevel
+        : undefined,
     }
   }
 
-  if (typeof val === 'string') {
-    let match = val.match(/^(\d+\.?\d*)\s+to\s+(\d+\.?\d*)$/)
-    if (match) {
-      return {
-        lower: parseFloat(match[1]),
-        upper: parseFloat(match[2]),
-        confidenceLevel: 95,
-        interpretation: 'normal',
-      }
-    }
-
-    match = val.match(/^CI\[(-?\d+\.?\d*),\s*(-?\d+\.?\d*)\]$/)
-    if (match) {
-      return {
-        lower: parseFloat(match[1]),
-        upper: parseFloat(match[2]),
-        confidenceLevel: 95,
-        interpretation: 'normal',
-      }
+  if (obj.kind === 'distribution' && isDistributionKind(obj.distribution)) {
+    return {
+      kind: obj.distribution,
+      source: obj.source === 'ci' ? 'ci' : 'parameters',
+      mean: typeof obj.mean === 'number' ? obj.mean : undefined,
+      variance: typeof obj.variance === 'number' ? obj.variance : undefined,
+      mu: typeof obj.mu === 'number' ? obj.mu : undefined,
+      sigma: typeof obj.sigma === 'number' ? obj.sigma : undefined,
+      min: typeof obj.min === 'number' ? obj.min : undefined,
+      max: typeof obj.max === 'number' ? obj.max : undefined,
+      lower: typeof obj.lower === 'number' ? obj.lower : undefined,
+      upper: typeof obj.upper === 'number' ? obj.upper : undefined,
+      confidenceLevel: typeof obj.confidenceLevel === 'number'
+        ? obj.confidenceLevel
+        : undefined,
     }
   }
 
   return null
+}
+
+export const isDistributionValue = (val: unknown): boolean =>
+  parseDistributionValue(val) !== null
+
+export const confidenceLevelToFormulaArgument = (
+  confidenceLevel: number,
+): number => confidenceLevel > 1 ? confidenceLevel / 100 : confidenceLevel
+
+type SampledDistributionLike = {
+  samples?: unknown
+  getSamples?: () => number[]
+  getMean?: () => number
+  getVariance?: () => number
+}
+
+const getSampleArray = (val: unknown): number[] | null => {
+  if (!val || typeof val !== 'object') {
+    return null
+  }
+
+  const sampled = val as SampledDistributionLike
+  if (typeof sampled.getSamples === 'function') {
+    return sampled.getSamples()
+  }
+
+  return Array.isArray(sampled.samples) ? sampled.samples as number[] : null
 }
 
 export const isSampledDistributionValue = (val: unknown): boolean => {
-  return Boolean(val && typeof val === 'object' && 'samples' in (val as Record<string, unknown>) && Array.isArray((val as { samples?: unknown }).samples))
+  return getSampleArray(val) !== null
 }
 
 export const parseSampledDistributionValue = (val: unknown): { samples: number[]; mean: number; std: number } | null => {
-  if (val && typeof val === 'object' && 'samples' in (val as Record<string, unknown>) && Array.isArray((val as { samples: unknown[] }).samples)) {
-    const samples = (val as { samples: number[] }).samples
-    if (!samples.length) {
-      return { samples, mean: 0, std: 0 }
-    }
-
-    const mean = samples.reduce((a, b) => a + b, 0) / samples.length
-    const variance = samples.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / samples.length
-    const std = Math.sqrt(variance)
-    return { samples, mean, std }
+  const samples = getSampleArray(val)
+  if (!samples) {
+    return null
   }
-  return null
+
+  if (!samples.length) {
+    return { samples, mean: 0, std: 0 }
+  }
+
+  const sampled = val as SampledDistributionLike
+  const mean = typeof sampled.getMean === 'function'
+    ? sampled.getMean()
+    : samples.reduce((a, b) => a + b, 0) / samples.length
+  const variance = typeof sampled.getVariance === 'function'
+    ? sampled.getVariance()
+    : samples.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / samples.length
+  const std = Math.sqrt(variance)
+  return { samples, mean, std }
 }
 
 export const getSamplesFromDistribution = (val: unknown): number[] | null => {
-  if (isSampledDistributionValue(val)) {
-    return ((val as { samples: number[] }).samples)
+  const sampledSamples = getSampleArray(val)
+  if (sampledSamples) {
+    return sampledSamples
   }
 
-  if (val && typeof val === 'object' && 'toSamples' in (val as Record<string, unknown>) && typeof (val as { toSamples: () => number[] }).toSamples === 'function') {
+  if (isDistributionValue(val) && val && typeof val === 'object' && 'toSamples' in (val as Record<string, unknown>) && typeof (val as { toSamples: () => number[] }).toSamples === 'function') {
     try {
       return (val as { toSamples: () => number[] }).toSamples()
     } catch (error) {
-      console.error('Error calling toSamples:', error)
+      console.error('Error calling distribution toSamples:', error)
     }
   }
 
   return null
-}
-
-export const getConfidenceIntervalMedian = (ci: Pick<ParsedConfidenceInterval, 'lower' | 'upper' | 'interpretation'>): number => {
-  switch (ci.interpretation) {
-    case 'lognormal':
-      return Math.sqrt(ci.lower * ci.upper)
-    case 'uniform':
-    case 'normal':
-    default:
-      return (ci.lower + ci.upper) / 2
-  }
-}
-
-export const canUseLognormalInterpretation = (
-  ci: Pick<ParsedConfidenceInterval, 'lower' | 'upper'>,
-): boolean => ci.lower > 0 && ci.upper > 0
-
-export const getAvailableDistributionViews = (
-  ci: Pick<ParsedConfidenceInterval, 'lower' | 'upper'>,
-): DistributionViewType[] =>
-  canUseLognormalInterpretation(ci)
-    ? ['normal', 'lognormal', 'uniform']
-    : ['normal', 'uniform']
-
-export const zScoreForConfidence = (confidenceLevel: number): number => {
-  if (confidenceLevel >= 99.9) return 3.29;
-  if (confidenceLevel >= 99) return 2.576;
-  if (confidenceLevel >= 98) return 2.326;
-  if (confidenceLevel >= 95) return 1.96;
-  if (confidenceLevel >= 90) return 1.645;
-  if (confidenceLevel >= 80) return 1.282;
-  if (confidenceLevel >= 70) return 1.036;
-  return 1.0;
 }

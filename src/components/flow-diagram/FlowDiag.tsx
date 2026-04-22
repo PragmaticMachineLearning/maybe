@@ -14,9 +14,8 @@ import type {
   VisualDependencyNodeValue,
 } from "../../types/visualDependencyGraph";
 import {
-  getAvailableDistributionViews,
-  isConfidenceIntervalValue,
   isSampledDistributionValue,
+  parseDistributionValue,
   parseSampledDistributionValue,
 } from "../../utils/distribution/distributionUtils";
 import {
@@ -53,9 +52,12 @@ interface FlowDiagramNodeData extends Record<string, unknown> {
   formula: string;
   row: number;
   col: number;
-  valueKind: "scalar" | "confidence_interval" | "sampled_distribution";
-  interpretation?: "normal" | "uniform" | "lognormal" | "auto";
-  confidenceIntervalBounds?: { lower: number; upper: number };
+  valueKind:
+    | "scalar"
+    | "distribution"
+    | "sampled_distribution";
+  distributionKind?: "normal" | "uniform" | "lognormal";
+  distributionSource?: "parameters" | "ci";
   isSelected: boolean;
   focusState: GraphFocusState;
   onSelect: () => void;
@@ -81,9 +83,12 @@ interface PlainNodeData extends Record<string, unknown> {
   formula: string;
   row: number;
   col: number;
-  valueKind: "scalar" | "confidence_interval" | "sampled_distribution";
-  interpretation?: "normal" | "uniform" | "lognormal" | "auto";
-  confidenceIntervalBounds?: { lower: number; upper: number };
+  valueKind:
+    | "scalar"
+    | "distribution"
+    | "sampled_distribution";
+  distributionKind?: "normal" | "uniform" | "lognormal";
+  distributionSource?: "parameters" | "ci";
 }
 
 interface PlainNode extends LayoutNode {
@@ -112,12 +117,9 @@ function buildPlainElements(graph: VisualDependencyGraph): {
       col: node.col,
       valueKind: node.value.kind,
     };
-    if (node.value.kind === "confidence_interval") {
-      data.interpretation = node.value.interpretation;
-      data.confidenceIntervalBounds = {
-        lower: node.value.lower,
-        upper: node.value.upper,
-      };
+    if (node.value.kind === "distribution") {
+      data.distributionKind = node.value.distribution;
+      data.distributionSource = node.value.source;
     }
     return {
       id: node.id,
@@ -152,21 +154,21 @@ function cellValueToNodeValue(raw: unknown): VisualDependencyNodeValue | null {
   }
 
   if (typeof raw === "object" && raw !== null) {
-    if (isConfidenceIntervalValue(raw)) {
-      const obj = raw as {
-        lower: number;
-        upper: number;
-        confidenceLevel: number;
-        interpretation?: string;
-      };
+    const distribution = parseDistributionValue(raw);
+    if (distribution) {
       return {
-        kind: "confidence_interval",
-        lower: obj.lower,
-        upper: obj.upper,
-        confidenceLevel: obj.confidenceLevel,
-        interpretation:
-          (obj.interpretation as "normal" | "lognormal" | "uniform" | "auto") ??
-          "normal",
+        kind: "distribution",
+        distribution: distribution.kind,
+        source: distribution.source,
+        mean: distribution.mean,
+        variance: distribution.variance,
+        mu: distribution.mu,
+        sigma: distribution.sigma,
+        min: distribution.min,
+        max: distribution.max,
+        lower: distribution.lower,
+        upper: distribution.upper,
+        confidenceLevel: distribution.confidenceLevel,
       };
     }
 
@@ -233,13 +235,10 @@ function collectOrphanNodes(
         valueKind: nodeValue.kind,
       };
 
-    if (nodeValue.kind === "confidence_interval") {
-      data.interpretation = nodeValue.interpretation;
-      data.confidenceIntervalBounds = {
-        lower: nodeValue.lower,
-        upper: nodeValue.upper,
-      };
-    }
+      if (nodeValue.kind === "distribution") {
+        data.distributionKind = nodeValue.distribution;
+        data.distributionSource = nodeValue.source;
+      }
 
       orphans.push({
         id: nodeId,
@@ -341,8 +340,8 @@ function getValueKindLabel(
   valueKind: FlowDiagramNodeData["valueKind"],
 ): string {
   switch (valueKind) {
-    case "confidence_interval":
-      return "confidence interval";
+    case "distribution":
+      return "distribution";
     case "sampled_distribution":
       return "sampled distribution";
     case "scalar":
@@ -392,18 +391,17 @@ function getSelectedNodeInspectorDetails(
 // ── CSS class helpers ───────────────────────────────────────────────────────
 
 function getDistributionClass(data: FlowDiagramNodeData): string {
-  if (data.valueKind === "confidence_interval" && data.interpretation) {
-    switch (data.interpretation) {
+  if (data.valueKind === "distribution" && data.distributionKind) {
+    switch (data.distributionKind) {
       case "normal":
         return styles.nodeDistNormal;
       case "lognormal":
         return styles.nodeDistLognormal;
       case "uniform":
         return styles.nodeDistUniform;
-      case "auto":
-        return styles.nodeDistNormal;
     }
   }
+
   if (data.valueKind === "sampled_distribution") return styles.nodeDistSampled;
   return "";
 }
@@ -426,11 +424,9 @@ function getSparklineProps(data: FlowDiagramNodeData): {
   type: "normal" | "lognormal" | "uniform" | "sampled";
   color: string;
 } | null {
-  if (data.valueKind === "confidence_interval") {
-    const interp = data.interpretation ?? "normal";
-    switch (interp) {
+  if (data.valueKind === "distribution" && data.distributionKind) {
+    switch (data.distributionKind) {
       case "normal":
-      case "auto":
         return { type: "normal", color: "var(--dist-normal-accent)" };
       case "lognormal":
         return { type: "lognormal", color: "var(--dist-lognormal-accent)" };
@@ -438,6 +434,7 @@ function getSparklineProps(data: FlowDiagramNodeData): {
         return { type: "uniform", color: "var(--dist-uniform-accent)" };
     }
   }
+
   if (data.valueKind === "sampled_distribution")
     return { type: "sampled", color: "var(--dist-sampled-accent)" };
   return null;
@@ -621,11 +618,6 @@ const SelectedNodeInspector: React.FC<{
 }> = ({ details }) => {
   const { node, role, directInputs, directOutputs } = details;
   const { data } = node;
-  const { setDistributionView } = useContext(SpreadsheetContext);
-  const distributionOptions =
-    data.valueKind === "confidence_interval" && data.confidenceIntervalBounds
-      ? getAvailableDistributionViews(data.confidenceIntervalBounds)
-      : [];
 
   return (
     <aside className={styles.nodeInspector} aria-label="Selected node inspector">
@@ -646,35 +638,8 @@ const SelectedNodeInspector: React.FC<{
         )}
         <div className={styles.inspectorMetaRow}>
           <span>{getValueKindLabel(data.valueKind)}</span>
-          {data.interpretation && <span>{data.interpretation}</span>}
+          {data.distributionKind && <span>{data.distributionKind}</span>}
         </div>
-        {data.valueKind === "confidence_interval" && data.interpretation && (
-          <div className={styles.inspectorDistributionRow}>
-            <span className={styles.inspectorLabel}>Distribution</span>
-            <div
-              className={styles.inspectorDistributionGroup}
-              aria-label="Cell distribution"
-            >
-              {distributionOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={`${styles.inspectorDistributionButton} ${
-                    data.interpretation === option
-                      ? styles.inspectorDistributionButtonActive
-                      : ""
-                  }`}
-                  aria-pressed={data.interpretation === option}
-                  onClick={() =>
-                    setDistributionView(data.row, data.col, option)
-                  }
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       <div className={styles.inspectorRelations}>
         <RelationshipList label="Direct inputs" nodes={directInputs} />

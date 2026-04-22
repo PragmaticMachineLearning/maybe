@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatCellValue } from '../../../../src/components/spreadsheet/cellFormatting'
+import {
+  formatCellEditValue,
+  formatCellValue,
+} from '../../../../src/components/spreadsheet/cellFormatting'
 
 const sampledValue = {
   samples: [1, 2, 3],
@@ -14,34 +17,78 @@ const sampledValue = {
 
 describe('formatCellValue', () => {
   it('formats primitive values', () => {
-    expect(formatCellValue(null, { type: 'normal' })).toBe('')
-    expect(formatCellValue(true, { type: 'normal' })).toBe('TRUE')
-    expect(formatCellValue(false, { type: 'normal' })).toBe('FALSE')
-    expect(formatCellValue(123, { type: 'normal' })).toBe('123')
-    expect(formatCellValue('abc', { type: 'normal' })).toBe('abc')
+    expect(formatCellValue(null)).toBe('')
+    expect(formatCellValue(true)).toBe('TRUE')
+    expect(formatCellValue(false)).toBe('FALSE')
+    expect(formatCellValue(123)).toBe('123')
+    expect(formatCellValue('abc')).toBe('abc')
   })
 
-  it('formats normal confidence intervals', () => {
+  it('formats explicit distributions', () => {
     expect(
       formatCellValue(
-        { lower: 10, upper: 20, confidenceLevel: 95 },
-        { type: 'normal' },
+        {
+          kind: 'normal',
+          source: 'parameters',
+          mean: 10,
+          variance: 4,
+        },
       ),
-    ).toBe('N(μ=15.00, σ=2.55)')
+    ).toBe('N μ=10 σ²=4')
+
+    expect(
+      formatCellValue(
+        {
+          kind: 'normal',
+          source: 'ci',
+          lower: 10,
+          upper: 20,
+          confidenceLevel: 95,
+        },
+      ),
+    ).toBe('N 95% CI [10, 20]')
+
+    expect(
+      formatCellValue(
+        {
+          kind: 'lognormal',
+          source: 'ci',
+          lower: 1,
+          upper: 2,
+          confidenceLevel: 95,
+        },
+      ),
+    ).toBe('LN 95% CI [1, 2]')
+
+    expect(
+      formatCellValue(
+        {
+          kind: 'uniform',
+          source: 'parameters',
+          min: 1,
+          max: 2,
+        },
+      ),
+    ).toBe('U [1, 2]')
   })
 
-  it('formats uniform confidence intervals', () => {
+  it('formats explicit distributions as editable formulas', () => {
     expect(
-      formatCellValue(
-        { lower: 10, upper: 20, confidenceLevel: 95 },
-        { type: 'uniform' },
+      formatCellEditValue(
+        {
+          kind: 'lognormal',
+          source: 'ci',
+          lower: 1,
+          upper: 2,
+          confidenceLevel: 95,
+        },
       ),
-    ).toBe('U[10.00, 20.00]')
+    ).toBe('LN.CI(1.00, 2.00, 0.95)')
   })
 
   it('formats sampled distributions', () => {
     expect(
-      formatCellValue(sampledValue, { type: 'normal' }),
+      formatCellValue(sampledValue),
     ).toBe('S(μ=2.00, σ=0.82)')
   })
 })

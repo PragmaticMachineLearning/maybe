@@ -7,18 +7,6 @@ describe('formatVisualDependencyValue', () => {
     expect(formatVisualDependencyValue({ kind: 'scalar', value: 42 })).toBe('42')
   })
 
-  it('formats confidence intervals', () => {
-    expect(
-      formatVisualDependencyValue({
-        kind: 'confidence_interval',
-        lower: 10,
-        upper: 20,
-        confidenceLevel: 95,
-        interpretation: 'normal',
-      }),
-    ).toBe('CI[10.00, 20.00]')
-  })
-
   it('formats sampled distributions from summary stats', () => {
     expect(
       formatVisualDependencyValue({
@@ -27,5 +15,28 @@ describe('formatVisualDependencyValue', () => {
         variance: 4,
       }),
     ).toBe('S(μ=5.00, σ=2.00)')
+  })
+
+  it('formats explicit distributions', () => {
+    expect(
+      formatVisualDependencyValue({
+        kind: 'distribution',
+        distribution: 'normal',
+        source: 'ci',
+        lower: 10,
+        upper: 20,
+        confidenceLevel: 95,
+      }),
+    ).toBe('N.CI(10.00, 20.00, 0.95)')
+
+    expect(
+      formatVisualDependencyValue({
+        kind: 'distribution',
+        distribution: 'uniform',
+        source: 'parameters',
+        min: 10,
+        max: 20,
+      }),
+    ).toBe('U(10.00, 20.00)')
   })
 })

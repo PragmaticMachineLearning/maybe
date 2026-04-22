@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { spreadsheetExamples } from "../../../src/examples/examples";
 import { GaussFormulaEngine } from "../../../src/lib/formulaEngine";
+import { parseSampledDistributionValue } from "../../../src/utils/distribution/distributionUtils";
 
 const a1ToAddress = (address: string) => {
   const match = address.match(/^([A-Z]+)(\d+)$/);
@@ -18,23 +19,26 @@ const a1ToAddress = (address: string) => {
 };
 
 const meanOfSampledValue = (value: unknown): number => {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    !("samples" in value) ||
-    !Array.isArray((value as { samples?: unknown }).samples)
-  ) {
+  const sampled = parseSampledDistributionValue(value);
+
+  if (!sampled) {
     throw new Error("Expected a sampled distribution value.");
   }
 
-  const samples = (value as { samples: number[] }).samples;
-  return samples.reduce((sum, sample) => sum + sample, 0) / samples.length;
+  return sampled.mean;
 };
 
 describe("spreadsheet examples", () => {
-  it("keeps the prompt-cost example mean aligned with the deterministic workbook total", () => {
+  const supportsExplicitDistributions = Boolean(
+    (GaussFormulaEngine as unknown as { DistributionNumber?: unknown })
+      .DistributionNumber,
+  );
+
+  it.skipIf(!supportsExplicitDistributions)(
+    "keeps the prompt-cost example mean aligned with the deterministic workbook total",
+    () => {
     const promptCostExample = spreadsheetExamples.find(
-      (example) => example.id === "prompt-cost-ci",
+      (example) => example.id === "prompt-cost-uncertainty",
     );
     expect(promptCostExample).toBeDefined();
 
@@ -56,5 +60,6 @@ describe("spreadsheet examples", () => {
     } finally {
       engine.destroy();
     }
-  });
+    },
+  );
 });

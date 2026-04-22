@@ -41,6 +41,7 @@ type SpreadsheetRow = {
 interface EditingCell {
   row: number;
   col: number;
+  value: string;
 }
 
 export const Spreadsheet: React.FC<SpreadsheetProps> = ({
@@ -158,7 +159,21 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
               isEditing={
                 editingCell?.row === rowIndex && editingCell?.col === colIndex
               }
-              onRequestEdit={(row, col) => setEditingCell({ row, col })}
+              editValue={
+                editingCell?.row === rowIndex && editingCell?.col === colIndex
+                  ? editingCell.value
+                  : ""
+              }
+              onEditValueChange={(value) => {
+                setEditingCell((current) =>
+                  current?.row === rowIndex && current?.col === colIndex
+                    ? { ...current, value }
+                    : current,
+                );
+              }}
+              onRequestEdit={(row, col, value) =>
+                setEditingCell({ row, col, value })
+              }
               onStopEdit={() => setEditingCell(null)}
             />
           );
@@ -259,7 +274,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
             </svg>
             <p className={styles.welcomeTitle}>Start building your model</p>
             <p className={styles.welcomeSubtitle}>
-              Type values, formulas, or ranges like <code>CI[10, 20]</code> to
+              Type values, formulas, or uncertainty like <code>N.CI(10, 20, 0.95)</code> to
               add uncertainty
             </p>
           </div>
