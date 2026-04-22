@@ -81,7 +81,9 @@ const getMessageProposalResult = (
     return toolProposal;
   }
 
-  const textProposal = extractAssistantProposalFromText(getMessageText(message));
+  const textProposal = extractAssistantProposalFromText(
+    getMessageText(message),
+  );
   return textProposal === null
     ? null
     : { proposal: textProposal, source: "text" };
@@ -113,10 +115,7 @@ const getVisibleAssistantText = (rawText: string): string => {
   return stripAssistantProposalFromText(rawText);
 };
 
-const renderInlineText = (
-  text: string,
-  keyPrefix: string,
-): React.ReactNode[] =>
+const renderInlineText = (text: string, keyPrefix: string): React.ReactNode[] =>
   text
     .split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/g)
     .filter((token) => token.length > 0)
@@ -155,8 +154,14 @@ const FormattedAssistantText: React.FC<{ text: string }> = ({ text }) => {
 
     const elementIndex = elements.length;
     elements.push(
-      <p key={`paragraph-${elementIndex}`} className={styles.assistantParagraph}>
-        {renderInlineText(paragraphLines.join(" "), `paragraph-${elementIndex}`)}
+      <p
+        key={`paragraph-${elementIndex}`}
+        className={styles.assistantParagraph}
+      >
+        {renderInlineText(
+          paragraphLines.join(" "),
+          `paragraph-${elementIndex}`,
+        )}
       </p>,
     );
     paragraphLines = [];
@@ -309,15 +314,10 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     () => new DefaultChatTransport<UIMessage>({ api: "/api/assistant" }),
     [],
   );
-  const {
-    messages,
-    sendMessage,
-    status,
-    error,
-    clearError,
-  } = useChat<UIMessage>({
-    transport,
-  });
+  const { messages, sendMessage, status, error, clearError } =
+    useChat<UIMessage>({
+      transport,
+    });
 
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true });
@@ -457,15 +457,16 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     });
   };
 
-  const autoApplyProposal = allowDirectCellChanges && applyError === null
-    ? proposalEntries.find(
-        (entry) =>
-          entry.show &&
-          !entry.isApplied &&
-          entry.canApply &&
-          entry.validation !== null,
-      )
-    : undefined;
+  const autoApplyProposal =
+    allowDirectCellChanges && applyError === null
+      ? proposalEntries.find(
+          (entry) =>
+            entry.show &&
+            !entry.isApplied &&
+            entry.canApply &&
+            entry.validation !== null,
+        )
+      : undefined;
 
   // Scroll to bottom when new results appear
   useEffect(() => {
@@ -651,9 +652,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
                   {message.role === "assistant" && visibleText ? (
                     <FormattedAssistantText text={visibleText} />
                   ) : message.role === "user" ? (
-                    <span className={styles.userPromptText}>
-                      {visibleText}
-                    </span>
+                    <span className={styles.userPromptText}>{visibleText}</span>
                   ) : null}
                   {proposalEntry ? renderProposalCard(proposalEntry) : null}
                 </div>
@@ -669,7 +668,9 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
           </div>
         )}
 
-        {transportError && <div className={styles.errorBox}>{transportError}</div>}
+        {transportError && (
+          <div className={styles.errorBox}>{transportError}</div>
+        )}
         {applyError && <div className={styles.errorBox}>{applyError}</div>}
       </div>
 
@@ -714,15 +715,8 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
 // ── Change row (compact, single-line-ish) ───────────────────────────────────
 
 const ChangeRow: React.FC<{ row: AssistantCellChange }> = ({ row }) => {
-  const toneClass =
-    row.kind === "add"
-      ? styles.toneAdd
-      : row.kind === "update"
-        ? styles.toneChange
-        : styles.toneReview;
-
   return (
-    <div className={`${styles.changeRow} ${toneClass}`}>
+    <div className={styles.changeRow}>
       <div className={styles.changeTop}>
         <span className={styles.changeTone}>{toneLabels[row.kind]}</span>
         <span className={styles.changeCell}>{row.cell}</span>

@@ -306,31 +306,21 @@
 .changeList {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
 }
 
 .changeRow {
     padding: 8px 10px;
-    border-radius: var(--radius-sm, 6px);
     display: flex;
     flex-direction: column;
     gap: 3px;
-    border-left: 2px solid transparent;
+    background: var(--bg-muted);
 }
 
-.toneAdd {
-    border-left-color: var(--dist-normal-accent);
-    background: var(--dist-normal-bg);
-}
-
-.toneChange {
-    border-left-color: var(--dist-sampled-accent);
-    background: var(--dist-sampled-bg);
-}
-
-.toneReview {
-    border-left-color: var(--dist-lognormal-accent);
-    background: var(--dist-lognormal-bg);
+.changeRow + .changeRow {
+    border-top: 1px solid var(--border-color);
 }
 
 .changeTop {
@@ -397,7 +387,7 @@
         monospace
     );
     font-size: 11px;
-    color: var(--resize-handle-active);
+    color: var(--text-primary);
     font-weight: 600;
 }
 
