@@ -1,25 +1,54 @@
 declare module "gaussformula" {
-  export type CIInterpretation = "normal" | "uniform" | "lognormal" | "auto";
-
-  export interface ConfidenceIntervalOptions {
-    interpretation?: CIInterpretation;
-    sourceFormat?: "ci" | "range" | "bracket";
+  export interface DistributionNumberOptions {
+    source?: "parameters" | "ci";
+    lower?: number;
+    upper?: number;
+    confidenceLevel?: number;
     samplingIdentity?: string;
-    format?: unknown;
   }
 
-  export class ConfidenceIntervalNumber {
-    readonly lower: number;
-    readonly upper: number;
-    readonly confidenceLevel: number;
-    readonly interpretation: CIInterpretation;
+  export class DistributionNumber {
+    readonly kind: "normal" | "lognormal" | "uniform";
+    readonly source: "parameters" | "ci";
+    readonly mean?: number;
+    readonly variance?: number;
+    readonly mu?: number;
+    readonly sigma?: number;
+    readonly min?: number;
+    readonly max?: number;
+    readonly lower?: number;
+    readonly upper?: number;
+    readonly confidenceLevel?: number;
 
-    constructor(
+    static normal(
+      mean: number,
+      variance: number,
+      options?: DistributionNumberOptions
+    ): DistributionNumber;
+    static lognormal(
+      mu: number,
+      sigma: number,
+      options?: DistributionNumberOptions
+    ): DistributionNumber;
+    static uniform(
+      min: number,
+      max: number,
+      options?: DistributionNumberOptions
+    ): DistributionNumber;
+    static normalFromCI(
       lower: number,
       upper: number,
-      confidenceLevel?: number,
-      options?: ConfidenceIntervalOptions
-    );
+      confidenceLevel: number,
+      options?: DistributionNumberOptions
+    ): DistributionNumber;
+    static lognormalFromCI(
+      lower: number,
+      upper: number,
+      confidenceLevel: number,
+      options?: DistributionNumberOptions
+    ): DistributionNumber;
+
+    toSamples(sampleSize?: number): number[];
   }
 
   export type RawCellContent =
@@ -29,11 +58,11 @@ declare module "gaussformula" {
     | Date
     | null
     | undefined
-    | ConfidenceIntervalNumber;
+    | DistributionNumber;
 
   export class GaussFormula {
     static buildEmpty(config?: Record<string, unknown>): GaussFormula;
-    static ConfidenceIntervalNumber: typeof ConfidenceIntervalNumber;
+    static DistributionNumber: typeof DistributionNumber;
     static version: string;
     static buildDate: string;
     static releaseDate: string;

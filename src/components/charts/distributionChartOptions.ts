@@ -1,4 +1,3 @@
-import { zScoreForConfidence } from "../../utils/distribution/distributionUtils";
 import { formatNumber } from "../../utils/formatting/formatUtils";
 import {
   createLogNormalData,
@@ -57,6 +56,7 @@ export interface DistributionChartDataInput {
   samples: number[];
   distributionKind: DistributionKind;
   confidenceInterval?: ChartConfidenceInterval;
+  distributionParams?: DistributionParams | null;
 }
 
 export interface DistributionChartData {
@@ -112,11 +112,16 @@ const getDistributionTitle = (distributionKind: DistributionKind): string => {
 export const createDistributionChartData = (
   input: DistributionChartDataInput,
 ): DistributionChartData => {
-  const { samples, distributionKind, confidenceInterval } = input;
+  const {
+    samples,
+    distributionKind,
+    confidenceInterval,
+    distributionParams: providedDistributionParams,
+  } = input;
 
   const sortedSamples = [...samples].sort((a, b) => a - b);
 
-  const distributionParams = (() => {
+  const distributionParams = providedDistributionParams ?? (() => {
     switch (distributionKind) {
       case "uniform": {
         if (confidenceInterval) {
@@ -131,33 +136,10 @@ export const createDistributionChartData = (
         return params ? { type: "uniform" as const, ...params } : null;
       }
       case "lognormal": {
-        if (
-          confidenceInterval &&
-          confidenceInterval.lower > 0 &&
-          confidenceInterval.upper > 0
-        ) {
-          const z = zScoreForConfidence(confidenceInterval.confidenceLevel);
-          const lnLower = Math.log(confidenceInterval.lower);
-          const lnUpper = Math.log(confidenceInterval.upper);
-          const mu = (lnLower + lnUpper) / 2;
-          const sigma = (lnUpper - lnLower) / (2 * z);
-          if (Number.isFinite(mu) && Number.isFinite(sigma) && sigma > 0) {
-            return { type: "lognormal" as const, mu, sigma };
-          }
-        }
-
         const params = toLogNormalParams(samples);
         return params ? { type: "lognormal" as const, ...params } : null;
       }
       case "normal": {
-        if (confidenceInterval) {
-          const z = zScoreForConfidence(confidenceInterval.confidenceLevel);
-          const mean = (confidenceInterval.lower + confidenceInterval.upper) / 2;
-          const std =
-            (confidenceInterval.upper - confidenceInterval.lower) / (2 * z);
-          return { type: "normal" as const, mean, std };
-        }
-
         const { mean, std } = toMeanAndStd(samples);
         return std > 0 ? { type: "normal" as const, mean, std } : null;
       }

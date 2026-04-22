@@ -18,7 +18,30 @@ test("edits a spreadsheet cell directly", async ({ page }) => {
   );
 });
 
-test("opens a confidence interval distribution chart", async ({ page }) => {
+test("double-clicking an existing cell preserves the editor and formula bar values", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const firstCell = page.locator("tbody tr:first-child td:nth-child(2) > div");
+  const formulaBar = page.getByPlaceholder("Enter value or formula…");
+
+  await firstCell.dblclick();
+
+  const editor = page.getByLabel("Cell A1");
+  await editor.fill("456");
+  await editor.press("Enter");
+
+  await expect(firstCell).toHaveText("456");
+  await expect(formulaBar).toHaveValue("456");
+
+  await firstCell.dblclick();
+
+  await expect(page.getByLabel("Cell A1")).toHaveValue("456");
+  await expect(formulaBar).toHaveValue("456");
+});
+
+test("opens an explicit distribution chart", async ({ page }) => {
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 
@@ -28,10 +51,10 @@ test("opens a confidence interval distribution chart", async ({ page }) => {
   await firstCell.dblclick();
 
   const editor = page.getByLabel("Cell A1");
-  await editor.fill("CI[10, 20]");
+  await editor.fill("N.CI(10, 20, 0.95)");
   await editor.press("Enter");
 
-  await expect(firstCell).toHaveText("N(μ=15.00, σ=2.55)");
+  await expect(firstCell).toHaveText("N 95% CI [10, 20]");
 
   await firstCell.click({ button: "right" });
 
@@ -83,7 +106,7 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
       expect.arrayContaining([
         expect.objectContaining({
           address: "A1",
-          kind: "confidence_interval",
+          kind: "distribution",
         }),
       ]),
     );
@@ -124,7 +147,7 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   await firstCell.dblclick();
 
   let editor = page.getByLabel("Cell A1");
-  await editor.fill("CI[10, 20]");
+  await editor.fill("N.CI(10, 20, 0.95)");
   await editor.press("Enter");
 
   // GaussFormula trims empty rightmost columns, so C1 keeps empty B1 in bounds.
@@ -237,12 +260,12 @@ test("renders Sage prose readably and applies proposals from json fences", async
     "```json",
     JSON.stringify({
       title: "Add uncertain input",
-      summary: "Adds a starter confidence interval.",
+      summary: "Adds a starter uncertainty input.",
       changes: [
         {
           cell: "A1",
           before: "",
-          after: "CI[100, 200]",
+          after: "N.CI(100, 200, 0.95)",
           reason: "Capture the uncertain source estimate as a distribution.",
           kind: "add",
         },
@@ -286,12 +309,12 @@ test("renders Sage prose readably and applies proposals from json fences", async
 test("renders and applies proposals produced by Sage tools", async ({ page }) => {
   const proposal = {
     title: "Add tool proposal output",
-    summary: "Adds a starter confidence interval through the proposal tool.",
+    summary: "Adds a starter uncertainty input through the proposal tool.",
     changes: [
       {
         cell: "A1",
         before: "",
-        after: "CI[100, 200]",
+        after: "N.CI(100, 200, 0.95)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -341,13 +364,13 @@ test("renders and applies proposals produced by Sage tools", async ({ page }) =>
   await expect(
     page.getByText("I prepared one workbook change for review."),
   ).toBeVisible();
-  await expect(page.getByText("CI[100, 200]")).toBeVisible();
+  await expect(page.getByText("N.CI(100, 200, 0.95)")).toBeVisible();
   await page.getByRole("button", { name: "Apply 1 change" }).click();
   await expect(page.getByText("Applied", { exact: true })).toBeVisible();
 
   await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
-    "CI[100.00, 200.00]",
+    "N.CI(100.00, 200.00, 0.95)",
   );
 });
 
@@ -356,12 +379,12 @@ test("keeps proposal cards with the assistant messages that produced them", asyn
 }) => {
   const firstProposal = {
     title: "Add uncertain input",
-    summary: "Adds a starter confidence interval.",
+    summary: "Adds a starter uncertainty input.",
     changes: [
       {
         cell: "A1",
         before: "",
-        after: "CI[100, 200]",
+        after: "N.CI(100, 200, 0.95)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -429,14 +452,14 @@ test("keeps proposal cards with the assistant messages that produced them", asyn
     .fill("Prepare the first change");
   await page.getByRole("button", { name: "Send" }).click();
 
-  await expect(page.getByText("CI[100, 200]")).toBeVisible();
+  await expect(page.getByText("N.CI(100, 200, 0.95)")).toBeVisible();
 
   await page.getByLabel("Message Sage")
     .fill("Prepare a second change");
   await page.getByRole("button", { name: "Send" }).click();
 
   const sagePanel = page.getByRole("complementary", { name: "Sage" });
-  await expect(page.getByText("CI[100, 200]")).toBeVisible();
+  await expect(page.getByText("N.CI(100, 200, 0.95)")).toBeVisible();
   await expect(sagePanel.getByText("42", { exact: true })).toBeVisible();
   await expect(
     sagePanel.getByRole("button", { name: "Apply 1 change" }),
@@ -448,12 +471,12 @@ test("auto-applies direct apply tool results in Write mode", async ({
 }) => {
   const proposal = {
     title: "Apply tool output",
-    summary: "Applies a starter confidence interval through the apply tool.",
+    summary: "Applies a starter uncertainty input through the apply tool.",
     changes: [
       {
         cell: "A1",
         before: "",
-        after: "CI[100, 200]",
+        after: "N.CI(100, 200, 0.95)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -513,7 +536,7 @@ test("auto-applies direct apply tool results in Write mode", async ({
   await expect(page.getByText("Applied", { exact: true })).toBeVisible();
   await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
-    "CI[100.00, 200.00]",
+    "N.CI(100.00, 200.00, 0.95)",
   );
 });
 
@@ -522,12 +545,12 @@ test("auto-applies proposal tool results in Write mode", async ({
 }) => {
   const proposal = {
     title: "Proposal tool output",
-    summary: "Adds a starter confidence interval through the proposal tool.",
+    summary: "Adds a starter uncertainty input through the proposal tool.",
     changes: [
       {
         cell: "A1",
         before: "",
-        after: "CI[100, 200]",
+        after: "N.CI(100, 200, 0.95)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -589,7 +612,7 @@ test("auto-applies proposal tool results in Write mode", async ({
   ).toHaveCount(0);
   await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
-    "CI[100.00, 200.00]",
+    "N.CI(100.00, 200.00, 0.95)",
   );
 });
 
@@ -603,7 +626,7 @@ test("does not show proposal action buttons in Write mode", async ({
       {
         cell: "A1",
         before: "stale",
-        after: "CI[100, 200]",
+        after: "N.CI(100, 200, 0.95)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -814,7 +837,7 @@ test("editing the sheet preserves the current flow graph viewport", async ({
     .toBe(transformAfterPan);
 });
 
-test("changing a CI node distribution persists in the flow inspector", async ({
+test("shows explicit distribution nodes in the flow inspector", async ({
   page,
 }) => {
   await page.goto("/");
@@ -831,7 +854,7 @@ test("changing a CI node distribution persists in the flow inspector", async ({
   await firstCell.dblclick();
 
   editor = page.getByLabel("Cell A1");
-  await editor.fill("CI[10, 20]");
+  await editor.fill("N.CI(10, 20, 0.95)");
   await editor.press("Enter");
 
   await page.getByTitle("Show dependency graph").click();
@@ -843,15 +866,13 @@ test("changing a CI node distribution persists in the flow inspector", async ({
   await canvasInner.getByText("A1").first().click();
 
   const inspector = flowPane.getByLabel("Selected node inspector");
-  await expect(inspector).toContainText("confidence interval");
+  await expect(inspector).toContainText("distribution");
   await expect(inspector).toContainText("normal");
-
-  await inspector.getByRole("button", { name: "uniform" }).click();
-
-  await expect(inspector).toContainText("uniform");
+  await expect(inspector.getByRole("button", { name: "uniform" }))
+    .toHaveCount(0);
 });
 
-test("hides lognormal distribution for CI cells with non-positive bounds", async ({
+test("does not show reinterpretation controls for explicit distributions", async ({
   page,
 }) => {
   await page.goto("/");
@@ -868,22 +889,10 @@ test("hides lognormal distribution for CI cells with non-positive bounds", async
   await firstCell.dblclick();
 
   editor = page.getByLabel("Cell A1");
-  await editor.fill("CI[0, 1]");
+  await editor.fill("N.CI(0, 1, 0.95)");
   await editor.press("Enter");
 
-  await firstCell.getByRole("button", { name: "Change view" }).click();
-
-  await expect(
-    page.getByRole("button", { name: "Normal Distribution", exact: true }),
-  )
-    .toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Uniform Distribution", exact: true }),
-  )
-    .toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Log-Normal Distribution", exact: true }),
-  )
+  await expect(firstCell.getByRole("button", { name: "Change view" }))
     .toHaveCount(0);
 
   await page.getByTitle("Show dependency graph").click();
@@ -896,9 +905,9 @@ test("hides lognormal distribution for CI cells with non-positive bounds", async
 
   const inspector = flowPane.getByLabel("Selected node inspector");
   await expect(inspector.getByRole("button", { name: "normal" }))
-    .toBeVisible();
+    .toHaveCount(0);
   await expect(inspector.getByRole("button", { name: "uniform" }))
-    .toBeVisible();
+    .toHaveCount(0);
   await expect(inspector.getByRole("button", { name: "lognormal" }))
     .toHaveCount(0);
 });

@@ -1,33 +1,26 @@
 import React, {
   useCallback,
-  useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import {
-  getAvailableDistributionViews,
   getSamplesFromDistribution,
-  isConfidenceIntervalValue,
+  isDistributionValue,
   isSampledDistributionValue,
-  parseConfidenceIntervalValue,
-  parseSampledDistributionValue,
+  parseDistributionValue,
 } from "../../utils/distribution/distributionUtils";
 import {
   BooleanIcon,
   MicroSparkline,
+  formatCellEditValue,
   formatCellValue,
   type CellValue,
-  type DistributionViewOptions,
 } from "./cellFormatting";
 
 import { DistributionPlot } from "../charts/DistributionPlot";
-import {
-  SpreadsheetContext,
-  type DistributionViewType,
-} from "../../context/SpreadsheetContext";
-import { DistributionViewDropdown } from "./DistributionViewDropdown";
+import type { DistributionParams } from "../charts/distributionChartOptions";
+import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./CellRenderer.module.css";
 
 interface CellRendererProps {
@@ -39,7 +32,9 @@ interface CellRendererProps {
   onContextMenu?: (e: React.MouseEvent) => void;
   isSelected?: boolean;
   isEditing?: boolean;
-  onRequestEdit?: (row: number, col: number) => void;
+  editValue?: string;
+  onEditValueChange?: (value: string) => void;
+  onRequestEdit?: (row: number, col: number, value: string) => void;
   onStopEdit?: () => void;
 }
 
@@ -52,77 +47,19 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onContextMenu,
   isSelected = false,
   isEditing = false,
+  editValue = "",
+  onEditValueChange,
   onRequestEdit,
   onStopEdit,
 }) => {
-  const {
-    getCellFormula,
-    getDistributionView,
-    setDistributionView,
-    clearDistributionView,
-  } = useContext(SpreadsheetContext);
-  const [tempValue, setTempValue] = useState("");
+  const { getCellFormula } = React.useContext(SpreadsheetContext);
   const [showPlot, setShowPlot] = useState(false);
   const [plotPosition, setPlotPosition] = useState({ top: 0, left: 0 });
-  const [showViewDropdown, setShowViewDropdown] = useState(false);
-  const confidenceInterval = useMemo(
-    () =>
-      isConfidenceIntervalValue(value)
-        ? parseConfidenceIntervalValue(value)
-        : null,
+  const explicitDistribution = useMemo(
+    () => parseDistributionValue(value),
     [value],
   );
-  const availableDistributionViews = useMemo(
-    () =>
-      confidenceInterval
-        ? getAvailableDistributionViews(confidenceInterval)
-        : (["normal", "lognormal", "uniform"] satisfies DistributionViewType[]),
-    [confidenceInterval],
-  );
-  const inferViewFromValue = () => {
-    if (confidenceInterval) {
-      const override = getDistributionView(row, col);
-      if (override && availableDistributionViews.includes(override)) {
-        return override;
-      }
-      const interpretation = confidenceInterval.interpretation;
-      if (
-        interpretation === "lognormal" &&
-        availableDistributionViews.includes("lognormal")
-      ) {
-        return "lognormal";
-      }
-      if (interpretation === "uniform") {
-        return "uniform";
-      }
-    }
-    return "normal";
-  };
-  const [viewOptions, setViewOptions] = useState<DistributionViewOptions>(
-    () => ({
-      type: inferViewFromValue(),
-    }),
-  );
   const cellRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowViewDropdown(false);
-      }
-    };
-
-    if (showViewDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [showViewDropdown]);
 
   const getDistributionColors = useCallback(() => {
     if (isSampledDistributionValue(value)) {
@@ -133,8 +70,8 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         variant: "sampled" as const,
       };
     }
-    if (isConfidenceIntervalValue(value)) {
-      switch (viewOptions.type) {
+    if (explicitDistribution) {
+      switch (explicitDistribution.kind) {
         case "lognormal":
           return {
             bg: "var(--dist-lognormal-bg)",
@@ -160,89 +97,25 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       }
     }
     return null;
-  }, [value, viewOptions.type]);
+  }, [value, explicitDistribution]);
 
   const distColors = getDistributionColors();
-
-  useEffect(() => {
-    if (confidenceInterval) {
-      const override = getDistributionView(row, col);
-      let nextType: DistributionViewType = "normal";
-      if (override && availableDistributionViews.includes(override)) {
-        nextType = override;
-      } else if (
-        confidenceInterval.interpretation === "lognormal" &&
-        availableDistributionViews.includes("lognormal")
-      ) {
-        nextType = "lognormal";
-      } else if (confidenceInterval.interpretation === "uniform") {
-        nextType = "uniform";
-      }
-
-      setViewOptions((prev) =>
-        prev.type === nextType ? prev : { type: nextType },
-      );
-
-      if (!override) {
-        setDistributionView(row, col, nextType);
-      }
-    } else {
-      if (viewOptions.type !== "normal") {
-        setViewOptions({ type: "normal" });
-      }
-      clearDistributionView(row, col);
-    }
-  }, [
-    value,
-    confidenceInterval,
-    availableDistributionViews,
-    row,
-    col,
-    getDistributionView,
-    setDistributionView,
-    clearDistributionView,
-    viewOptions.type,
-  ]);
 
   const startEditing = () => {
     const formula = getCellFormula(row, col);
     if (formula) {
-      setTempValue(formula);
-      onRequestEdit?.(row, col);
+      onRequestEdit?.(row, col, formula);
       return;
     }
-    if (isConfidenceIntervalValue(value)) {
-      const ci = parseConfidenceIntervalValue(value);
-      if (ci) {
-        const ciDistRepresentation = `[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
-        setTempValue(ciDistRepresentation);
-      } else {
-        setTempValue("");
-      }
-    } else if (isSampledDistributionValue(value)) {
-      const sampled = parseSampledDistributionValue(value);
-      if (sampled) {
-        const sampledDistRepresentation = `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
-        setTempValue(sampledDistRepresentation);
-      } else {
-        setTempValue("");
-      }
-    } else {
-      setTempValue(value ? String(value) : "");
-    }
-    onRequestEdit?.(row, col);
+    onRequestEdit?.(row, col, formatCellEditValue(value));
   };
 
-  const handleCellClick = (event: React.MouseEvent) => {
+  const handleCellClick = () => {
     onClick?.();
-
-    if (event.detail === 2) {
-      startEditing();
-    }
   };
 
   const handleBlur = () => {
-    onEdit(row, col, tempValue);
+    onEdit(row, col, editValue);
     onStopEdit?.();
   };
 
@@ -315,7 +188,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       });
 
       if (
-        isConfidenceIntervalValue(value) ||
+        isDistributionValue(value) ||
         isSampledDistributionValue(value)
       ) {
         setShowPlot(true);
@@ -323,18 +196,18 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
   };
 
-  // Update isDistribution to only include the two types we support in unified approach
   const isDistribution =
-    isConfidenceIntervalValue(value) || isSampledDistributionValue(value);
-
-  // Only show view options for confidence intervals, not sampled distributions
-  const showViewOptions = isConfidenceIntervalValue(value);
+    isDistributionValue(value) ||
+    isSampledDistributionValue(value);
 
   const leadingIcon = useMemo(() => {
-    if (isConfidenceIntervalValue(value) || isSampledDistributionValue(value)) {
+    if (
+      isDistributionValue(value) ||
+      isSampledDistributionValue(value)
+    ) {
       const sparkType = isSampledDistributionValue(value)
         ? ("sampled" as const)
-        : viewOptions.type;
+        : explicitDistribution?.kind ?? "normal";
       const sparkColor = distColors?.accent ?? "var(--text-muted)";
       return <MicroSparkline type={sparkType} color={sparkColor} />;
     }
@@ -344,17 +217,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     }
 
     return null;
-  }, [value, viewOptions.type, distColors]);
-
-  const handleViewOptionChange = (type: "normal" | "lognormal" | "uniform") => {
-    setViewOptions({ type });
-    setDistributionView(row, col, type);
-    setShowViewDropdown(false);
-  };
+  }, [value, explicitDistribution, distColors]);
 
   const displayValue = useMemo(
-    () => formatCellValue(value, viewOptions),
-    [value, viewOptions],
+    () => formatCellValue(value),
+    [value],
   );
 
   const cellClassName = [
@@ -377,22 +244,20 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         onDoubleClick={startEditing}
         className={cellClassName}
         style={{
-          gridTemplateColumns: showViewOptions
-            ? "auto 1fr auto auto"
-            : isDistribution
-              ? leadingIcon
-                ? "auto 1fr auto"
-                : "1fr auto"
-              : leadingIcon
-                ? "auto 1fr"
-                : "1fr",
+          gridTemplateColumns: isDistribution
+            ? leadingIcon
+              ? "auto 1fr auto"
+              : "1fr auto"
+            : leadingIcon
+              ? "auto 1fr"
+              : "1fr",
         }}
       >
         {isEditing ? (
           <input
             autoFocus
-            value={tempValue}
-            onChange={(e) => setTempValue(e.target.value)}
+            value={editValue}
+            onChange={(e) => onEditValueChange?.(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleBlur();
@@ -407,16 +272,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
             <span className={styles.cellText} title={displayValue}>
               {displayValue}
             </span>
-            {showViewOptions && !isEditing && (
-              <DistributionViewDropdown
-                availableViews={availableDistributionViews}
-                viewType={viewOptions.type}
-                showDropdown={showViewDropdown}
-                onToggleDropdown={() => setShowViewDropdown(!showViewDropdown)}
-                onSelectView={handleViewOptionChange}
-                dropdownRef={dropdownRef}
-              />
-            )}
             {isDistribution && !isEditing && (
               <button
                 type="button"
@@ -448,34 +303,65 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           const samples = getSamplesFromDistribution(value);
           if (!samples) return null;
 
-          // Get distribution type and confidence interval info
           let distributionType: "normal" | "lognormal" | "uniform" | "sampled" =
             "sampled";
+          let distributionParams: DistributionParams | null = null;
           let confidenceInterval:
             | { lower: number; upper: number; confidenceLevel: number }
             | undefined;
 
-          if (isConfidenceIntervalValue(value)) {
-            const ci = parseConfidenceIntervalValue(value);
-            if (ci) {
-              confidenceInterval = {
-                lower: ci.lower,
-                upper: ci.upper,
-                confidenceLevel: ci.confidenceLevel,
-              };
+          if (explicitDistribution) {
+            distributionType = explicitDistribution.kind;
+            switch (explicitDistribution.kind) {
+              case "normal":
+                if (
+                  explicitDistribution.mean !== undefined &&
+                  explicitDistribution.variance !== undefined
+                ) {
+                  distributionParams = {
+                    type: "normal",
+                    mean: explicitDistribution.mean,
+                    std: Math.sqrt(explicitDistribution.variance),
+                  };
+                }
+                break;
+              case "lognormal":
+                if (
+                  explicitDistribution.mu !== undefined &&
+                  explicitDistribution.sigma !== undefined
+                ) {
+                  distributionParams = {
+                    type: "lognormal",
+                    mu: explicitDistribution.mu,
+                    sigma: explicitDistribution.sigma,
+                  };
+                }
+                break;
+              case "uniform":
+                if (
+                  explicitDistribution.min !== undefined &&
+                  explicitDistribution.max !== undefined
+                ) {
+                  distributionParams = {
+                    type: "uniform",
+                    a: explicitDistribution.min,
+                    b: explicitDistribution.max,
+                  };
+                }
+                break;
+            }
 
-              // Map view options to distribution types
-              switch (viewOptions.type) {
-                case "normal":
-                  distributionType = "normal";
-                  break;
-                case "lognormal":
-                  distributionType = "lognormal";
-                  break;
-                case "uniform":
-                  distributionType = "uniform";
-                  break;
-              }
+            if (
+              explicitDistribution.source === "ci" &&
+              explicitDistribution.lower !== undefined &&
+              explicitDistribution.upper !== undefined &&
+              explicitDistribution.confidenceLevel !== undefined
+            ) {
+              confidenceInterval = {
+                lower: explicitDistribution.lower,
+                upper: explicitDistribution.upper,
+                confidenceLevel: explicitDistribution.confidenceLevel,
+              };
             }
           } else if (isSampledDistributionValue(value)) {
             distributionType = "sampled";
@@ -487,6 +373,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
               samples={samples}
               onClose={() => setShowPlot(false)}
               distributionType={distributionType}
+              distributionParams={distributionParams}
               confidenceInterval={confidenceInterval}
             />
           );

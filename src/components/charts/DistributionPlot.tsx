@@ -4,6 +4,7 @@ import ReactEChartsCore, { echarts } from "../../lib/echarts";
 import {
   createDistributionChartData,
   createDistributionChartModelFromData,
+  type DistributionParams,
   type DistributionKind,
   type DistributionQueryState,
 } from "./distributionChartOptions";
@@ -15,6 +16,7 @@ interface DistributionPlotProps {
   position?: { top: number; left: number };
   inline?: boolean;
   distributionType?: DistributionKind;
+  distributionParams?: DistributionParams | null;
   confidenceInterval?: {
     lower: number;
     upper: number;
@@ -101,6 +103,7 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   position,
   inline = false,
   distributionType,
+  distributionParams,
   confidenceInterval,
 }) => {
   const confidenceLower = confidenceInterval?.lower;
@@ -220,9 +223,10 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       createDistributionChartData({
         samples,
         distributionKind,
+        distributionParams,
         confidenceInterval: normalizedConfidenceInterval,
       }),
-    [samples, distributionKind, normalizedConfidenceInterval],
+    [samples, distributionKind, distributionParams, normalizedConfidenceInterval],
   );
 
   const chartModel = useMemo(

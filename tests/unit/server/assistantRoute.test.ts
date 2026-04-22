@@ -35,13 +35,14 @@ const requestBodyWithWorkbookContext = {
         row: 0,
         col: 0,
         formula: null,
-        displayValue: "CI[10, 20]",
-        kind: "confidence_interval",
-        confidenceInterval: {
+        displayValue: "N.CI(10, 20, 0.95)",
+        kind: "distribution",
+        distribution: {
+          kind: "normal",
+          source: "ci",
           lower: 10,
           upper: 20,
           confidenceLevel: 95,
-          interpretation: "normal",
         },
       },
     ],
@@ -271,7 +272,7 @@ describe("assistant route", () => {
       modelId: DEFAULT_ASSISTANT_MODEL_ID,
     });
     expect(options.system).toContain("Current workbook snapshot");
-    expect(options.system).toContain("CI[10, 20]");
+    expect(options.system).toContain("N.CI(10, 20, 0.95)");
     expect(options.system).toContain("Do not use LaTeX");
     expect(options.system).toContain("Use getWorkbookContext");
     expect(options.system).toContain("Use validateFormula");
@@ -330,7 +331,7 @@ describe("assistant route", () => {
       cells: [
         expect.objectContaining({
           address: "A1",
-          kind: "confidence_interval",
+          kind: "distribution",
         }),
       ],
     });
@@ -340,7 +341,6 @@ describe("assistant route", () => {
       cell: "B1",
       valid: true,
       formula: "=A1*2",
-      kind: "sampled_distribution",
     });
     await expect(
       tools.proposeCellChanges.execute({

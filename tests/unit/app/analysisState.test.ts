@@ -16,7 +16,6 @@ describe('analysisState', () => {
         analysisMode: false,
         formulaEngine: null,
         selectedCell: { row: 0, col: 0 },
-        getDistributionView: () => null,
       }),
     ).toBeNull()
   })
@@ -31,23 +30,22 @@ describe('analysisState', () => {
         analysisMode: true,
         formulaEngine,
         selectedCell: { row: 0, col: 0 },
-        getDistributionView: () => null,
       }),
     ).toMatchObject({
       cellLabel: 'A1',
       samples: null,
       distributionType: 'normal',
-      confidenceInterval: null,
     })
   })
 
-  it('respects distribution view overrides for confidence interval cells', () => {
+  it('uses explicit distribution kind when present', () => {
     const formulaEngine = {
       getCellValue: () => ({
-        lower: 10,
-        upper: 20,
-        confidenceLevel: 95,
-        samples: [10, 15, 20],
+        kind: 'lognormal',
+        source: 'parameters',
+        mu: 0,
+        sigma: 0.2,
+        toSamples: () => [1, 1.1, 1.2],
       }),
     }
 
@@ -55,13 +53,12 @@ describe('analysisState', () => {
       deriveAnalysisState({
         analysisMode: true,
         formulaEngine,
-        selectedCell: { row: 1, col: 1 },
-        getDistributionView: () => 'uniform',
+        selectedCell: { row: 2, col: 0 },
       }),
     ).toMatchObject({
-      cellLabel: 'B2',
-      samples: [10, 15, 20],
-      distributionType: 'uniform',
+      cellLabel: 'A3',
+      samples: [1, 1.1, 1.2],
+      distributionType: 'lognormal',
     })
   })
 })

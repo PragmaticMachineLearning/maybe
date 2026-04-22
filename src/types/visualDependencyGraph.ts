@@ -1,11 +1,18 @@
 export type VisualDependencyNodeValue =
   | { kind: 'scalar'; value: number }
   | {
-      kind: 'confidence_interval'
-      lower: number
-      upper: number
-      confidenceLevel: number
-      interpretation: 'normal' | 'uniform' | 'lognormal' | 'auto'
+      kind: 'distribution'
+      distribution: 'normal' | 'uniform' | 'lognormal'
+      source: 'parameters' | 'ci'
+      mean?: number
+      variance?: number
+      mu?: number
+      sigma?: number
+      min?: number
+      max?: number
+      lower?: number
+      upper?: number
+      confidenceLevel?: number
     }
   | {
       kind: 'sampled_distribution'

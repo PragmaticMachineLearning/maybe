@@ -3,17 +3,12 @@
 import React from "react";
 
 import {
-  getConfidenceIntervalMedian,
-  isConfidenceIntervalValue,
+  confidenceLevelToFormulaArgument,
+  isDistributionValue,
   isSampledDistributionValue,
-  parseConfidenceIntervalValue,
+  parseDistributionValue,
   parseSampledDistributionValue,
-  zScoreForConfidence,
 } from "../../utils/distribution/distributionUtils";
-
-export interface DistributionViewOptions {
-  type: "normal" | "lognormal" | "uniform";
-}
 
 export type CellValue =
   | string
@@ -24,7 +19,20 @@ export type CellValue =
   | undefined
   | { samples: number[] }
   | { mean: number; variance: number }
-  | { lower: number; upper: number; confidenceLevel: number };
+  | {
+      kind: "normal" | "lognormal" | "uniform";
+      source?: "parameters" | "ci";
+      mean?: number;
+      variance?: number;
+      mu?: number;
+      sigma?: number;
+      min?: number;
+      max?: number;
+      lower?: number;
+      upper?: number;
+      confidenceLevel?: number;
+      toSamples?: () => number[];
+    };
 
 export const BooleanIcon: React.FC<{ value: boolean }> = ({ value }) => (
   <svg
@@ -108,10 +116,21 @@ export const MicroSparkline: React.FC<{
   );
 };
 
-export const formatCellValue = (
-  val: CellValue,
-  options: DistributionViewOptions,
-): string => {
+const formatCompactNumber = (value: number): string => {
+  const abs = Math.abs(value);
+  const fractionDigits = abs > 0 && abs < 1 ? 4 : 2;
+  return value
+    .toFixed(fractionDigits)
+    .replace(/(\.\d*?)0+$/, "$1")
+    .replace(/\.$/, "");
+};
+
+const formatConfidencePercent = (confidenceLevel: number): string => {
+  const normalized = confidenceLevel > 1 ? confidenceLevel : confidenceLevel * 100;
+  return `${formatCompactNumber(normalized)}%`;
+};
+
+export const formatCellEditValue = (val: CellValue): string => {
   if (val === null || val === undefined) return "";
 
   if (typeof val === "boolean") {
@@ -122,31 +141,83 @@ export const formatCellValue = (
     return String(val);
   }
 
-  if (isConfidenceIntervalValue(val)) {
-    const ci = parseConfidenceIntervalValue(val);
-    if (ci) {
-      const median = getConfidenceIntervalMedian(ci);
-
-      switch (options.type) {
-        case "normal": {
-          const mean = (ci.lower + ci.upper) / 2;
-          const zScore = zScoreForConfidence(ci.confidenceLevel);
-          const std = (ci.upper - ci.lower) / (2 * zScore);
-          return `N(μ=${mean.toFixed(2)}, σ=${std.toFixed(2)})`;
-        }
-        case "lognormal":
-          if (ci.lower > 0 && ci.upper > 0) {
-            const lnLower = Math.log(ci.lower);
-            const lnUpper = Math.log(ci.upper);
-            const mu = (lnLower + lnUpper) / 2;
-            const sigma = (lnUpper - lnLower) / 3.29;
-            return `LN(μ=${mu.toFixed(2)}, σ=${sigma.toFixed(2)})`;
+  if (isDistributionValue(val)) {
+    const distribution = parseDistributionValue(val);
+    if (distribution) {
+      switch (distribution.kind) {
+        case "normal":
+          if (
+            distribution.source === "ci" &&
+            distribution.lower !== undefined &&
+            distribution.upper !== undefined &&
+            distribution.confidenceLevel !== undefined
+          ) {
+            return `N.CI(${distribution.lower.toFixed(2)}, ${distribution.upper.toFixed(2)}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel).toFixed(2)})`;
           }
-          return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`;
+          return `N(${(distribution.mean ?? 0).toFixed(2)}, ${(distribution.variance ?? 0).toFixed(2)})`;
+        case "lognormal":
+          if (
+            distribution.source === "ci" &&
+            distribution.lower !== undefined &&
+            distribution.upper !== undefined &&
+            distribution.confidenceLevel !== undefined
+          ) {
+            return `LN.CI(${distribution.lower.toFixed(2)}, ${distribution.upper.toFixed(2)}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel).toFixed(2)})`;
+          }
+          return `LN(${(distribution.mu ?? 0).toFixed(2)}, ${(distribution.sigma ?? 0).toFixed(2)})`;
         case "uniform":
-          return `U[${ci.lower.toFixed(2)}, ${ci.upper.toFixed(2)}]`;
-        default:
-          return `${median.toFixed(2)} [${ci.lower}-${ci.upper}]`;
+          return `U(${(distribution.min ?? 0).toFixed(2)}, ${(distribution.max ?? 0).toFixed(2)})`;
+      }
+    }
+  }
+
+  if (isSampledDistributionValue(val)) {
+    const sampled = parseSampledDistributionValue(val);
+    if (sampled) {
+      return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
+    }
+  }
+
+  return String(val);
+};
+
+export const formatCellValue = (val: CellValue): string => {
+  if (val === null || val === undefined) return "";
+
+  if (typeof val === "boolean") {
+    return val ? "TRUE" : "FALSE";
+  }
+
+  if (typeof val === "string" || typeof val === "number") {
+    return String(val);
+  }
+
+  if (isDistributionValue(val)) {
+    const distribution = parseDistributionValue(val);
+    if (distribution) {
+      switch (distribution.kind) {
+        case "normal":
+          if (
+            distribution.source === "ci" &&
+            distribution.lower !== undefined &&
+            distribution.upper !== undefined &&
+            distribution.confidenceLevel !== undefined
+          ) {
+            return `N ${formatConfidencePercent(distribution.confidenceLevel)} CI [${formatCompactNumber(distribution.lower)}, ${formatCompactNumber(distribution.upper)}]`;
+          }
+          return `N μ=${formatCompactNumber(distribution.mean ?? 0)} σ²=${formatCompactNumber(distribution.variance ?? 0)}`;
+        case "lognormal":
+          if (
+            distribution.source === "ci" &&
+            distribution.lower !== undefined &&
+            distribution.upper !== undefined &&
+            distribution.confidenceLevel !== undefined
+          ) {
+            return `LN ${formatConfidencePercent(distribution.confidenceLevel)} CI [${formatCompactNumber(distribution.lower)}, ${formatCompactNumber(distribution.upper)}]`;
+          }
+          return `LN μlog=${formatCompactNumber(distribution.mu ?? 0)} σlog=${formatCompactNumber(distribution.sigma ?? 0)}`;
+        case "uniform":
+          return `U [${formatCompactNumber(distribution.min ?? 0)}, ${formatCompactNumber(distribution.max ?? 0)}]`;
       }
     }
   }

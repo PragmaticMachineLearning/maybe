@@ -38,17 +38,24 @@ const workbookCellKindSchema = z.enum([
   "scalar",
   "text",
   "boolean",
-  "confidence_interval",
+  "distribution",
   "sampled_distribution",
   "error",
   "unknown_object",
 ]);
 
-const workbookConfidenceIntervalSchema = z.object({
-  lower: z.number(),
-  upper: z.number(),
-  confidenceLevel: z.number(),
-  interpretation: z.string(),
+const workbookDistributionSchema = z.object({
+  kind: z.enum(["normal", "lognormal", "uniform"]),
+  source: z.enum(["parameters", "ci"]),
+  mean: z.number().optional(),
+  variance: z.number().optional(),
+  mu: z.number().optional(),
+  sigma: z.number().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  lower: z.number().optional(),
+  upper: z.number().optional(),
+  confidenceLevel: z.number().optional(),
 });
 
 const workbookSampleSummarySchema = z.object({
@@ -67,7 +74,7 @@ const workbookCellSnapshotSchema = z.object({
   formula: z.string().nullable(),
   displayValue: z.string(),
   kind: workbookCellKindSchema,
-  confidenceInterval: workbookConfidenceIntervalSchema.optional(),
+  distribution: workbookDistributionSchema.optional(),
   sampleSummary: workbookSampleSummarySchema.optional(),
 });
 
