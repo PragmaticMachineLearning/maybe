@@ -9,6 +9,6 @@ export const formatVisualDependencyValue = (value: VisualDependencyNodeValue): s
     case 'confidence_interval':
       return `CI[${formatNumber(value.lower)}, ${formatNumber(value.upper)}]`
     case 'sampled_distribution':
-      return `S(μ=${formatNumber(value.mean)}, σ²=${formatNumber(value.variance)})`
+      return `S(μ=${formatNumber(value.mean)}, σ=${formatNumber(Math.sqrt(value.variance))})`
   }
 }

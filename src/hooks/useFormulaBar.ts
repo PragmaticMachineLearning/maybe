@@ -1,21 +1,27 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { SpreadsheetContext } from "../context/SpreadsheetContext";
+import { parseSampledDistributionValue } from "../utils/distribution/distributionUtils";
 
 interface SelectedCell {
   row: number;
   col: number;
 }
 
-const formatCellValue = (value: unknown): string => {
+export const formatFormulaBarCellValue = (value: unknown): string => {
   if (value === null || value === undefined) return "";
   if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
 
   if (typeof value === "object" && value !== null) {
+    const sampled = parseSampledDistributionValue(value);
+    if (sampled) {
+      return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
+    }
+
     const v = value as Record<string, unknown>;
     if (typeof v.mean === "number" && typeof v.variance === "number")
-      return `N(μ=${v.mean.toFixed(2)}, σ²=${v.variance.toFixed(2)})`;
+      return `S(μ=${v.mean.toFixed(2)}, σ=${Math.sqrt(v.variance).toFixed(2)})`;
     if (typeof v.mu === "number" && typeof v.sigma2 === "number")
-      return `LN(μ=${v.mu.toFixed(2)}, σ²=${v.sigma2.toFixed(2)})`;
+      return `LN(μ=${v.mu.toFixed(2)}, σ=${Math.sqrt(v.sigma2).toFixed(2)})`;
     if (typeof v.a === "number" && typeof v.b === "number")
       return `U[${v.a.toFixed(2)}, ${v.b.toFixed(2)}]`;
     if (typeof v.lower === "number" && typeof v.upper === "number" && typeof v.confidenceLevel === "number")
@@ -44,7 +50,7 @@ export function useFormulaBar(selectedCell: SelectedCell | null) {
     if (formula) {
       nextValue = formula;
     } else if (value !== null && value !== undefined) {
-      nextValue = formatCellValue(value);
+      nextValue = formatFormulaBarCellValue(value);
     }
 
     setFormulaInput((prev) => (prev === nextValue ? prev : nextValue));

@@ -222,7 +222,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     } else if (isSampledDistributionValue(value)) {
       const sampled = parseSampledDistributionValue(value);
       if (sampled) {
-        const sampledDistRepresentation = `S(μ=${sampled.mean.toFixed(2)}, σ²=${(sampled.std ** 2).toFixed(2)})`;
+        const sampledDistRepresentation = `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
         setTempValue(sampledDistRepresentation);
       } else {
         setTempValue("");
