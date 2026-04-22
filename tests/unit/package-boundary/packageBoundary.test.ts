@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { GaussFormulaEngine } from '../lib/formulaEngine'
+import { GaussFormulaEngine } from '../../../src/lib/formulaEngine'
 
 const packageJson = JSON.parse(
   readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),

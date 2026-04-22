@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { VisualDependencyGraph } from '../../types/visualDependencyGraph'
-import { toFlowDiagramElements } from './visualDependencyGraphAdapter'
+import type { VisualDependencyGraph } from '../../../../src/types/visualDependencyGraph'
+import { toFlowDiagramElements } from '../../../../src/utils/visual-dependency-graph/visualDependencyGraphAdapter'
 
 describe('toFlowDiagramElements', () => {
   it('maps graph payload into React Flow nodes and edges', () => {

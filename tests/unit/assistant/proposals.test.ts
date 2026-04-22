@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { GaussFormulaEngine } from "../lib/formulaEngine";
-import { cellAddressToA1 } from "./address";
-import type { WorkbookSnapshot } from "./workbookSnapshot";
+import { cellAddressToA1 } from "../../../src/assistant/address";
 import {
   applyAssistantChangesToEngine,
   extractAssistantProposalFromText,
   stripAssistantProposalFromText,
   validateAssistantProposal,
-} from "./proposals";
+} from "../../../src/assistant/proposals";
+import type { WorkbookSnapshot } from "../../../src/assistant/workbookSnapshot";
+import { GaussFormulaEngine } from "../../../src/lib/formulaEngine";
 
 const snapshot: WorkbookSnapshot = {
   sheetName: "Sheet1",

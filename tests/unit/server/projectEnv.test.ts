@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getProjectEnvValue } from "./projectEnv";
+import { getProjectEnvValue } from "../../../src/server/projectEnv";
 
 const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
 let tempDirectories: string[] = [];

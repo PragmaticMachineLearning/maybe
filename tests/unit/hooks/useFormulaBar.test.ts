@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatFormulaBarCellValue } from "./useFormulaBar";
+import { formatFormulaBarCellValue } from "../../../src/hooks/useFormulaBar";
 
 describe("formatFormulaBarCellValue", () => {
   it("formats variance-backed summaries as standard deviation", () => {
