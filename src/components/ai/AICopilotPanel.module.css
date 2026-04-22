@@ -1,9 +1,9 @@
 /* ── Panel ────────────────────────────────────────────────────────────── */
 
 .panel {
-    width: 340px;
-    max-width: 380px;
-    min-width: 300px;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -34,6 +34,13 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
 .sageAvatar {
@@ -136,6 +143,12 @@
     gap: 10px;
 }
 
+.messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 /* ── User prompt echo ────────────────────────────────────────────────── */
 
 .userPrompt {
@@ -149,6 +162,76 @@
 
 .userPromptText {
     display: block;
+    white-space: pre-wrap;
+}
+
+.assistantMessage {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.assistantParagraph {
+    margin: 0;
+}
+
+.assistantList {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.assistantList li + li {
+    margin-top: 4px;
+}
+
+.assistantStrong {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.assistantInlineCode,
+.assistantCodeBlock {
+    font-family: var(
+        --font-mono,
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace
+    );
+}
+
+.assistantInlineCode {
+    padding: 1px 4px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--bg-muted);
+    color: var(--resize-handle-active);
+    font-size: 12px;
+}
+
+.assistantCodeBlock {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.errorBox {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--dist-lognormal-accent);
+    background: var(--dist-lognormal-bg);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 /* ── Change list ─────────────────────────────────────────────────────── */
@@ -156,31 +239,21 @@
 .changeList {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
 }
 
 .changeRow {
     padding: 8px 10px;
-    border-radius: var(--radius-sm, 6px);
     display: flex;
     flex-direction: column;
     gap: 3px;
-    border-left: 2px solid transparent;
+    background: var(--bg-muted);
 }
 
-.toneAdd {
-    border-left-color: var(--dist-normal-accent);
-    background: var(--dist-normal-bg);
-}
-
-.toneChange {
-    border-left-color: var(--dist-sampled-accent);
-    background: var(--dist-sampled-bg);
-}
-
-.toneReview {
-    border-left-color: var(--dist-lognormal-accent);
-    background: var(--dist-lognormal-bg);
+.changeRow + .changeRow {
+    border-top: 1px solid var(--border-color);
 }
 
 .changeTop {
@@ -247,7 +320,7 @@
         monospace
     );
     font-size: 11px;
-    color: var(--resize-handle-active);
+    color: var(--text-primary);
     font-weight: 600;
 }
 
@@ -281,6 +354,17 @@
 
 .applyBtn:hover {
     opacity: 0.85;
+}
+
+.applyBtn:disabled,
+.applyBtnDisabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.applyBtn:disabled:hover,
+.applyBtnDisabled:hover {
+    opacity: 0.45;
 }
 
 .dismissBtn {
@@ -342,31 +426,24 @@
 
 .inputBar {
     display: flex;
-    align-items: flex-end;
-    gap: 6px;
-    padding: 10px 14px;
+    flex-direction: column;
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
     background: var(--bg-surface);
 }
 
 .input {
-    flex: 1;
-    min-width: 0;
-    min-height: 20px;
-    max-height: 120px;
+    width: 100%;
+    min-height: 36px;
+    max-height: 140px;
     resize: none;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md, 10px);
-    padding: 8px 12px;
-    background: var(--bg-secondary);
+    border: none;
+    padding: 12px 14px 8px;
+    background: transparent;
     color: var(--text-primary);
     font: inherit;
     font-size: 13px;
-    line-height: 1.4;
-    transition:
-        border-color 0.12s ease,
-        box-shadow 0.12s ease;
+    line-height: 1.5;
     field-sizing: content;
 }
 
@@ -376,16 +453,55 @@
 
 .input:focus {
     outline: none;
-    border-color: var(--resize-handle-active);
-    box-shadow: 0 0 0 2px var(--resize-handle-bg);
+}
+
+.composerControls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px 10px;
+}
+
+.composerSelect {
+    min-width: 0;
+    max-width: 40%;
+    height: 24px;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    padding: 0 20px 0 6px;
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.12s ease;
+}
+
+.composerSelect:hover {
+    color: var(--text-secondary);
+}
+
+.composerSelect:focus {
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: 1px;
+}
+
+.composerSelect:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.composerSpacer {
+    flex: 1;
 }
 
 .sendBtn {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     padding: 0;
     border: none;
-    border-radius: var(--radius-full, 999px);
+    border-radius: var(--radius-sm, 6px);
     background: var(--resize-handle-active);
     color: white;
     cursor: pointer;
@@ -395,14 +511,14 @@
     flex-shrink: 0;
     transition:
         opacity 0.12s ease,
-        transform 0.12s ease;
+        background-color 0.12s ease;
 }
 
 .sendBtn:hover:not(:disabled) {
-    transform: scale(1.05);
+    opacity: 0.85;
 }
 
 .sendBtn:disabled {
-    opacity: 0.3;
+    opacity: 0.25;
     cursor: default;
 }

@@ -1,5 +1,14 @@
 import React, { createContext, useCallback, useEffect, useState } from "react";
 
+import {
+  applyAssistantChangesToEngine,
+  type AssistantCellChange,
+} from "../assistant/proposals";
+import {
+  buildWorkbookSnapshot,
+  type SelectedCell,
+  type WorkbookSnapshot,
+} from "../assistant/workbookSnapshot";
 import { GaussFormulaEngine, type FormulaEngine } from "../lib/formulaEngine";
 import {
   canUseLognormalInterpretation,
@@ -11,6 +20,9 @@ type CellContent = string | number | null;
 type SheetData = CellContent[][];
 
 export type { DistributionViewType };
+
+const VISIBLE_SHEET_ROWS = 50;
+const VISIBLE_SHEET_COLUMNS = 26;
 
 interface SpreadsheetContextValue {
   formulaEngine: FormulaEngine | null;
@@ -27,6 +39,10 @@ interface SpreadsheetContextValue {
     view: DistributionViewType,
   ) => void;
   clearDistributionView: (row: number, col: number) => void;
+  getWorkbookSnapshot: (
+    selectedCell: SelectedCell | null,
+  ) => WorkbookSnapshot | null;
+  applyAssistantChanges: (changes: AssistantCellChange[]) => void;
 }
 
 const SpreadsheetContext = createContext<SpreadsheetContextValue>({
@@ -37,6 +53,8 @@ const SpreadsheetContext = createContext<SpreadsheetContextValue>({
   getDistributionView: () => null,
   setDistributionView: () => {},
   clearDistributionView: () => {},
+  getWorkbookSnapshot: () => null,
+  applyAssistantChanges: () => {},
 });
 
 export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -61,11 +79,9 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Initialize sheet
     engine.addSheet("Sheet1");
-    const initialRows = 50;
-    const initialCols = 26;
-    const initialData: SheetData = Array(initialRows)
+    const initialData: SheetData = Array(VISIBLE_SHEET_ROWS)
       .fill(null)
-      .map(() => Array(initialCols).fill(null));
+      .map(() => Array(VISIBLE_SHEET_COLUMNS).fill(null));
 
     engine.setSheetContent(0, initialData);
     setFormulaEngine(engine);
@@ -183,6 +199,42 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
+  const getWorkbookSnapshot = useCallback(
+    (selectedCell: SelectedCell | null) => {
+      if (!formulaEngine) return null;
+
+      const dimensions = formulaEngine.getSheetDimensions(0);
+      const minimumDimensions = {
+        width: VISIBLE_SHEET_COLUMNS,
+        height: VISIBLE_SHEET_ROWS,
+      };
+
+      return buildWorkbookSnapshot({
+        formulaEngine,
+        selectedCell,
+        maxCells:
+          Math.max(dimensions.width, minimumDimensions.width) *
+          Math.max(dimensions.height, minimumDimensions.height),
+        minimumDimensions,
+      });
+    },
+    [formulaEngine],
+  );
+
+  const applyAssistantChanges = useCallback(
+    (changes: AssistantCellChange[]) => {
+      if (!formulaEngine) return;
+
+      const engineDimensions = formulaEngine.getSheetDimensions(0);
+      const dimensions = {
+        width: Math.max(engineDimensions.width, VISIBLE_SHEET_COLUMNS),
+        height: Math.max(engineDimensions.height, VISIBLE_SHEET_ROWS),
+      };
+      applyAssistantChangesToEngine(formulaEngine, dimensions, changes);
+    },
+    [formulaEngine],
+  );
+
   return (
     <SpreadsheetContext
       value={{
@@ -193,6 +245,8 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
         getDistributionView,
         setDistributionView,
         clearDistributionView,
+        getWorkbookSnapshot,
+        applyAssistantChanges,
       }}
     >
       {children}

@@ -213,6 +213,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               <AICopilotPanel
                 onClose={onCloseAiPanel}
                 compact={isCompactLayout}
+                selectedCell={selectedCell}
               />
             </div>
           </>
