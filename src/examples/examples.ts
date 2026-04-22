@@ -10,7 +10,7 @@ export interface ExampleDefinition {
 const llmPricingExample: ExampleDefinition = {
   id: 'prompt-cost-ci',
   name: 'Prompt Cost Forecast (CI)',
-  description: 'Mean-aligned with prompt-cost-calculation.xlsx, with CI bounds on variable inputs.',
+  description: 'Mean-aligned prompt-cost forecast with CI bounds on variable inputs.',
   data: [
     [null, null, null, null, null],
     [null, null, null, null, null],

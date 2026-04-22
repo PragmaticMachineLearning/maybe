@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/maybe-logo.png" alt="Maybe logo" width="420" />
+  <img src="public/maybe-logo.png" alt="Maybe logo" width="420" />
 </p>
 
 # Maybe Spreadsheet
