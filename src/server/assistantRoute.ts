@@ -136,5 +136,3 @@ export const createAssistantHandler = ({
       onError: getErrorMessage,
     });
   };
-
-export const handleAssistantRequest = createAssistantHandler();
