@@ -14,6 +14,8 @@ export interface ParsedDistribution {
   confidenceLevel?: number
 }
 
+export const DEFAULT_CONFIDENCE_LEVEL = 95
+
 const isDistributionKind = (value: unknown): value is DistributionKind =>
   value === 'normal' || value === 'lognormal' || value === 'uniform'
 
@@ -70,6 +72,15 @@ export const confidenceLevelToFormulaArgument = (
   confidenceLevel: number,
 ): number => confidenceLevel > 1 ? confidenceLevel / 100 : confidenceLevel
 
+const normalizeConfidencePercent = (confidenceLevel: number): number =>
+  confidenceLevel > 1 ? confidenceLevel : confidenceLevel * 100
+
+export const isDefaultConfidenceLevel = (
+  confidenceLevel: number | undefined,
+): boolean =>
+  confidenceLevel === undefined ||
+  Math.abs(normalizeConfidencePercent(confidenceLevel) - DEFAULT_CONFIDENCE_LEVEL) < 1e-9
+
 export const formatDistributionFormulaNumber = (value: number): string => {
   if (!Number.isFinite(value)) {
     return String(value)
@@ -80,6 +91,22 @@ export const formatDistributionFormulaNumber = (value: number): string => {
   }
 
   return Number(value.toPrecision(12)).toString()
+}
+
+export const formatConfidenceFormulaSuffix = (
+  confidenceLevel: number | undefined,
+): string => {
+  if (
+    confidenceLevel === undefined ||
+    isDefaultConfidenceLevel(confidenceLevel)
+  ) {
+    return ''
+  }
+
+  const confidence = formatDistributionFormulaNumber(
+    confidenceLevelToFormulaArgument(confidenceLevel),
+  )
+  return `, ${confidence}`
 }
 
 type SampledDistributionLike = {

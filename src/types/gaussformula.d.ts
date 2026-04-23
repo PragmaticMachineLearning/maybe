@@ -38,13 +38,13 @@ declare module "gaussformula" {
     static normalFromCI(
       lower: number,
       upper: number,
-      confidenceLevel: number,
+      confidenceLevel?: number,
       options?: DistributionNumberOptions
     ): DistributionNumber;
     static lognormalFromCI(
       lower: number,
       upper: number,
-      confidenceLevel: number,
+      confidenceLevel?: number,
       options?: DistributionNumberOptions
     ): DistributionNumber;
 

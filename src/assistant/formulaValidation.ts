@@ -1,4 +1,5 @@
 import { GaussFormulaEngine } from "../lib/formulaEngine";
+import { DEFAULT_CONFIDENCE_LEVEL } from "../utils/distribution/distributionUtils";
 import { cellAddressFromA1 } from "./address";
 import { type ValidateFormulaInput } from "./toolSchemas";
 import {
@@ -77,13 +78,12 @@ const reconstructDistributionValue = (
       distribution.source === "ci" &&
       distribution.lower !== undefined &&
       distribution.upper !== undefined &&
-      distribution.confidenceLevel !== undefined &&
       ctor.normalFromCI
     ) {
       return ctor.normalFromCI(
         distribution.lower,
         distribution.upper,
-        distribution.confidenceLevel,
+        distribution.confidenceLevel ?? DEFAULT_CONFIDENCE_LEVEL,
       );
     }
 
@@ -92,13 +92,12 @@ const reconstructDistributionValue = (
       distribution.source === "ci" &&
       distribution.lower !== undefined &&
       distribution.upper !== undefined &&
-      distribution.confidenceLevel !== undefined &&
       ctor.lognormalFromCI
     ) {
       return ctor.lognormalFromCI(
         distribution.lower,
         distribution.upper,
-        distribution.confidenceLevel,
+        distribution.confidenceLevel ?? DEFAULT_CONFIDENCE_LEVEL,
       );
     }
 

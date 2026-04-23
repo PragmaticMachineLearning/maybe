@@ -1,6 +1,6 @@
 import type { FormulaEngine } from "../lib/formulaEngine";
 import {
-  confidenceLevelToFormulaArgument,
+  formatConfidenceFormulaSuffix,
   getSamplesFromDistribution,
   isSampledDistributionValue,
   parseDistributionValue,
@@ -189,11 +189,11 @@ const serializeCellValue = (
     switch (distribution.kind) {
       case "normal":
         return distribution.source === "ci"
-          ? `N.CI(${distribution.lower}, ${distribution.upper}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel ?? 95)})`
+          ? `N.CI(${distribution.lower}, ${distribution.upper}${formatConfidenceFormulaSuffix(distribution.confidenceLevel)})`
           : `N(${distribution.mean}, ${distribution.variance})`;
       case "lognormal":
         return distribution.source === "ci"
-          ? `LN.CI(${distribution.lower}, ${distribution.upper}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel ?? 95)})`
+          ? `LN.CI(${distribution.lower}, ${distribution.upper}${formatConfidenceFormulaSuffix(distribution.confidenceLevel)})`
           : `LN(${distribution.mu}, ${distribution.sigma})`;
       case "uniform":
         return `U(${distribution.min}, ${distribution.max})`;

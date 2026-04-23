@@ -27,7 +27,18 @@ describe('formatVisualDependencyValue', () => {
         upper: 20,
         confidenceLevel: 95,
       }),
-    ).toBe('N.CI(10.00, 20.00, 0.95)')
+    ).toBe('N.CI(10.00, 20.00)')
+
+    expect(
+      formatVisualDependencyValue({
+        kind: 'distribution',
+        distribution: 'normal',
+        source: 'ci',
+        lower: 10,
+        upper: 20,
+        confidenceLevel: 90,
+      }),
+    ).toBe('N.CI(10.00, 20.00, 0.9)')
 
     expect(
       formatVisualDependencyValue({

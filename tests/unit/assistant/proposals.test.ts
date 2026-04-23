@@ -23,7 +23,7 @@ const snapshot: WorkbookSnapshot = {
       row: 0,
       col: 0,
       formula: null,
-      displayValue: "N.CI(10, 20, 0.95)",
+      displayValue: "N.CI(10, 20)",
       kind: "distribution",
       distribution: {
         kind: "normal",
@@ -68,7 +68,7 @@ const text = [
       {
         cell: "A1",
         before: "stale value",
-        after: "N.CI(10, 20, 0.95)",
+        after: "N.CI(10, 20)",
         reason: "Document the uncertainty for reviewers.",
         kind: "review",
       },
@@ -367,7 +367,7 @@ describe("assistant proposal parsing", () => {
           {
             cell: "A1",
             before: "10",
-            after: "N.CI(15, 25, 0.95)",
+            after: "N.CI(15, 25)",
             reason: "Flag for manual review.",
             kind: "review",
           },

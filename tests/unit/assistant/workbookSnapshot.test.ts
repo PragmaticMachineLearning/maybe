@@ -76,7 +76,7 @@ describe("assistant workbook snapshot", () => {
     expect(snapshot.cells.find((cell) => cell.address === "B1")).toMatchObject({
       address: "B1",
       formula: null,
-      displayValue: "N.CI(10, 20, 0.95)",
+      displayValue: "N.CI(10, 20)",
       kind: "distribution",
       distribution: {
         kind: "normal",

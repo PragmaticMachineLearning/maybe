@@ -10,7 +10,7 @@ Maybe is a React-based spreadsheet application with built-in support for uncerta
 
 - Full spreadsheet functionality powered by GaussFormula
 - Support for formulas and calculations
-- Built-in support for explicit distributions such as `N(mean, variance)`, `LN(mu, sigma)`, `U(min, max)`, `N.CI(lower, upper, confidence)`, and `LN.CI(lower, upper, confidence)`
+- Built-in support for explicit distributions such as `N(mean, variance)`, `LN(mu, sigma)`, `U(min, max)`, `N.CI(lower, upper[, confidence])`, and `LN.CI(lower, upper[, confidence])`
 - Interactive visualizations for distributions
 - Statistical analysis tools including:
   - Percentile calculations
@@ -56,8 +56,8 @@ The spreadsheet supports explicit probability distributions that can be created 
 
 - `N(mean, variance)` uses normal-distribution parameters directly.
 - `LN(mu, sigma)` uses log-space parameters: if `X ~ LN(mu, sigma)`, then `ln(X) ~ N(mu, sigma^2)`. `mu` and `sigma` are not the mean and standard deviation of `X`.
-- Prefer `LN.CI(lower, upper, confidence)` for user-facing lognormal inputs because the bounds are in the original value scale.
-- `N.CI(lower, upper, confidence)` derives a normal distribution from a value-scale confidence interval.
+- Prefer `LN.CI(lower, upper[, confidence])` for user-facing lognormal inputs because the bounds are in the original value scale.
+- `N.CI(lower, upper[, confidence])` derives a normal distribution from a value-scale confidence interval.
 - `U(min, max)` represents a uniform range on the original value scale.
 
 ## Technical Details

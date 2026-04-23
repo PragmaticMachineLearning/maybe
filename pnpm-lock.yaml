@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  gaussformula@0.1.8:
+    hash: 4df6d333c3ac49ac0301859313ee1d52489683f3fd2e456d548fc28754c8f56f
+    path: patches/gaussformula@0.1.8.patch
+
 importers:
 
   .:
@@ -27,8 +32,8 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6(echarts@6.0.0)(react@19.2.5)
       gaussformula:
-        specifier: file:../gaussformula/gaussformula-0.1.7.tgz
-        version: file:../gaussformula/gaussformula-0.1.7.tgz
+        specifier: ^0.1.8
+        version: 0.1.8(patch_hash=4df6d333c3ac49ac0301859313ee1d52489683f3fd2e456d548fc28754c8f56f)
       react:
         specifier: ^19.2.5
         version: 19.2.5
@@ -1002,9 +1007,8 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  gaussformula@file:../gaussformula/gaussformula-0.1.7.tgz:
-    resolution: {integrity: sha512-uUqiqmcH539hPaKwUYedq2RbFI1yiAlrGSFjEJqjVHDhlk9pi5F5qIZOfhP/WXr8wJ1NjIrS3uqY8evL8H1VXQ==, tarball: file:../gaussformula/gaussformula-0.1.7.tgz}
-    version: 0.1.7
+  gaussformula@0.1.8:
+    resolution: {integrity: sha512-x0/RCpn//OcmKyFhPlZKDp6y5bkiawBlvJQyh0EsM1XbPh+ht9ED7iV1gYZSm2TD6Z8iwZwTUQC/w7sH6WWBjQ==}
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -2363,7 +2367,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  gaussformula@file:../gaussformula/gaussformula-0.1.7.tgz:
+  gaussformula@0.1.8(patch_hash=4df6d333c3ac49ac0301859313ee1d52489683f3fd2e456d548fc28754c8f56f):
     dependencies:
       chevrotain: 6.5.0
       tiny-emitter: 2.1.0
