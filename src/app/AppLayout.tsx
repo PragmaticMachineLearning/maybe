@@ -1,12 +1,28 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
-import { AICopilotPanel } from "../components/ai/AICopilotPanel";
-import { FlowDiag } from "../components/flow-diagram/FlowDiag";
 import { Spreadsheet } from "../components/spreadsheet/Spreadsheet";
 import { Toolbar } from "../components/toolbar/Toolbar";
 import { useFormulaBar } from "../hooks/useFormulaBar";
 import styles from "./AppLayout.module.css";
 import type { SelectedCell } from "./analysisState";
+
+const AICopilotPanel = lazy(() =>
+  import("../components/ai/AICopilotPanel").then((module) => ({
+    default: module.AICopilotPanel,
+  })),
+);
+const FlowDiag = lazy(() =>
+  import("../components/flow-diagram/FlowDiag").then((module) => ({
+    default: module.FlowDiag,
+  })),
+);
 
 interface AppLayoutProps {
   selectedCell: SelectedCell | null;
@@ -174,10 +190,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               </div>
 
               <div className={styles.flowPane}>
-                <FlowDiag
-                  selectedCell={selectedCell}
-                  onCellSelect={onCellSelect}
-                />
+                <Suspense fallback={null}>
+                  <FlowDiag
+                    selectedCell={selectedCell}
+                    onCellSelect={onCellSelect}
+                  />
+                </Suspense>
               </div>
             </>
           ) : (
@@ -210,11 +228,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               id="ai-copilot-panel"
               style={{ width: sageWidth }}
             >
-              <AICopilotPanel
-                onClose={onCloseAiPanel}
-                compact={isCompactLayout}
-                selectedCell={selectedCell}
-              />
+              <Suspense fallback={null}>
+                <AICopilotPanel
+                  onClose={onCloseAiPanel}
+                  compact={isCompactLayout}
+                  selectedCell={selectedCell}
+                />
+              </Suspense>
             </div>
           </>
         )}

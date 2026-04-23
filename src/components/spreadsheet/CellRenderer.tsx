@@ -1,4 +1,11 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   getSamplesFromDistribution,
   isDistributionValue,
@@ -13,10 +20,15 @@ import {
   type CellValue,
 } from "./cellFormatting";
 
-import { DistributionPlot } from "../charts/DistributionPlot";
 import type { DistributionParams } from "../charts/distributionChartOptions";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./CellRenderer.module.css";
+
+const DistributionPlot = lazy(() =>
+  import("../charts/DistributionPlot").then((module) => ({
+    default: module.DistributionPlot,
+  })),
+);
 
 interface CellEditInputProps {
   initialValue: string;
@@ -378,14 +390,16 @@ const CellRendererComponent: React.FC<CellRendererProps> = ({
           }
 
           return (
-            <DistributionPlot
-              position={plotPosition}
-              samples={samples}
-              onClose={() => setShowPlot(false)}
-              distributionType={distributionType}
-              distributionParams={distributionParams}
-              confidenceInterval={confidenceInterval}
-            />
+            <Suspense fallback={null}>
+              <DistributionPlot
+                position={plotPosition}
+                samples={samples}
+                onClose={() => setShowPlot(false)}
+                distributionType={distributionType}
+                distributionParams={distributionParams}
+                confidenceInterval={confidenceInterval}
+              />
+            </Suspense>
           );
         })()}
     </>
