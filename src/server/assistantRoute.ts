@@ -48,6 +48,7 @@ const buildSystemPrompt = (
     allowDirectCellChanges
       ? "Do not say a change was applied until applyCellChanges returns successfully. If you only propose or discuss a change, do not claim it was applied."
       : "Do not say that you will implement changes, have implemented changes, or that the user should look for a hidden proposal. The user must click Apply before any proposed edit changes the workbook.",
+    "If a direct edit cannot be validated because a before value does not match, do not say the cell is locked or being edited by another session. Treat it as a stale proposal and return a reviewable proposal or ask the user to confirm the current cell value.",
     "If the workbook snapshot is truncated, say that the recommendation is based on partial context and ask for confirmation before relying on omitted cells.",
     "Current workbook snapshot:",
     JSON.stringify(workbookSnapshot, null, 2),

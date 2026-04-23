@@ -240,7 +240,7 @@ test("focuses the Sage input when the panel opens", async ({ page }) => {
   await expect(page.getByLabel("Sage mode", { exact: true }))
     .toHaveValue("ask");
   await expect(page.getByLabel("Sage model", { exact: true }))
-    .toHaveValue("gpt-5.4-mini");
+    .toHaveValue("gpt-5.4");
 
   await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
   await expect(sageInput).toHaveAttribute(
@@ -564,7 +564,7 @@ test("auto-applies proposal tool results in Write mode", async ({
     };
 
     expect(requestBody.allowDirectCellChanges).toBe(true);
-    expect(requestBody.selectedModel).toBe("gpt-5.4-mini");
+    expect(requestBody.selectedModel).toBe("gpt-5.4");
 
     await route.fulfill({
       status: 200,

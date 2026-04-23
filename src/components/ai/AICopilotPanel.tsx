@@ -23,6 +23,10 @@ import {
   type AssistantModelId,
 } from "../../assistant/modelOptions";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
+import {
+  getAssistantActivityLabel,
+  isAssistantMessageStreaming,
+} from "./assistantStreamingState";
 import styles from "./AICopilotPanel.module.css";
 
 type ProposalValidationResult = ReturnType<typeof validateAssistantProposal>;
@@ -380,8 +384,16 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const assistantMessages = messages.filter(
     (message) => message.role === "assistant",
   );
+  const transportError = getReadableError(error) ?? requestError;
+  const isBusy = status === "submitted" || status === "streaming";
+  const allowDirectCellChanges = assistantMode === "write";
+  const activityLabel = getAssistantActivityLabel(messages, status);
   const proposalCandidates = assistantMessages
     .map((message) => {
+      if (isAssistantMessageStreaming(message, assistantMessages, isBusy)) {
+        return null;
+      }
+
       const result = getMessageProposalResult(message);
 
       if (result === null) {
@@ -433,9 +445,6 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     .filter((entry) => entry.show)
     .map((entry) => entry.key)
     .join("|");
-  const transportError = getReadableError(error) ?? requestError;
-  const isBusy = status === "submitted" || status === "streaming";
-  const allowDirectCellChanges = assistantMode === "write";
 
   const markProposalApplied = useCallback((proposalKey: string) => {
     setAppliedProposalKeys((currentKeys) => {
@@ -482,7 +491,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   };
 
   const autoApplyProposal =
-    allowDirectCellChanges && applyError === null
+    allowDirectCellChanges && !isBusy && applyError === null
       ? proposalEntries.find(
           (entry) =>
             entry.show &&
@@ -674,7 +683,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         {isBusy && (
           <div className={styles.statusRow}>
             <span className={styles.statusDot} />
-            <span className={styles.statusText}>Sage is thinking…</span>
+            <span className={styles.statusText}>{activityLabel}…</span>
           </div>
         )}
 
