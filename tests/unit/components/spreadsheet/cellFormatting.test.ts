@@ -86,6 +86,20 @@ describe('formatCellValue', () => {
     ).toBe('LN.CI(1.00, 2.00, 0.95)')
   })
 
+  it('preserves small CI bounds in editable formulas', () => {
+    expect(
+      formatCellEditValue(
+        {
+          kind: 'normal',
+          source: 'ci',
+          lower: 0.009,
+          upper: 0.011,
+          confidenceLevel: 95,
+        },
+      ),
+    ).toBe('N.CI(0.009, 0.011, 0.95)')
+  })
+
   it('formats sampled distributions', () => {
     expect(
       formatCellValue(sampledValue),
