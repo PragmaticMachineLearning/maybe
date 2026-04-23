@@ -3,7 +3,7 @@
 import React from "react";
 
 import {
-  confidenceLevelToFormulaArgument,
+  formatConfidenceFormulaSuffix,
   formatDistributionFormulaNumber,
   isDistributionValue,
   isSampledDistributionValue,
@@ -150,15 +150,14 @@ export const formatCellEditValue = (val: CellValue): string => {
           if (
             distribution.source === "ci" &&
             distribution.lower !== undefined &&
-            distribution.upper !== undefined &&
-            distribution.confidenceLevel !== undefined
+            distribution.upper !== undefined
           ) {
             const lower = formatDistributionFormulaNumber(distribution.lower);
             const upper = formatDistributionFormulaNumber(distribution.upper);
-            const confidence = formatDistributionFormulaNumber(
-              confidenceLevelToFormulaArgument(distribution.confidenceLevel),
+            const confidence = formatConfidenceFormulaSuffix(
+              distribution.confidenceLevel,
             );
-            return `N.CI(${lower}, ${upper}, ${confidence})`;
+            return `N.CI(${lower}, ${upper}${confidence})`;
           }
           const mean = formatDistributionFormulaNumber(distribution.mean ?? 0);
           const variance = formatDistributionFormulaNumber(
@@ -170,15 +169,14 @@ export const formatCellEditValue = (val: CellValue): string => {
           if (
             distribution.source === "ci" &&
             distribution.lower !== undefined &&
-            distribution.upper !== undefined &&
-            distribution.confidenceLevel !== undefined
+            distribution.upper !== undefined
           ) {
             const lower = formatDistributionFormulaNumber(distribution.lower);
             const upper = formatDistributionFormulaNumber(distribution.upper);
-            const confidence = formatDistributionFormulaNumber(
-              confidenceLevelToFormulaArgument(distribution.confidenceLevel),
+            const confidence = formatConfidenceFormulaSuffix(
+              distribution.confidenceLevel,
             );
-            return `LN.CI(${lower}, ${upper}, ${confidence})`;
+            return `LN.CI(${lower}, ${upper}${confidence})`;
           }
           const mu = formatDistributionFormulaNumber(distribution.mu ?? 0);
           const sigma = formatDistributionFormulaNumber(

@@ -268,7 +268,7 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
             <p className={styles.welcomeTitle}>Start building your model</p>
             <p className={styles.welcomeSubtitle}>
               Type values, formulas, or uncertainty like{" "}
-              <code>N.CI(10, 20, 0.95)</code> to add uncertainty
+              <code>N.CI(10, 20)</code> to add uncertainty
             </p>
           </div>
         </div>

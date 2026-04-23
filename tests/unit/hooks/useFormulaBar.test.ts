@@ -20,7 +20,16 @@ describe("formatFormulaBarCellValue", () => {
         upper: 2,
         confidenceLevel: 95,
       }),
-    ).toBe("LN.CI(1.00, 2.00, 0.95)");
+    ).toBe("LN.CI(1.00, 2.00)");
+    expect(
+      formatFormulaBarCellValue({
+        kind: "lognormal",
+        source: "ci",
+        lower: 1,
+        upper: 2,
+        confidenceLevel: 90,
+      }),
+    ).toBe("LN.CI(1.00, 2.00, 0.9)");
     expect(
       formatFormulaBarCellValue({
         kind: "uniform",
@@ -40,7 +49,7 @@ describe("formatFormulaBarCellValue", () => {
         upper: 0.011,
         confidenceLevel: 95,
       }),
-    ).toBe("N.CI(0.009, 0.011, 0.95)");
+    ).toBe("N.CI(0.009, 0.011)");
   });
 
   it("formats variance-backed summaries as standard deviation", () => {

@@ -35,7 +35,7 @@ const requestBodyWithWorkbookContext = {
         row: 0,
         col: 0,
         formula: null,
-        displayValue: "N.CI(10, 20, 0.95)",
+        displayValue: "N.CI(10, 20)",
         kind: "distribution",
         distribution: {
           kind: "normal",
@@ -272,7 +272,7 @@ describe("assistant route", () => {
       modelId: DEFAULT_ASSISTANT_MODEL_ID,
     });
     expect(options.system).toContain("Current workbook snapshot");
-    expect(options.system).toContain("N.CI(10, 20, 0.95)");
+    expect(options.system).toContain("N.CI(10, 20)");
     expect(options.system).toContain("Do not use LaTeX");
     expect(options.system).toContain("Use getWorkbookContext");
     expect(options.system).toContain("Use validateFormula");
@@ -438,7 +438,7 @@ describe("assistant route", () => {
           {
             cell: "A1",
             before: "stale",
-            after: "N.CI(100, 200, 0.95)",
+            after: "N.CI(100, 200)",
             reason: "Capture an updated uncertain input.",
             kind: "update",
           },

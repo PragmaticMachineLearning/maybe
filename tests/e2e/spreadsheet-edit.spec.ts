@@ -51,7 +51,7 @@ test("opens an explicit distribution chart", async ({ page }) => {
   await firstCell.dblclick();
 
   const editor = page.getByLabel("Cell A1");
-  await editor.fill("N.CI(10, 20, 0.95)");
+  await editor.fill("N.CI(10, 20)");
   await editor.press("Enter");
 
   await expect(firstCell).toHaveText("N 95% CI [10, 20]");
@@ -147,7 +147,7 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   await firstCell.dblclick();
 
   let editor = page.getByLabel("Cell A1");
-  await editor.fill("N.CI(10, 20, 0.95)");
+  await editor.fill("N.CI(10, 20)");
   await editor.press("Enter");
 
   // GaussFormula trims empty rightmost columns, so C1 keeps empty B1 in bounds.
@@ -265,7 +265,7 @@ test("renders Sage prose readably and applies proposals from json fences", async
         {
           cell: "A1",
           before: "",
-          after: "N.CI(100, 200, 0.95)",
+          after: "N.CI(100, 200)",
           reason: "Capture the uncertain source estimate as a distribution.",
           kind: "add",
         },
@@ -314,7 +314,7 @@ test("renders and applies proposals produced by Sage tools", async ({ page }) =>
       {
         cell: "A1",
         before: "",
-        after: "N.CI(100, 200, 0.95)",
+        after: "N.CI(100, 200)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -364,13 +364,13 @@ test("renders and applies proposals produced by Sage tools", async ({ page }) =>
   await expect(
     page.getByText("I prepared one workbook change for review."),
   ).toBeVisible();
-  await expect(page.getByText("N.CI(100, 200, 0.95)")).toBeVisible();
+  await expect(page.getByText("N.CI(100, 200)")).toBeVisible();
   await page.getByRole("button", { name: "Apply 1 change" }).click();
   await expect(page.getByText("Applied", { exact: true })).toBeVisible();
 
   await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
-    "N.CI(100.00, 200.00, 0.95)",
+    "N.CI(100.00, 200.00)",
   );
 });
 
@@ -384,7 +384,7 @@ test("keeps proposal cards with the assistant messages that produced them", asyn
       {
         cell: "A1",
         before: "",
-        after: "N.CI(100, 200, 0.95)",
+        after: "N.CI(100, 200)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -452,14 +452,14 @@ test("keeps proposal cards with the assistant messages that produced them", asyn
     .fill("Prepare the first change");
   await page.getByRole("button", { name: "Send" }).click();
 
-  await expect(page.getByText("N.CI(100, 200, 0.95)")).toBeVisible();
+  await expect(page.getByText("N.CI(100, 200)")).toBeVisible();
 
   await page.getByLabel("Message Sage")
     .fill("Prepare a second change");
   await page.getByRole("button", { name: "Send" }).click();
 
   const sagePanel = page.getByRole("complementary", { name: "Sage" });
-  await expect(page.getByText("N.CI(100, 200, 0.95)")).toBeVisible();
+  await expect(page.getByText("N.CI(100, 200)")).toBeVisible();
   await expect(sagePanel.getByText("42", { exact: true })).toBeVisible();
   await expect(
     sagePanel.getByRole("button", { name: "Apply 1 change" }),
@@ -476,7 +476,7 @@ test("auto-applies direct apply tool results in Write mode", async ({
       {
         cell: "A1",
         before: "",
-        after: "N.CI(100, 200, 0.95)",
+        after: "N.CI(100, 200)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -536,7 +536,7 @@ test("auto-applies direct apply tool results in Write mode", async ({
   await expect(page.getByText("Applied", { exact: true })).toBeVisible();
   await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
-    "N.CI(100.00, 200.00, 0.95)",
+    "N.CI(100.00, 200.00)",
   );
 });
 
@@ -550,7 +550,7 @@ test("auto-applies proposal tool results in Write mode", async ({
       {
         cell: "A1",
         before: "",
-        after: "N.CI(100, 200, 0.95)",
+        after: "N.CI(100, 200)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -612,7 +612,7 @@ test("auto-applies proposal tool results in Write mode", async ({
   ).toHaveCount(0);
   await page.locator("tbody tr:first-child td:nth-child(2) > div").click();
   await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
-    "N.CI(100.00, 200.00, 0.95)",
+    "N.CI(100.00, 200.00)",
   );
 });
 
@@ -626,7 +626,7 @@ test("does not show proposal action buttons in Write mode", async ({
       {
         cell: "A1",
         before: "stale",
-        after: "N.CI(100, 200, 0.95)",
+        after: "N.CI(100, 200)",
         reason: "Capture the uncertain source estimate as a distribution.",
         kind: "add",
       },
@@ -854,7 +854,7 @@ test("shows explicit distribution nodes in the flow inspector", async ({
   await firstCell.dblclick();
 
   editor = page.getByLabel("Cell A1");
-  await editor.fill("N.CI(10, 20, 0.95)");
+  await editor.fill("N.CI(10, 20)");
   await editor.press("Enter");
 
   await page.getByTitle("Show dependency graph").click();
@@ -889,7 +889,7 @@ test("does not show reinterpretation controls for explicit distributions", async
   await firstCell.dblclick();
 
   editor = page.getByLabel("Cell A1");
-  await editor.fill("N.CI(0, 1, 0.95)");
+  await editor.fill("N.CI(0, 1)");
   await editor.press("Enter");
 
   await expect(firstCell.getByRole("button", { name: "Change view" }))
