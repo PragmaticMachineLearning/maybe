@@ -31,6 +31,18 @@ describe("formatFormulaBarCellValue", () => {
     ).toBe("U(1.00, 2.00)");
   });
 
+  it("preserves small CI bounds in formulas", () => {
+    expect(
+      formatFormulaBarCellValue({
+        kind: "normal",
+        source: "ci",
+        lower: 0.009,
+        upper: 0.011,
+        confidenceLevel: 95,
+      }),
+    ).toBe("N.CI(0.009, 0.011, 0.95)");
+  });
+
   it("formats variance-backed summaries as standard deviation", () => {
     expect(formatFormulaBarCellValue({ mean: 5, variance: 4 }))
       .toBe("S(μ=5.00, σ=2.00)");

@@ -164,13 +164,6 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
                   ? editingCell.value
                   : ""
               }
-              onEditValueChange={(value) => {
-                setEditingCell((current) =>
-                  current?.row === rowIndex && current?.col === colIndex
-                    ? { ...current, value }
-                    : current,
-                );
-              }}
               onRequestEdit={(row, col, value) =>
                 setEditingCell({ row, col, value })
               }
@@ -274,8 +267,8 @@ export const Spreadsheet: React.FC<SpreadsheetProps> = ({
             </svg>
             <p className={styles.welcomeTitle}>Start building your model</p>
             <p className={styles.welcomeSubtitle}>
-              Type values, formulas, or uncertainty like <code>N.CI(10, 20, 0.95)</code> to
-              add uncertainty
+              Type values, formulas, or uncertainty like{" "}
+              <code>N.CI(10, 20, 0.95)</code> to add uncertainty
             </p>
           </div>
         </div>

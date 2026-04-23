@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   getSamplesFromDistribution,
   isDistributionValue,
@@ -23,6 +18,40 @@ import type { DistributionParams } from "../charts/distributionChartOptions";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import styles from "./CellRenderer.module.css";
 
+interface CellEditInputProps {
+  initialValue: string;
+  onCommit: (value: string) => void;
+  onCancel: () => void;
+  ariaLabel: string;
+}
+
+// Keeps the in-progress edit value in local state so typing does not
+// re-render the parent Spreadsheet (and therefore every other cell) on
+// every keystroke. This component mounts when editing begins and unmounts
+// when it ends, so `initialValue` is captured fresh each edit session.
+const CellEditInput: React.FC<CellEditInputProps> = ({
+  initialValue,
+  onCommit,
+  onCancel,
+  ariaLabel,
+}) => {
+  const [value, setValue] = useState(initialValue);
+  return (
+    <input
+      autoFocus
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => onCommit(value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onCommit(value);
+        if (e.key === "Escape") onCancel();
+      }}
+      className={styles.editInput}
+      aria-label={ariaLabel}
+    />
+  );
+};
+
 interface CellRendererProps {
   row: number;
   col: number;
@@ -38,7 +67,7 @@ interface CellRendererProps {
   onStopEdit?: () => void;
 }
 
-export const CellRenderer: React.FC<CellRendererProps> = ({
+const CellRendererComponent: React.FC<CellRendererProps> = ({
   row,
   col,
   value,
@@ -48,7 +77,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   isSelected = false,
   isEditing = false,
   editValue = "",
-  onEditValueChange,
   onRequestEdit,
   onStopEdit,
 }) => {
@@ -112,11 +140,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
 
   const handleCellClick = () => {
     onClick?.();
-  };
-
-  const handleBlur = () => {
-    onEdit(row, col, editValue);
-    onStopEdit?.();
   };
 
   const handleChartHintClick = (e: React.MouseEvent) => {
@@ -187,27 +210,20 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         left,
       });
 
-      if (
-        isDistributionValue(value) ||
-        isSampledDistributionValue(value)
-      ) {
+      if (isDistributionValue(value) || isSampledDistributionValue(value)) {
         setShowPlot(true);
       }
     }
   };
 
   const isDistribution =
-    isDistributionValue(value) ||
-    isSampledDistributionValue(value);
+    isDistributionValue(value) || isSampledDistributionValue(value);
 
   const leadingIcon = useMemo(() => {
-    if (
-      isDistributionValue(value) ||
-      isSampledDistributionValue(value)
-    ) {
+    if (isDistributionValue(value) || isSampledDistributionValue(value)) {
       const sparkType = isSampledDistributionValue(value)
         ? ("sampled" as const)
-        : explicitDistribution?.kind ?? "normal";
+        : (explicitDistribution?.kind ?? "normal");
       const sparkColor = distColors?.accent ?? "var(--text-muted)";
       return <MicroSparkline type={sparkType} color={sparkColor} />;
     }
@@ -219,10 +235,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     return null;
   }, [value, explicitDistribution, distColors]);
 
-  const displayValue = useMemo(
-    () => formatCellValue(value),
-    [value],
-  );
+  const displayValue = useMemo(() => formatCellValue(value), [value]);
 
   const cellClassName = [
     styles.cell,
@@ -254,17 +267,14 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
         }}
       >
         {isEditing ? (
-          <input
-            autoFocus
-            value={editValue}
-            onChange={(e) => onEditValueChange?.(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleBlur();
-              if (e.key === "Escape") onStopEdit?.();
+          <CellEditInput
+            initialValue={editValue}
+            onCommit={(committed) => {
+              onEdit(row, col, committed);
+              onStopEdit?.();
             }}
-            className={styles.editInput}
-            aria-label={`Cell ${String.fromCharCode(65 + col)}${row + 1}`}
+            onCancel={() => onStopEdit?.()}
+            ariaLabel={`Cell ${String.fromCharCode(65 + col)}${row + 1}`}
           />
         ) : (
           <>
@@ -381,3 +391,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     </>
   );
 };
+
+// Memoized so cells whose props didn't change skip re-rendering when
+// unrelated cells update (e.g. selection changes elsewhere in the grid).
+export const CellRenderer = React.memo(CellRendererComponent);

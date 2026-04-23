@@ -70,6 +70,18 @@ export const confidenceLevelToFormulaArgument = (
   confidenceLevel: number,
 ): number => confidenceLevel > 1 ? confidenceLevel / 100 : confidenceLevel
 
+export const formatDistributionFormulaNumber = (value: number): string => {
+  if (!Number.isFinite(value)) {
+    return String(value)
+  }
+
+  if (Number.isInteger(value) || Math.abs(value) >= 1) {
+    return value.toFixed(2)
+  }
+
+  return Number(value.toPrecision(12)).toString()
+}
+
 type SampledDistributionLike = {
   samples?: unknown
   getSamples?: () => number[]

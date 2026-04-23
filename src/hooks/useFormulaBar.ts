@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { SpreadsheetContext } from "../context/SpreadsheetContext";
 import {
   confidenceLevelToFormulaArgument,
+  formatDistributionFormulaNumber,
   parseDistributionValue,
   parseSampledDistributionValue,
 } from "../utils/distribution/distributionUtils";
@@ -19,28 +20,51 @@ export const formatFormulaBarCellValue = (value: unknown): string => {
     const distribution = parseDistributionValue(value);
     if (distribution) {
       switch (distribution.kind) {
-        case "normal":
+        case "normal": {
           if (
             distribution.source === "ci" &&
             distribution.lower !== undefined &&
             distribution.upper !== undefined &&
             distribution.confidenceLevel !== undefined
           ) {
-            return `N.CI(${distribution.lower.toFixed(2)}, ${distribution.upper.toFixed(2)}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel).toFixed(2)})`;
+            const lower = formatDistributionFormulaNumber(distribution.lower);
+            const upper = formatDistributionFormulaNumber(distribution.upper);
+            const confidence = formatDistributionFormulaNumber(
+              confidenceLevelToFormulaArgument(distribution.confidenceLevel),
+            );
+            return `N.CI(${lower}, ${upper}, ${confidence})`;
           }
-          return `N(${(distribution.mean ?? 0).toFixed(2)}, ${(distribution.variance ?? 0).toFixed(2)})`;
-        case "lognormal":
+          const mean = formatDistributionFormulaNumber(distribution.mean ?? 0);
+          const variance = formatDistributionFormulaNumber(
+            distribution.variance ?? 0,
+          );
+          return `N(${mean}, ${variance})`;
+        }
+        case "lognormal": {
           if (
             distribution.source === "ci" &&
             distribution.lower !== undefined &&
             distribution.upper !== undefined &&
             distribution.confidenceLevel !== undefined
           ) {
-            return `LN.CI(${distribution.lower.toFixed(2)}, ${distribution.upper.toFixed(2)}, ${confidenceLevelToFormulaArgument(distribution.confidenceLevel).toFixed(2)})`;
+            const lower = formatDistributionFormulaNumber(distribution.lower);
+            const upper = formatDistributionFormulaNumber(distribution.upper);
+            const confidence = formatDistributionFormulaNumber(
+              confidenceLevelToFormulaArgument(distribution.confidenceLevel),
+            );
+            return `LN.CI(${lower}, ${upper}, ${confidence})`;
           }
-          return `LN(${(distribution.mu ?? 0).toFixed(2)}, ${(distribution.sigma ?? 0).toFixed(2)})`;
-        case "uniform":
-          return `U(${(distribution.min ?? 0).toFixed(2)}, ${(distribution.max ?? 0).toFixed(2)})`;
+          const mu = formatDistributionFormulaNumber(distribution.mu ?? 0);
+          const sigma = formatDistributionFormulaNumber(
+            distribution.sigma ?? 0,
+          );
+          return `LN(${mu}, ${sigma})`;
+        }
+        case "uniform": {
+          const min = formatDistributionFormulaNumber(distribution.min ?? 0);
+          const max = formatDistributionFormulaNumber(distribution.max ?? 0);
+          return `U(${min}, ${max})`;
+        }
       }
     }
 
