@@ -28,7 +28,14 @@ const assertApplyableProposal = (
   );
 
   if (!validation.valid || !validation.proposal) {
-    throw new Error(validation.errors.join(" "));
+    throw new Error(
+      [
+        "The direct edit could not be validated against the workbook snapshot.",
+        "Do not describe the cell as locked or being edited by another session.",
+        "Return a reviewable proposal instead.",
+        validation.errors.join(" "),
+      ].join(" "),
+    );
   }
 
   return validation.proposal;

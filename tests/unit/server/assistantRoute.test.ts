@@ -430,6 +430,21 @@ describe("assistant route", () => {
         }),
       ],
     });
+    await expect(
+      tools.applyCellChanges.execute({
+        title: "Stale output",
+        summary: "Attempts one stale edit.",
+        changes: [
+          {
+            cell: "A1",
+            before: "stale",
+            after: "N.CI(100, 200, 0.95)",
+            reason: "Capture an updated uncertain input.",
+            kind: "update",
+          },
+        ],
+      }),
+    ).rejects.toThrow("Do not describe the cell as locked");
   });
 
   it("accepts assistant history containing step-start parts", async () => {
