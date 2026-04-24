@@ -48,7 +48,7 @@ declare module "gaussformula" {
       options?: DistributionNumberOptions
     ): DistributionNumber;
 
-    toSamples(sampleSize?: number): number[];
+    toSamples(config?: { sampleSize?: number; simulationSeed?: string }): number[];
   }
 
   export type RawCellContent =

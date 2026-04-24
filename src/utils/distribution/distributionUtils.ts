@@ -116,6 +116,11 @@ type SampledDistributionLike = {
   getVariance?: () => number
 }
 
+interface DistributionSamplingConfig {
+  sampleSize?: number
+  simulationSeed?: string
+}
+
 const getSampleArray = (val: unknown): number[] | null => {
   if (!val || typeof val !== 'object') {
     return null
@@ -154,15 +159,18 @@ export const parseSampledDistributionValue = (val: unknown): { samples: number[]
   return { samples, mean, std }
 }
 
-export const getSamplesFromDistribution = (val: unknown): number[] | null => {
+export const getSamplesFromDistribution = (
+  val: unknown,
+  samplingConfig?: DistributionSamplingConfig,
+): number[] | null => {
   const sampledSamples = getSampleArray(val)
   if (sampledSamples) {
     return sampledSamples
   }
 
-  if (isDistributionValue(val) && val && typeof val === 'object' && 'toSamples' in (val as Record<string, unknown>) && typeof (val as { toSamples: () => number[] }).toSamples === 'function') {
+  if (isDistributionValue(val) && val && typeof val === 'object' && 'toSamples' in (val as Record<string, unknown>) && typeof (val as { toSamples: (config?: DistributionSamplingConfig) => number[] }).toSamples === 'function') {
     try {
-      return (val as { toSamples: () => number[] }).toSamples()
+      return (val as { toSamples: (config?: DistributionSamplingConfig) => number[] }).toSamples(samplingConfig)
     } catch (error) {
       console.error('Error calling distribution toSamples:', error)
     }

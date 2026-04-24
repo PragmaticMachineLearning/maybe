@@ -9,6 +9,7 @@ import {
   type SelectedCell,
   type WorkbookSnapshot,
 } from "../assistant/workbookSnapshot";
+import { maybeFormulaEngineConfig } from "../config/simulation";
 import { GaussFormulaEngine, type FormulaEngine } from "../lib/formulaEngine";
 
 type CellContent = string | number | null;
@@ -44,14 +45,7 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     null,
   );
   useEffect(() => {
-    const config = {
-      licenseKey: "gpl-v3",
-      language: "enGB",
-      useColumnIndex: true,
-      sampleSize: 10000,
-    };
-
-    const engine = GaussFormulaEngine.buildEmpty(config);
+    const engine = GaussFormulaEngine.buildEmpty(maybeFormulaEngineConfig);
 
     // Initialize sheet
     engine.addSheet("Sheet1");

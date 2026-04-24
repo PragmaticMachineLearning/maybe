@@ -1,4 +1,5 @@
 import { GaussFormulaEngine } from "../lib/formulaEngine";
+import { maybeFormulaEngineConfig } from "../config/simulation";
 import { DEFAULT_CONFIDENCE_LEVEL } from "../utils/distribution/distributionUtils";
 import { cellAddressFromA1 } from "./address";
 import { type ValidateFormulaInput } from "./toolSchemas";
@@ -145,12 +146,7 @@ const reconstructCellValue = (cell: WorkbookCellSnapshot): unknown => {
 };
 
 const createFormulaEngineFromSnapshot = (snapshot: WorkbookSnapshot) => {
-  const formulaEngine = GaussFormulaEngine.buildEmpty({
-    licenseKey: "gpl-v3",
-    language: "enGB",
-    useColumnIndex: true,
-    sampleSize: 10000,
-  });
+  const formulaEngine = GaussFormulaEngine.buildEmpty(maybeFormulaEngineConfig);
 
   formulaEngine.addSheet(snapshot.sheetName || "Sheet1");
 
