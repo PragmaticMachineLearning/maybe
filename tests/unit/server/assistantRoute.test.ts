@@ -274,6 +274,10 @@ describe("assistant route", () => {
     expect(options.system).toContain("Current workbook snapshot");
     expect(options.system).toContain("N.CI(10, 20)");
     expect(options.system).toContain("Do not use LaTeX");
+    expect(options.system).not.toContain("P10(A1)");
+    expect(options.system).not.toContain("P50(A1)");
+    expect(options.system).not.toContain("P90(A1)");
+    expect(options.system).toContain("Sample summaries");
     expect(options.system).toContain("Use getWorkbookContext");
     expect(options.system).toContain("Use validateFormula");
     expect(options.system).toContain("Use proposeCellChanges");

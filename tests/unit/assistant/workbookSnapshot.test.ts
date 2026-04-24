@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   cellAddressFromA1,
   cellAddressToA1,
 } from "../../../src/assistant/address";
 import { buildWorkbookSnapshot } from "../../../src/assistant/workbookSnapshot";
+import { MAYBE_SAMPLE_SIZE } from "../../../src/config/simulation";
 import { GaussFormulaEngine } from "../../../src/lib/formulaEngine";
 import type { FormulaEngine } from "../../../src/lib/formulaEngine";
 
@@ -121,6 +122,33 @@ describe("assistant workbook snapshot", () => {
         standardDeviation: 3,
       },
     });
+  });
+
+  it("uses the configured Maybe sample size when summarizing explicit distributions", () => {
+    const toSamples = vi.fn(() => [1, 2, 3]);
+    const engine = {
+      getSheetName: () => "Sheet1",
+      getSheetDimensions: () => ({ width: 1, height: 1 }),
+      getCellFormula: () => null,
+      getCellValue: () => ({
+        kind: "normal",
+        source: "ci",
+        lower: 1,
+        upper: 2,
+        confidenceLevel: 95,
+        mean: 1.5,
+        variance: 0.065,
+        toSamples,
+      }),
+    };
+
+    buildWorkbookSnapshot({
+      formulaEngine: engine as unknown as FormulaEngine,
+      selectedCell: null,
+      maxCells: 20,
+    });
+
+    expect(toSamples).toHaveBeenCalledWith({ sampleSize: MAYBE_SAMPLE_SIZE });
   });
 
   it("returns null for an out-of-bounds selected cell and uses the engine sheet name", () => {

@@ -1,4 +1,5 @@
 import type { FormulaEngine } from "../lib/formulaEngine";
+import { MAYBE_SAMPLE_SIZE } from "../config/simulation";
 import {
   formatConfidenceFormulaSuffix,
   getSamplesFromDistribution,
@@ -109,7 +110,9 @@ const isSelectedCellInBounds = (
 
 const summarizeSamples = (value: unknown): WorkbookSampleSummary | undefined => {
   const parsed = parseSampledDistributionValue(value);
-  const samples = parsed?.samples ?? getSamplesFromDistribution(value);
+  const samples =
+    parsed?.samples ??
+    getSamplesFromDistribution(value, { sampleSize: MAYBE_SAMPLE_SIZE });
 
   if (!samples || samples.length === 0) {
     return undefined;
