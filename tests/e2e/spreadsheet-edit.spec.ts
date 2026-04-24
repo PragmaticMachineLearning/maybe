@@ -62,7 +62,7 @@ test("opens an explicit distribution chart", async ({ page }) => {
   expect(pageErrors).toEqual([]);
 });
 
-test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
+test("opens Ask Maybe, receives a proposal, and applies it", async ({ page }) => {
   const promptText = "Add an output that doubles the selected input";
   const assistantText = [
     "I can add a dependent output that keeps the uncertainty from A1.",
@@ -159,15 +159,15 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
 
   await firstCell.click();
 
-  await expect(page.getByRole("button", { name: /Sage/i })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "Sage" })).toHaveCount(
+  await expect(page.getByRole("button", { name: /Ask Maybe/i })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Ask Maybe" })).toHaveCount(
     0,
   );
 
-  await page.getByRole("button", { name: /Sage/i }).click();
-  await expect(page.getByRole("complementary", { name: "Sage" })).toBeVisible();
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
+  await expect(page.getByRole("complementary", { name: "Ask Maybe" })).toBeVisible();
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill(promptText);
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -188,16 +188,16 @@ test("opens Sage, receives a proposal, and applies it", async ({ page }) => {
   await expect(page.getByText("Applied", { exact: true })).toBeVisible();
 });
 
-test("resized Sage panel fills its allocated slot", async ({ page }) => {
+test("resized Ask Maybe panel fills its allocated slot", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
 
-  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
   const sageSlot = page.locator("#ai-copilot-panel");
-  const sagePanel = page.getByRole("complementary", { name: "Sage" });
+  const sagePanel = page.getByRole("complementary", { name: "Ask Maybe" });
   await expect(sagePanel).toBeVisible();
 
-  const handle = page.getByRole("separator", { name: "Resize Sage panel" });
+  const handle = page.getByRole("separator", { name: "Resize Ask Maybe panel" });
   const handleBox = await handle.boundingBox();
   expect(handleBox).not.toBeNull();
 
@@ -226,30 +226,30 @@ test("resized Sage panel fills its allocated slot", async ({ page }) => {
     .toBeLessThanOrEqual(2);
 });
 
-test("focuses the Sage input when the panel opens", async ({ page }) => {
+test("focuses the Ask Maybe input when the panel opens", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
 
-  const sageInput = page.getByLabel("Message Sage");
+  const sageInput = page.getByLabel("Message Ask Maybe");
   await expect(sageInput).toBeFocused();
   await expect(sageInput).toHaveAttribute(
     "placeholder",
-    "Ask Sage about formulas, uncertainty, or what to change next...",
+    "Ask about formulas, uncertainty, or what to change next...",
   );
-  await expect(page.getByLabel("Sage mode", { exact: true }))
+  await expect(page.getByLabel("Ask Maybe mode", { exact: true }))
     .toHaveValue("ask");
-  await expect(page.getByLabel("Sage model", { exact: true }))
+  await expect(page.getByLabel("Ask Maybe model", { exact: true }))
     .toHaveValue("gpt-5.4");
 
-  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
+  await page.getByLabel("Ask Maybe mode", { exact: true }).selectOption("write");
   await expect(sageInput).toHaveAttribute(
     "placeholder",
-    "Tell Sage what to change. Write mode can apply safe workbook edits directly...",
+    "Tell Maybe what to change. Write mode can apply safe workbook edits directly...",
   );
 });
 
-test("renders Sage prose readably and applies proposals from json fences", async ({
+test("renders Ask Maybe prose readably and applies proposals from json fences", async ({
   page,
 }) => {
   const assistantText = [
@@ -293,9 +293,9 @@ test("renders Sage prose readably and applies proposals from json fences", async
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("Set up a simple uncertain input");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -306,7 +306,7 @@ test("renders Sage prose readably and applies proposals from json fences", async
     .toBeVisible();
 });
 
-test("renders and applies proposals produced by Sage tools", async ({ page }) => {
+test("renders and applies proposals produced by Ask Maybe tools", async ({ page }) => {
   const proposal = {
     title: "Add tool proposal output",
     summary: "Adds a starter uncertainty input through the proposal tool.",
@@ -355,9 +355,9 @@ test("renders and applies proposals produced by Sage tools", async ({ page }) =>
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("Use the proposal tool to set up A1");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -446,19 +446,19 @@ test("keeps proposal cards with the assistant messages that produced them", asyn
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /Sage/i }).click();
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("Prepare the first change");
   await page.getByRole("button", { name: "Send" }).click();
 
   await expect(page.getByText("N.CI(100, 200)")).toBeVisible();
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("Prepare a second change");
   await page.getByRole("button", { name: "Send" }).click();
 
-  const sagePanel = page.getByRole("complementary", { name: "Sage" });
+  const sagePanel = page.getByRole("complementary", { name: "Ask Maybe" });
   await expect(page.getByText("N.CI(100, 200)")).toBeVisible();
   await expect(sagePanel.getByText("42", { exact: true })).toBeVisible();
   await expect(
@@ -525,11 +525,11 @@ test("auto-applies direct apply tool results in Write mode", async ({
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /Sage/i }).click();
-  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
-  await page.getByLabel("Sage model", { exact: true }).selectOption("gpt-5.4");
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
+  await page.getByLabel("Ask Maybe mode", { exact: true }).selectOption("write");
+  await page.getByLabel("Ask Maybe model", { exact: true }).selectOption("gpt-5.4");
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("Apply the setup directly");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -599,10 +599,10 @@ test("auto-applies proposal tool results in Write mode", async ({
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /Sage/i }).click();
-  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
+  await page.getByLabel("Ask Maybe mode", { exact: true }).selectOption("write");
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("Apply the setup directly");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -673,14 +673,14 @@ test("does not show proposal action buttons in Write mode", async ({
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /Sage/i }).click();
-  await page.getByLabel("Sage mode", { exact: true }).selectOption("write");
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
+  await page.getByLabel("Ask Maybe mode", { exact: true }).selectOption("write");
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("Apply the setup directly");
   await page.getByRole("button", { name: "Send" }).click();
 
-  await expect(page.getByText("A1 has changed since Sage prepared this proposal."))
+  await expect(page.getByText("A1 has changed since Maybe prepared this proposal."))
     .toBeVisible();
   await expect(page.getByRole("button", { name: /Apply/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Dismiss" })).toHaveCount(0);
@@ -701,10 +701,10 @@ test("shows a setup error when the assistant server has no OpenAI key", async ({
 
   await page.goto("/");
 
-  await page.getByRole("button", { name: /Sage/i }).click();
-  await expect(page.getByRole("complementary", { name: "Sage" })).toBeVisible();
+  await page.getByRole("button", { name: /Ask Maybe/i }).click();
+  await expect(page.getByRole("complementary", { name: "Ask Maybe" })).toBeVisible();
 
-  await page.getByLabel("Message Sage")
+  await page.getByLabel("Message Ask Maybe")
     .fill("What formulas should I add?");
   await page.getByRole("button", { name: "Send" }).click();
 
@@ -716,8 +716,8 @@ test("shows a setup error when the assistant server has no OpenAI key", async ({
 test("starts with workstation side panels collapsed", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("button", { name: /Sage/i })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "Sage" })).toHaveCount(
+  await expect(page.getByRole("button", { name: /Ask Maybe/i })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Ask Maybe" })).toHaveCount(
     0,
   );
   await expect(page.locator(".echarts-for-react")).toHaveCount(0);

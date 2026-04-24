@@ -55,7 +55,7 @@ export const getAssistantActivityLabel = (
   }
 
   if (status !== "streaming") {
-    return "Sage is ready";
+    return "Maybe is ready";
   }
 
   const assistantMessages = getAssistantMessages(messages);
@@ -80,5 +80,5 @@ export const getAssistantActivityLabel = (
     }
   }
 
-  return "Sage is working";
+  return "Maybe is working";
 };

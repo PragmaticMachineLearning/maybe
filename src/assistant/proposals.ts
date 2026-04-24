@@ -180,7 +180,7 @@ export const validateAssistantProposal = (
       valid: false,
       proposal: null,
       applyableChanges: [],
-      errors: ["Sage did not return a valid proposal."],
+      errors: ["Maybe did not return a valid proposal."],
     };
   }
 
@@ -221,7 +221,7 @@ export const validateAssistantProposal = (
 
     if (change.kind !== "review" && isStale) {
       errors.push(
-        `${normalizedCell} has changed since Sage prepared this proposal.`,
+        `${normalizedCell} has changed since Maybe prepared this proposal.`,
       );
       continue;
     }
