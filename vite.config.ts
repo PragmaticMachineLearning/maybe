@@ -4,6 +4,8 @@ import react from "@vitejs/plugin-react";
 import { getProjectEnvValue } from "./src/server/projectEnv";
 import { assistantApiPlugin } from "./src/server/viteAssistantPlugin";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const openAiApiKey = getProjectEnvValue("OPENAI_API_KEY");
 
 function manualChunks(id: string): string | undefined {
@@ -62,12 +64,9 @@ function manualChunks(id: string): string | undefined {
 }
 
 export default defineConfig({
-  plugins: [
-    assistantApiPlugin({
-      getApiKey: () => openAiApiKey,
-    }),
-    react(),
-  ],
+  plugins: [assistantApiPlugin({
+    getApiKey: () => openAiApiKey,
+  }), react(), cloudflare()],
   build: {
     sourcemap: true,
     rolldownOptions: {
