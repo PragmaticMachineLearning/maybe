@@ -292,7 +292,7 @@ describe("assistant proposal parsing", () => {
 
     expect(result.valid).toBe(false);
     expect(result.errors).toEqual([
-      "B1 has changed since Sage prepared this proposal.",
+      "B1 has changed since Maybe prepared this proposal.",
       "Z99 is outside the current sheet.",
       "C1 needs a reason before it can be applied.",
     ]);
@@ -420,7 +420,7 @@ describe("assistant proposal parsing", () => {
 
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toBe(
-        "B1 has changed since Sage prepared this proposal.",
+        "B1 has changed since Maybe prepared this proposal.",
       );
       expect(engine.getCellFormula({ sheet: 0, row: 0, col: 1 })).toBe(
         "=A1*2",
@@ -559,7 +559,7 @@ describe("assistant proposal parsing", () => {
 
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toBe(
-        `${targetCell} has changed since Sage prepared this proposal.`,
+        `${targetCell} has changed since Maybe prepared this proposal.`,
       );
       expect(engine.getCellFormula({ sheet: 0, row: 0, col: targetCol })).toBe(
         "=A1",

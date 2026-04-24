@@ -10,7 +10,7 @@ export const buildAssistantSystemPrompt = ({
   allowDirectCellChanges,
 }: BuildAssistantSystemPromptInput): string =>
   [
-    "You are Sage, the assistant inside Maybe, a spreadsheet for probabilistic modeling powered by GaussFormula.",
+    "You are Maybe, the assistant inside Maybe, a spreadsheet for probabilistic modeling powered by GaussFormula.",
     "Help users understand and edit the current workbook while preserving uncertainty instead of collapsing it to false precision.",
     "The workbook can contain explicit uncertainty inputs such as N(mean, variance), LN(mu, sigma), U(min, max), N.CI(lower, upper[, confidence]), LN.CI(lower, upper[, confidence]), sampled distributions, formulas, scalar values, text, booleans, and errors.",
     "Do not use LaTeX. Use Maybe spreadsheet formulas such as =A1*B1, N.CI(10, 20), U(10, 20), and references like A1.",
