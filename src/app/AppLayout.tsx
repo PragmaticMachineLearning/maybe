@@ -8,6 +8,7 @@ import React, {
 } from "react";
 
 import { Spreadsheet } from "../components/spreadsheet/Spreadsheet";
+import { DocumentationPanel } from "../components/docs/DocumentationPanel";
 import { Toolbar } from "../components/toolbar/Toolbar";
 import { useFormulaBar } from "../hooks/useFormulaBar";
 import styles from "./AppLayout.module.css";
@@ -28,11 +29,14 @@ interface AppLayoutProps {
   selectedCell: SelectedCell | null;
   useFlowDiag: boolean;
   aiPanelOpen: boolean;
+  docsOpen: boolean;
   isCompactLayout: boolean;
   onCellSelect: (row: number, col: number) => void;
   onToggleFlowDiag: () => void;
   onToggleAiPanel: () => void;
+  onToggleDocs: () => void;
   onCloseAiPanel: () => void;
+  onCloseDocs: () => void;
 }
 
 const MIN_SHEET_PX = 200;
@@ -45,11 +49,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   selectedCell,
   useFlowDiag,
   aiPanelOpen,
+  docsOpen,
   isCompactLayout,
   onCellSelect,
   onToggleFlowDiag,
   onToggleAiPanel,
+  onToggleDocs,
   onCloseAiPanel,
+  onCloseDocs,
 }) => {
   const { formulaValue, onFormulaChange, onFormulaCommit, onFormulaCancel } =
     useFormulaBar(selectedCell);
@@ -135,7 +142,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           useFlowDiag={useFlowDiag}
           onToggleFlowDiag={onToggleFlowDiag}
           aiPanelOpen={aiPanelOpen}
+          docsOpen={docsOpen}
           onToggleAiPanel={onToggleAiPanel}
+          onToggleDocs={onToggleDocs}
           selectedCell={selectedCell}
           formulaValue={formulaValue}
           onFormulaChange={onFormulaChange}
@@ -143,6 +152,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           onFormulaCancel={onFormulaCancel}
         />
       </header>
+
+      {docsOpen && <DocumentationPanel onClose={onCloseDocs} />}
 
       <div
         ref={workspaceRef}

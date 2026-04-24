@@ -9,8 +9,10 @@ import styles from "./Toolbar.module.css";
 interface ToolbarProps {
   useFlowDiag: boolean;
   aiPanelOpen: boolean;
+  docsOpen: boolean;
   onToggleFlowDiag: () => void;
   onToggleAiPanel: () => void;
+  onToggleDocs: () => void;
   // Formula bar props (merged)
   selectedCell?: { row: number; col: number } | null;
   formulaValue: string;
@@ -107,8 +109,10 @@ const getCellReference = (
 export const Toolbar: React.FC<ToolbarProps> = ({
   useFlowDiag,
   aiPanelOpen,
+  docsOpen,
   onToggleFlowDiag,
   onToggleAiPanel,
+  onToggleDocs,
   selectedCell,
   formulaValue,
   onFormulaChange,
@@ -235,6 +239,16 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </div>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={onToggleDocs}
+          className={`${styles.textBtn} ${docsOpen ? styles.textBtnActive : ""}`}
+          title="Open Maybe documentation"
+          aria-pressed={docsOpen}
+        >
+          Docs
+        </button>
       </div>
 
       {/* ── Center: formula bar ──────────────────────────────────── */}

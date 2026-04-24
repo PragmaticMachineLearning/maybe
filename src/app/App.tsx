@@ -11,6 +11,7 @@ const SpreadsheetWithWizard: React.FC = () => {
   });
   const [useflowDiag, setUseFlowDiag] = useState<boolean>(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [docsOpen, setDocsOpen] = useState(false);
   const [viewportWidth, setViewportWidth] = useState<number>(() =>
     typeof window !== "undefined" ? window.innerWidth : 1280,
   );
@@ -41,8 +42,16 @@ const SpreadsheetWithWizard: React.FC = () => {
     setAiPanelOpen((isOpen) => !isOpen);
   };
 
+  const handleToggleDocs = () => {
+    setDocsOpen((isOpen) => !isOpen);
+  };
+
   const handleCloseAiPanel = () => {
     setAiPanelOpen(false);
+  };
+
+  const handleCloseDocs = () => {
+    setDocsOpen(false);
   };
 
   return (
@@ -50,11 +59,14 @@ const SpreadsheetWithWizard: React.FC = () => {
       selectedCell={selectedCell}
       useFlowDiag={useflowDiag}
       aiPanelOpen={aiPanelOpen}
+      docsOpen={docsOpen}
       isCompactLayout={isCompactLayout}
       onCellSelect={handleCellSelect}
       onToggleFlowDiag={handleToggleFlowDiag}
       onToggleAiPanel={handleToggleAiPanel}
+      onToggleDocs={handleToggleDocs}
       onCloseAiPanel={handleCloseAiPanel}
+      onCloseDocs={handleCloseDocs}
     />
   );
 };
