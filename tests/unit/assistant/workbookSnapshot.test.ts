@@ -52,6 +52,10 @@ describe("assistant workbook snapshot", () => {
     const engine = {
       getSheetName: () => "Sheet1",
       getSheetDimensions: () => ({ width: 3, height: 2 }),
+      getSheetSerialized: () => [
+        ["Label", "N.CI(10.00, 20.00)", "=B1*2"],
+        ["Plain", 42, null],
+      ],
       getCellFormula: ({ row, col }: { row: number; col: number }) =>
         formulas[row]?.[col] ?? null,
       getCellValue: ({ row, col }: { row: number; col: number }) =>
@@ -66,6 +70,10 @@ describe("assistant workbook snapshot", () => {
 
     expect(snapshot.sheetName).toBe("Sheet1");
     expect(snapshot.selectedCell).toBe("C1");
+    expect(snapshot.serializedContent).toEqual([
+      ["Label", "N.CI(10.00, 20.00)", "=B1*2"],
+      ["Plain", 42, null],
+    ]);
     expect(snapshot.truncated).toBe(false);
     expect(snapshot.cells.map((cell) => cell.address)).toEqual([
       "A1",

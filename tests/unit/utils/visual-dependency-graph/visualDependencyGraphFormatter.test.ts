@@ -14,7 +14,7 @@ describe('formatVisualDependencyValue', () => {
         mean: 5,
         variance: 4,
       }),
-    ).toBe('S(μ=5.00, σ=2.00)')
+    ).toBe('sampled μ=5.00 σ=2.00')
   })
 
   it('formats explicit distributions', () => {

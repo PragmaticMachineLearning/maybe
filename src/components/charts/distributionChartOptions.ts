@@ -105,7 +105,7 @@ const getDistributionTitle = (distributionKind: DistributionKind): string => {
       return "Uniform Distribution";
     case "sampled":
     default:
-      return "Empirical Distribution";
+      return "Sampled Distribution";
   }
 };
 
@@ -294,7 +294,7 @@ export const createDistributionChartModelFromData = (
       {
         name:
           chartData.distributionKind === "sampled"
-            ? "Empirical Density"
+            ? "Sampled Density"
             : `${distributionTitle} PDF`,
         type: "line",
         smooth: true,

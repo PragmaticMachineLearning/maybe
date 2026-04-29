@@ -22,6 +22,6 @@ export const formatVisualDependencyValue = (value: VisualDependencyNodeValue): s
       }
       return ''
     case 'sampled_distribution':
-      return `S(μ=${formatNumber(value.mean)}, σ=${formatNumber(Math.sqrt(value.variance))})`
+      return `sampled μ=${formatNumber(value.mean)} σ=${formatNumber(Math.sqrt(value.variance))}`
   }
 }

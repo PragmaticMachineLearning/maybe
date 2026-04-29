@@ -85,6 +85,9 @@ const workbookSnapshotSchema = z.object({
     height: z.number(),
   }),
   selectedCell: z.string().nullable(),
+  serializedContent: z.array(
+    z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  ),
   cells: z.array(workbookCellSnapshotSchema),
   includedCellCount: z.number(),
   totalNonEmptyCellCount: z.number(),

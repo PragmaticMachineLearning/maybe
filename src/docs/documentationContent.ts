@@ -30,7 +30,7 @@ export const quickStartSteps: QuickStartStep[] = [
     cell: "C1",
     formula: "=A1*B1",
     note: "Propagates uncertainty by multiplying aligned samples from A1 and B1.",
-    result: "Expected sampled result is around S(μ=52.57, σ=15.88).",
+    result: "Expected sampled result is around sampled μ=52.57 σ=15.88.",
   },
 ];
 
@@ -79,7 +79,7 @@ export const documentationSections: DocumentationSection[] = [
     id: "sampling",
     title: "Sampling Behavior",
     blocks: [
-      "Sampled results display as S(μ=..., σ=...), where μ is the sample mean and σ is the sample standard deviation.",
+      "Sampled results display as derived summaries such as sampled μ=<mean> σ=<standard deviation>. S(...) is not valid cell input syntax.",
       "Summary values are approximate because they come from samples, but they are deterministic for the same sampling configuration.",
     ],
   },

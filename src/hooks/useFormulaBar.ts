@@ -68,12 +68,12 @@ export const formatFormulaBarCellValue = (value: unknown): string => {
 
     const sampled = parseSampledDistributionValue(value);
     if (sampled) {
-      return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
+      return `sampled μ=${sampled.mean.toFixed(2)} σ=${sampled.std.toFixed(2)}`;
     }
 
     const v = value as Record<string, unknown>;
     if (typeof v.mean === "number" && typeof v.variance === "number")
-      return `S(μ=${v.mean.toFixed(2)}, σ=${Math.sqrt(v.variance).toFixed(2)})`;
+      return `sampled μ=${v.mean.toFixed(2)} σ=${Math.sqrt(v.variance).toFixed(2)}`;
     if (typeof v.mu === "number" && typeof v.sigma2 === "number")
       return `LN(μ=${v.mu.toFixed(2)}, σ=${Math.sqrt(v.sigma2).toFixed(2)})`;
   }
