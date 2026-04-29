@@ -7,6 +7,8 @@ import type {
 import type { Plugin } from "vite";
 
 import { createAssistantHandler } from "./assistantRoute";
+import { createInMemoryWorkbookRepository } from "./inMemoryWorkbookRepository";
+import { createWorkbookHandler } from "./workbookRoute";
 
 interface RequestInitWithDuplex extends RequestInit {
   duplex?: "half";
@@ -17,6 +19,7 @@ interface AssistantApiPluginOptions {
 }
 
 const assistantPath = "/api/assistant";
+const workbookPath = "/api/workbook";
 
 const buildHeaders = (headers: IncomingHttpHeaders): Headers => {
   const webHeaders = new Headers();
@@ -153,7 +156,7 @@ const writeMiddlewareError = (
   error: unknown,
   serverResponse: ServerResponse,
 ): void => {
-  console.error("Assistant middleware failed", error);
+  console.error("Vite API middleware failed", error);
 
   if (serverResponse.headersSent) {
     serverResponse.destroy(error instanceof Error ? error : undefined);
@@ -162,18 +165,18 @@ const writeMiddlewareError = (
 
   serverResponse.statusCode = 500;
   serverResponse.setHeader("content-type", "application/json");
-  serverResponse.end(JSON.stringify({ error: "Assistant middleware failed." }));
+  serverResponse.end(JSON.stringify({ error: "Vite API middleware failed." }));
 };
 
-const createAssistantMiddleware =
+const createApiMiddleware =
   (
-    handleAssistantRequest: (request: Request) => Promise<Response>,
+    handleRequest: (request: Request) => Promise<Response>,
   ): ((request: IncomingMessage, response: ServerResponse) => void) =>
   (request, response) => {
     void (async () => {
       try {
         const webRequest = toWebRequest(request);
-        const webResponse = await handleAssistantRequest(webRequest);
+        const webResponse = await handleRequest(webRequest);
         await writeWebResponse(webResponse, response);
       } catch (error) {
         writeMiddlewareError(error, response);
@@ -185,7 +188,7 @@ export const assistantApiPlugin = ({
   getApiKey,
 }: AssistantApiPluginOptions = {}): Plugin => {
   const handleAssistantRequest = createAssistantHandler({ getApiKey });
-  const assistantMiddleware = createAssistantMiddleware(handleAssistantRequest);
+  const assistantMiddleware = createApiMiddleware(handleAssistantRequest);
 
   return {
     name: "maybe-assistant-api",
@@ -194,6 +197,24 @@ export const assistantApiPlugin = ({
     },
     configurePreviewServer(server) {
       server.middlewares.use(assistantPath, assistantMiddleware);
+    },
+  };
+};
+
+export const workbookApiPlugin = (): Plugin => {
+  const workbookRepository = createInMemoryWorkbookRepository();
+  const handleWorkbookRequest = createWorkbookHandler({
+    repository: workbookRepository,
+  });
+  const workbookMiddleware = createApiMiddleware(handleWorkbookRequest);
+
+  return {
+    name: "maybe-workbook-api",
+    configureServer(server) {
+      server.middlewares.use(workbookPath, workbookMiddleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(workbookPath, workbookMiddleware);
     },
   };
 };

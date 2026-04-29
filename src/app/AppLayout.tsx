@@ -228,7 +228,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               onPointerMove={handleSagePointerMove}
               onPointerUp={handleSagePointerUp}
               onPointerCancel={handleSagePointerUp}
-              aria-label="Resize Ask Maybe panel"
+              aria-label="Resize assistant panel"
               role="separator"
               aria-orientation="vertical"
             >

@@ -22,6 +22,10 @@ import {
   DEFAULT_ASSISTANT_MODEL_ID,
   type AssistantModelId,
 } from "../../assistant/modelOptions";
+import {
+  ASSISTANT_BYOK_HEADER,
+  normalizeAssistantApiKey,
+} from "../../assistant/byok";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import {
   getAssistantActivityLabel,
@@ -81,6 +85,23 @@ const SageIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
       fill="currentColor"
       opacity="0.6"
     />
+  </svg>
+);
+
+const SettingsIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z" />
+    <path d="M19.4 15a1.9 1.9 0 0 0 .4 2.1l.1.1a2.3 2.3 0 0 1-3.2 3.2l-.1-.1a1.9 1.9 0 0 0-2.1-.4 1.9 1.9 0 0 0-1.1 1.7V22a2.3 2.3 0 0 1-4.6 0v-.1a1.9 1.9 0 0 0-1.2-1.7 1.9 1.9 0 0 0-2.1.4l-.1.1a2.3 2.3 0 0 1-3.2-3.2l.1-.1a1.9 1.9 0 0 0 .4-2.1 1.9 1.9 0 0 0-1.7-1.1H2a2.3 2.3 0 0 1 0-4.6h.1a1.9 1.9 0 0 0 1.7-1.2 1.9 1.9 0 0 0-.4-2.1l-.1-.1a2.3 2.3 0 0 1 3.2-3.2l.1.1a1.9 1.9 0 0 0 2.1.4 1.9 1.9 0 0 0 1.1-1.7V2a2.3 2.3 0 0 1 4.6 0v.1a1.9 1.9 0 0 0 1.2 1.7 1.9 1.9 0 0 0 2.1-.4l.1-.1a2.3 2.3 0 0 1 3.2 3.2l-.1.1a1.9 1.9 0 0 0-.4 2.1 1.9 1.9 0 0 0 1.7 1.1h.1a2.3 2.3 0 0 1 0 4.6h-.1a1.9 1.9 0 0 0-1.8.6Z" />
   </svg>
 );
 
@@ -329,6 +350,8 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const [selectedModel, setSelectedModel] = useState<AssistantModelId>(
     DEFAULT_ASSISTANT_MODEL_ID,
   );
+  const [sessionApiKey, setSessionApiKey] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [appliedProposalKeys, setAppliedProposalKeys] = useState<
     ReadonlySet<string>
   >(() => new Set());
@@ -364,10 +387,16 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
     clearError();
     const workbookSnapshot = getWorkbookSnapshot(selectedCell ?? null);
     const allowDirectCellChanges = assistantMode === "write";
+    const normalizedSessionApiKey = normalizeAssistantApiKey(sessionApiKey);
     try {
       await sendMessage(
         { text },
-        { body: { workbookSnapshot, allowDirectCellChanges, selectedModel } },
+        {
+          body: { workbookSnapshot, allowDirectCellChanges, selectedModel },
+          headers: normalizedSessionApiKey
+            ? { [ASSISTANT_BYOK_HEADER]: normalizedSessionApiKey }
+            : undefined,
+        },
       );
     } catch (caughtError) {
       setRequestError(getUnknownErrorMessage(caughtError));
@@ -388,6 +417,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   const isBusy = status === "submitted" || status === "streaming";
   const allowDirectCellChanges = assistantMode === "write";
   const activityLabel = getAssistantActivityLabel(messages, status);
+  const hasSessionApiKey = normalizeAssistantApiKey(sessionApiKey) !== undefined;
   const proposalCandidates = assistantMessages
     .map((message) => {
       if (isAssistantMessageStreaming(message, assistantMessages, isBusy)) {
@@ -594,7 +624,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   return (
     <aside
       className={`${styles.panel} ${compact ? styles.panelCompact : ""}`}
-      aria-label="Ask Maybe"
+      aria-label="Assistant"
     >
       {/* ── Header ─────────────────────────────────────────────────── */}
       <header className={styles.header}>
@@ -602,15 +632,25 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
           <div className={styles.sageAvatar}>
             <SageIcon size={16} />
           </div>
-          <span className={styles.title}>Ask Maybe</span>
+          <span className={styles.title}>Assistant</span>
         </div>
         <div className={styles.headerActions}>
           <button
             type="button"
+            onClick={() => setSettingsOpen((isOpen) => !isOpen)}
+            className={styles.iconButton}
+            title="Assistant settings"
+            aria-label="Assistant settings"
+            aria-pressed={settingsOpen}
+          >
+            <SettingsIcon size={15} />
+          </button>
+          <button
+            type="button"
             onClick={onClose}
             className={styles.closeButton}
-            title="Close Ask Maybe"
-            aria-label="Close Ask Maybe"
+            title="Close assistant"
+            aria-label="Close assistant"
           >
             <svg
               width="14"
@@ -630,137 +670,204 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
 
       {/* ── Scrollable content area ────────────────────────────────── */}
       <div ref={scrollRef} className={styles.content}>
-        {/* Empty state */}
-        {messages.length === 0 && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>
-              <SageIcon size={20} />
-            </div>
-            <p className={styles.emptyTitle}>Ask Maybe about this workbook</p>
-            <p className={styles.emptyHint}>
-              Maybe can inspect workbook values, formulas, and uncertainty, then
-              suggest spreadsheet updates for you to review.
+        {settingsOpen ? (
+          <div className={styles.settingsView}>
+            <p className={styles.settingsEyebrow}>Assistant settings</p>
+            <h3 className={styles.settingsTitle}>Connect OpenAI</h3>
+            <p className={styles.settingsCopy}>
+              Add your OpenAI API key to use the assistant. The key stays in
+              memory for this page only and is cleared on refresh, closing the
+              panel, or leaving the app.
             </p>
-          </div>
-        )}
-
-        {messages.length > 0 && (
-          <div className={styles.messages}>
-            {messages.map((message) => {
-              const rawText = getMessageText(message);
-              const visibleText =
-                message.role === "assistant"
-                  ? getVisibleAssistantText(rawText)
-                  : rawText;
-              const proposalEntry =
-                message.role === "assistant"
-                  ? proposalEntryByMessageId.get(message.id)
-                  : undefined;
-
-              if (!visibleText && !proposalEntry?.show) return null;
-
-              return (
-                <div
-                  key={message.id}
-                  className={
-                    message.role === "user"
-                      ? styles.userPrompt
-                      : styles.assistantMessage
-                  }
+            <label className={styles.settingsField}>
+              <span className={styles.settingsLabel}>OpenAI API key</span>
+              <input
+                aria-label="OpenAI API key"
+                className={styles.settingsInput}
+                type="password"
+                value={sessionApiKey}
+                onChange={(event) => setSessionApiKey(event.target.value)}
+                placeholder="sk-..."
+                autoComplete="off"
+                disabled={isBusy}
+              />
+            </label>
+            <div className={styles.settingsStatus}>
+              <span
+                className={
+                  hasSessionApiKey
+                    ? styles.settingsStatusDotActive
+                    : styles.settingsStatusDot
+                }
+              />
+              <span>
+                {hasSessionApiKey
+                  ? "OpenAI key configured for this session."
+                  : "No OpenAI key configured."}
+              </span>
+            </div>
+            <div className={styles.settingsActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setSettingsOpen(false)}
+              >
+                Back to chat
+              </button>
+              {hasSessionApiKey && (
+                <button
+                  type="button"
+                  className={styles.dismissBtn}
+                  onClick={() => setSessionApiKey("")}
+                  disabled={isBusy}
                 >
-                  {message.role === "assistant" && visibleText ? (
-                    <FormattedAssistantText text={visibleText} />
-                  ) : message.role === "user" ? (
-                    <span className={styles.userPromptText}>{visibleText}</span>
-                  ) : null}
-                  {proposalEntry ? renderProposalCard(proposalEntry) : null}
+                  Clear key
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Empty state */}
+            {messages.length === 0 && (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>
+                  <SageIcon size={20} />
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <p className={styles.emptyTitle}>
+                  Ask about this workbook
+                </p>
+                <p className={styles.emptyHint}>
+                  The assistant can inspect workbook values, formulas, and
+                  uncertainty, then suggest spreadsheet updates for you to
+                  review.
+                </p>
+              </div>
+            )}
 
-        {isBusy && (
-          <div className={styles.statusRow}>
-            <span className={styles.statusDot} />
-            <span className={styles.statusText}>{activityLabel}…</span>
-          </div>
-        )}
+            {messages.length > 0 && (
+              <div className={styles.messages}>
+                {messages.map((message) => {
+                  const rawText = getMessageText(message);
+                  const visibleText =
+                    message.role === "assistant"
+                      ? getVisibleAssistantText(rawText)
+                      : rawText;
+                  const proposalEntry =
+                    message.role === "assistant"
+                      ? proposalEntryByMessageId.get(message.id)
+                      : undefined;
 
-        {transportError && (
-          <div className={styles.errorBox}>{transportError}</div>
+                  if (!visibleText && !proposalEntry?.show) return null;
+
+                  return (
+                    <div
+                      key={message.id}
+                      className={
+                        message.role === "user"
+                          ? styles.userPrompt
+                          : styles.assistantMessage
+                      }
+                    >
+                      {message.role === "assistant" && visibleText ? (
+                        <FormattedAssistantText text={visibleText} />
+                      ) : message.role === "user" ? (
+                        <span className={styles.userPromptText}>
+                          {visibleText}
+                        </span>
+                      ) : null}
+                      {proposalEntry ? renderProposalCard(proposalEntry) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {isBusy && (
+              <div className={styles.statusRow}>
+                <span className={styles.statusDot} />
+                <span className={styles.statusText}>{activityLabel}…</span>
+              </div>
+            )}
+
+            {transportError && (
+              <div className={styles.errorBox}>{transportError}</div>
+            )}
+            {applyError && <div className={styles.errorBox}>{applyError}</div>}
+          </>
         )}
-        {applyError && <div className={styles.errorBox}>{applyError}</div>}
       </div>
 
       {/* ── Input area (anchored to bottom) ────────────────────────── */}
-      <form className={styles.inputBar} onSubmit={handleSubmit}>
-        <textarea
-          ref={inputRef}
-          className={styles.input}
-          aria-label="Message Ask Maybe"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={getPromptPlaceholder(assistantMode)}
-          rows={1}
-          disabled={isBusy}
-        />
-        <div className={styles.composerControls}>
-          <select
-            aria-label="Ask Maybe mode"
-            className={styles.composerSelect}
-            value={assistantMode}
-            onChange={(event) =>
-              setAssistantMode(event.target.value as AssistantMode)
-            }
+      {!settingsOpen && (
+        <form className={styles.inputBar} onSubmit={handleSubmit}>
+          <textarea
+            ref={inputRef}
+            className={styles.input}
+            aria-label="Message assistant"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={getPromptPlaceholder(assistantMode)}
+            rows={1}
             disabled={isBusy}
-          >
-            {ASSISTANT_MODE_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Ask Maybe model"
-            className={styles.composerSelect}
-            value={selectedModel}
-            onChange={(event) =>
-              setSelectedModel(event.target.value as AssistantModelId)
-            }
-            disabled={isBusy}
-          >
-            {ASSISTANT_MODEL_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <span className={styles.composerSpacer} />
-          <button
-            type="submit"
-            className={styles.sendBtn}
-            disabled={!prompt.trim() || isBusy}
-            title="Send"
-            aria-label="Send"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          />
+          <div className={styles.composerControls}>
+            <select
+              aria-label="Assistant mode"
+              className={styles.composerSelect}
+              value={assistantMode}
+              onChange={(event) =>
+                setAssistantMode(event.target.value as AssistantMode)
+              }
+              disabled={isBusy}
             >
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
-        </div>
-      </form>
+              {ASSISTANT_MODE_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Assistant model"
+              className={styles.composerSelect}
+              value={selectedModel}
+              onChange={(event) =>
+                setSelectedModel(event.target.value as AssistantModelId)
+              }
+              disabled={isBusy}
+            >
+              {ASSISTANT_MODEL_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <span className={styles.composerSpacer} />
+            <button
+              type="submit"
+              className={styles.sendBtn}
+              disabled={!prompt.trim() || isBusy}
+              title="Send"
+              aria-label="Send"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </div>
+        </form>
+      )}
     </aside>
   );
 };

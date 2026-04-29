@@ -77,7 +77,8 @@ describe("assistant route", () => {
     );
 
     await expect(response.json()).resolves.toEqual({
-      error: "OPENAI_API_KEY is not configured for the assistant server.",
+      error:
+        "OpenAI key is not configured. Open assistant settings and add your OpenAI API key.",
     });
     expect(response.status).toBe(500);
     expect(streamTextFn).not.toHaveBeenCalled();
@@ -235,10 +236,38 @@ describe("assistant route", () => {
     );
 
     await expect(response.json()).resolves.toEqual({
-      error: "OPENAI_API_KEY is not configured for the assistant server.",
+      error:
+        "OpenAI key is not configured. Open assistant settings and add your OpenAI API key.",
     });
     expect(response.status).toBe(500);
     expect(streamTextFn).not.toHaveBeenCalled();
+  });
+
+  it("uses a request-supplied OpenAI key when the server key is missing", async () => {
+    const toUIMessageStreamResponse = vi.fn(() => new Response("ok"));
+    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+      options,
+      toUIMessageStreamResponse,
+    }));
+    const handler = createAssistantHandler({
+      getApiKey: () => undefined,
+      streamTextFn,
+    });
+
+    const response = await handler(
+      new Request("http://localhost/api/assistant", {
+        method: "POST",
+        headers: {
+          "x-maybe-openai-api-key": "sk-user-test",
+        },
+        body: JSON.stringify(requestBodyWithWorkbookContext),
+      }),
+    );
+
+    await expect(response.text()).resolves.toBe("ok");
+    expect(response.status).toBe(200);
+    expect(streamTextFn).toHaveBeenCalledOnce();
+    expect(toUIMessageStreamResponse).toHaveBeenCalledOnce();
   });
 
   it("streams a response with converted messages and workbook context", async () => {

@@ -78,7 +78,30 @@
         color 0.12s ease;
 }
 
+.iconButton {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm, 6px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        background-color 0.12s ease,
+        color 0.12s ease;
+}
+
 .closeButton:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.iconButton:hover,
+.iconButton[aria-pressed="true"] {
     background: var(--bg-hover);
     color: var(--text-primary);
 }
@@ -232,6 +255,121 @@
     color: var(--text-secondary);
     font-size: 12px;
     line-height: 1.45;
+}
+
+/* ── Settings ────────────────────────────────────────────────────────── */
+
+.settingsView {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settingsEyebrow {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.settingsTitle {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+.settingsCopy {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.settingsField {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.settingsLabel {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.settingsInput {
+    width: 100%;
+    min-height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0 10px;
+    background: var(--bg-muted);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+}
+
+.settingsInput::placeholder {
+    color: var(--text-muted);
+}
+
+.settingsInput:focus {
+    outline: 2px solid var(--resize-handle-active);
+    outline-offset: 1px;
+}
+
+.settingsStatus {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--bg-muted);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.settingsStatusDot,
+.settingsStatusDotActive {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-full, 999px);
+    flex-shrink: 0;
+}
+
+.settingsStatusDot {
+    background: var(--text-muted);
+}
+
+.settingsStatusDotActive {
+    background: var(--dist-normal-accent);
+}
+
+.settingsActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.secondaryButton {
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--bg-muted);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.secondaryButton:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
 }
 
 /* ── Change list ─────────────────────────────────────────────────────── */

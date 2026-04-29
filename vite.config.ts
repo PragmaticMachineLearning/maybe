@@ -2,7 +2,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 import { getProjectEnvValue } from "./src/server/projectEnv";
-import { assistantApiPlugin } from "./src/server/viteAssistantPlugin";
+import {
+  assistantApiPlugin,
+  workbookApiPlugin,
+} from "./src/server/viteAssistantPlugin";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
 
@@ -66,7 +69,7 @@ function manualChunks(id: string): string | undefined {
 export default defineConfig({
   plugins: [assistantApiPlugin({
     getApiKey: () => openAiApiKey,
-  }), react(), cloudflare()],
+  }), workbookApiPlugin(), react(), cloudflare()],
   build: {
     sourcemap: true,
     rolldownOptions: {

@@ -12,6 +12,10 @@ import {
   type AssistantRequestBody,
   type MaybeAssistantMessage,
 } from "../assistant/messages";
+import {
+  ASSISTANT_BYOK_HEADER,
+  normalizeAssistantApiKey,
+} from "../assistant/byok";
 import { createAssistantTools } from "../assistant/tools";
 import { buildAssistantSystemPrompt } from "./assistantSystemPrompt";
 
@@ -20,6 +24,15 @@ const jsonResponse = (body: unknown, status: number): Response =>
 
 const invalidRequestResponse = (): Response =>
   jsonResponse({ error: "Invalid assistant request." }, 400);
+
+const missingApiKeyResponse = (): Response =>
+  jsonResponse(
+    {
+      error:
+        "OpenAI key is not configured. Open assistant settings and add your OpenAI API key.",
+    },
+    500,
+  );
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -84,14 +97,11 @@ export const createAssistantHandler = ({
       return invalidRequestResponse();
     }
 
-    const apiKey = getApiKey();
+    const apiKey =
+      normalizeAssistantApiKey(request.headers.get(ASSISTANT_BYOK_HEADER)) ??
+      normalizeAssistantApiKey(getApiKey());
     if (!apiKey) {
-      return jsonResponse(
-        {
-          error: "OPENAI_API_KEY is not configured for the assistant server.",
-        },
-        500,
-      );
+      return missingApiKeyResponse();
     }
 
     const openaiProvider = createOpenAI({ apiKey });
