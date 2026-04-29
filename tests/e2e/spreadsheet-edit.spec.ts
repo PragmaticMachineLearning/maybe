@@ -18,6 +18,32 @@ test("edits a spreadsheet cell directly", async ({ page }) => {
   );
 });
 
+test("persists spreadsheet edits across refresh", async ({ page }) => {
+  await page.goto("/");
+
+  const firstCell = page.locator("tbody tr:first-child td:nth-child(2) > div");
+  await firstCell.dblclick();
+
+  const editor = page.getByLabel("Cell A1");
+  await expect(editor).toBeVisible();
+
+  const saveResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/workbook") &&
+      response.request().method() === "PUT",
+  );
+  await editor.fill("789");
+  await editor.press("Enter");
+  await saveResponse;
+
+  await page.reload();
+
+  await expect(firstCell).toHaveText("789");
+  await expect(page.getByPlaceholder("Enter value or formula…")).toHaveValue(
+    "789",
+  );
+});
+
 test("double-clicking an existing cell preserves the editor and formula bar values", async ({
   page,
 }) => {
