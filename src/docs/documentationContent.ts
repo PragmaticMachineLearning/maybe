@@ -1,11 +1,11 @@
-export interface QuickStartStep {
+interface QuickStartStep {
   cell: string;
   formula: string;
   note: string;
   result?: string;
 }
 
-export interface DocumentationSection {
+interface DocumentationSection {
   id: string;
   title: string;
   blocks: string[];

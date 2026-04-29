@@ -11,9 +11,13 @@ import {
 } from "../assistant/workbookSnapshot";
 import { maybeFormulaEngineConfig } from "../config/simulation";
 import { GaussFormulaEngine, type FormulaEngine } from "../lib/formulaEngine";
+import {
+  createBlankSheetContent,
+  getSerializedContentFromWorkbookResponse,
+  type SerializedWorkbookContent,
+} from "../workbook/persistence";
 
-type CellContent = string | number | null;
-type SheetData = CellContent[][];
+type SheetData = SerializedWorkbookContent;
 
 const VISIBLE_SHEET_ROWS = 50;
 const VISIBLE_SHEET_COLUMNS = 26;
@@ -45,21 +49,100 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
     null,
   );
   useEffect(() => {
+    let isDisposed = false;
     const engine = GaussFormulaEngine.buildEmpty(maybeFormulaEngineConfig);
 
-    // Initialize sheet
     engine.addSheet("Sheet1");
-    const initialData: SheetData = Array(VISIBLE_SHEET_ROWS)
-      .fill(null)
-      .map(() => Array(VISIBLE_SHEET_COLUMNS).fill(null));
 
-    engine.setSheetContent(0, initialData);
-    setFormulaEngine(engine);
+    const loadWorkbook = async () => {
+      let sheetContent: SheetData = createBlankSheetContent({
+        rows: VISIBLE_SHEET_ROWS,
+        columns: VISIBLE_SHEET_COLUMNS,
+      });
+
+      try {
+        const response = await fetch("/api/workbook");
+        if (response.ok) {
+          const savedContent = getSerializedContentFromWorkbookResponse(
+            await response.json(),
+          );
+
+          if (savedContent !== null) {
+            sheetContent = savedContent;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading persisted workbook:", error);
+      }
+
+      if (isDisposed) {
+        return;
+      }
+
+      engine.setSheetContent(0, sheetContent);
+      setFormulaEngine(engine);
+    };
+
+    void loadWorkbook();
 
     return () => {
+      isDisposed = true;
       engine.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    if (!formulaEngine) return;
+
+    let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const saveWorkbook = async () => {
+      const dimensions = formulaEngine.getSheetDimensions(0);
+      const minimumDimensions = {
+        width: VISIBLE_SHEET_COLUMNS,
+        height: VISIBLE_SHEET_ROWS,
+      };
+      const workbookSnapshot = buildWorkbookSnapshot({
+        formulaEngine,
+        selectedCell: null,
+        maxCells:
+          Math.max(dimensions.width, minimumDimensions.width) *
+          Math.max(dimensions.height, minimumDimensions.height),
+        minimumDimensions,
+      });
+
+      try {
+        await fetch("/api/workbook", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            serializedContent: workbookSnapshot.serializedContent,
+          }),
+        });
+      } catch (error) {
+        console.error("Error saving persisted workbook:", error);
+      }
+    };
+
+    const scheduleSave = () => {
+      if (saveTimeout !== null) {
+        clearTimeout(saveTimeout);
+      }
+
+      saveTimeout = setTimeout(() => {
+        void saveWorkbook();
+      }, 1000);
+    };
+
+    formulaEngine.on("valuesUpdated", scheduleSave);
+
+    return () => {
+      if (saveTimeout !== null) {
+        clearTimeout(saveTimeout);
+      }
+      formulaEngine.off("valuesUpdated", scheduleSave);
+    };
+  }, [formulaEngine]);
 
   const updateCell = useCallback(
     (row: number, col: number, value: string) => {

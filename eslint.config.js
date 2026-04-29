@@ -28,7 +28,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['vite.config.ts', 'src/server/**/*.ts'],
+    files: ['vite.config.ts', 'drizzle.config.ts', 'src/server/**/*.ts'],
     languageOptions: {
       globals: globals.node,
     },

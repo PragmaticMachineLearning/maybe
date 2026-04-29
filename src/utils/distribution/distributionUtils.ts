@@ -1,6 +1,6 @@
-export type DistributionKind = 'normal' | 'lognormal' | 'uniform'
+type DistributionKind = 'normal' | 'lognormal' | 'uniform'
 
-export interface ParsedDistribution {
+interface ParsedDistribution {
   kind: DistributionKind
   source: 'parameters' | 'ci'
   mean?: number
@@ -14,7 +14,7 @@ export interface ParsedDistribution {
   confidenceLevel?: number
 }
 
-export const DEFAULT_CONFIDENCE_LEVEL = 95
+const DEFAULT_CONFIDENCE_LEVEL = 95
 
 const isDistributionKind = (value: unknown): value is DistributionKind =>
   value === 'normal' || value === 'lognormal' || value === 'uniform'
@@ -68,14 +68,14 @@ export const parseDistributionValue = (val: unknown): ParsedDistribution | null 
 export const isDistributionValue = (val: unknown): boolean =>
   parseDistributionValue(val) !== null
 
-export const confidenceLevelToFormulaArgument = (
+const confidenceLevelToFormulaArgument = (
   confidenceLevel: number,
 ): number => confidenceLevel > 1 ? confidenceLevel / 100 : confidenceLevel
 
 const normalizeConfidencePercent = (confidenceLevel: number): number =>
   confidenceLevel > 1 ? confidenceLevel : confidenceLevel * 100
 
-export const isDefaultConfidenceLevel = (
+const isDefaultConfidenceLevel = (
   confidenceLevel: number | undefined,
 ): boolean =>
   confidenceLevel === undefined ||

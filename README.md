@@ -42,6 +42,57 @@ pnpm install
 pnpm dev
 ```
 
+### Cloudflare D1 persistence
+
+Workbook persistence uses Cloudflare D1 with Drizzle ORM. Create a D1 database
+before deploying:
+
+```bash
+pnpm exec wrangler d1 create maybe
+```
+
+Create a local `wrangler.jsonc` file for your Cloudflare deployment. It is
+ignored by git because it contains deployment-specific resource ids. The D1
+binding must be named `DB`:
+
+```jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "maybe",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-04-24",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "maybe",
+      "database_id": "replace-with-your-d1-database-id",
+      "migrations_dir": "drizzle/migrations"
+    }
+  ],
+  "compatibility_flags": ["nodejs_compat"]
+}
+```
+
+Copy the database id returned by Wrangler into `database_id`, then apply
+migrations:
+
+```bash
+pnpm db:migrate:remote
+```
+
+For local Wrangler preview, apply the migration locally:
+
+```bash
+pnpm db:migrate:local
+```
+
 ## Usage
 
 ### Working with Distributions

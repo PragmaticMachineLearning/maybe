@@ -17,6 +17,18 @@ describe("cloudflare worker entry", () => {
     expect(response.status).toBe(405);
   });
 
+  it("routes workbook API requests to the workbook handler", async () => {
+    const response = await worker.fetch(createRequest("/api/workbook"), {
+      ASSETS: { fetch: vi.fn() },
+      DB: undefined,
+    });
+
+    await expect(response.json()).resolves.toEqual({
+      error: "Workbook persistence is not configured.",
+    });
+    expect(response.status).toBe(500);
+  });
+
   it("serves static assets for non-API requests", async () => {
     const assetResponse = new Response("asset");
     const assetsFetch = vi.fn(async () => assetResponse);
