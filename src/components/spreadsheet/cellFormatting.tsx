@@ -196,7 +196,7 @@ export const formatCellEditValue = (val: CellValue): string => {
   if (isSampledDistributionValue(val)) {
     const sampled = parseSampledDistributionValue(val);
     if (sampled) {
-      return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
+      return `sampled μ=${sampled.mean.toFixed(2)} σ=${sampled.std.toFixed(2)}`;
     }
   }
 
@@ -227,7 +227,7 @@ export const formatCellValue = (val: CellValue): string => {
           ) {
             return `N ${formatConfidencePercent(distribution.confidenceLevel)} CI [${formatCompactNumber(distribution.lower)}, ${formatCompactNumber(distribution.upper)}]`;
           }
-          return `N μ=${formatCompactNumber(distribution.mean ?? 0)} σ²=${formatCompactNumber(distribution.variance ?? 0)}`;
+          return `N(μ=${formatCompactNumber(distribution.mean ?? 0)}, σ²=${formatCompactNumber(distribution.variance ?? 0)})`;
         case "lognormal":
           if (
             distribution.source === "ci" &&
@@ -237,9 +237,9 @@ export const formatCellValue = (val: CellValue): string => {
           ) {
             return `LN ${formatConfidencePercent(distribution.confidenceLevel)} CI [${formatCompactNumber(distribution.lower)}, ${formatCompactNumber(distribution.upper)}]`;
           }
-          return `LN μlog=${formatCompactNumber(distribution.mu ?? 0)} σlog=${formatCompactNumber(distribution.sigma ?? 0)}`;
+          return `LN(μ=${formatCompactNumber(distribution.mu ?? 0)}, σ=${formatCompactNumber(distribution.sigma ?? 0)})`;
         case "uniform":
-          return `U [${formatCompactNumber(distribution.min ?? 0)}, ${formatCompactNumber(distribution.max ?? 0)}]`;
+          return `U(min=${formatCompactNumber(distribution.min ?? 0)}, max=${formatCompactNumber(distribution.max ?? 0)})`;
       }
     }
   }
@@ -247,7 +247,7 @@ export const formatCellValue = (val: CellValue): string => {
   if (isSampledDistributionValue(val)) {
     const sampled = parseSampledDistributionValue(val);
     if (sampled) {
-      return `S(μ=${sampled.mean.toFixed(2)}, σ=${sampled.std.toFixed(2)})`;
+      return `sampled μ=${sampled.mean.toFixed(2)} σ=${sampled.std.toFixed(2)}`;
     }
   }
 

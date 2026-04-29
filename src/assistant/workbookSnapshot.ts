@@ -14,6 +14,7 @@ import type { SheetDimensions, ZeroBasedCellAddress } from "./address";
 export type { SheetDimensions, ZeroBasedCellAddress };
 
 export type SelectedCell = ZeroBasedCellAddress;
+export type SerializedCellContent = string | number | boolean | null;
 
 export type WorkbookCellKind =
   | "scalar"
@@ -62,6 +63,7 @@ export interface WorkbookSnapshot {
   sheetName: string;
   dimensions: SheetDimensions;
   selectedCell: string | null;
+  serializedContent: SerializedCellContent[][];
   cells: WorkbookCellSnapshot[];
   includedCellCount: number;
   totalNonEmptyCellCount: number;
@@ -81,6 +83,50 @@ const isBlankCell = (value: unknown, formula: string | null): boolean =>
   formula == null && (value === null || value === undefined || value === "");
 
 const round6 = (value: number): number => Number(value.toFixed(6));
+
+const normalizeSerializedCellContent = (value: unknown): SerializedCellContent => {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null
+  ) {
+    return value;
+  }
+
+  return null;
+};
+
+const buildSerializedContent = (
+  formulaEngine: FormulaEngine,
+  dimensions: SheetDimensions,
+): SerializedCellContent[][] => {
+  const engineWithSerializedSheet = formulaEngine as FormulaEngine & {
+    getSheetSerialized?: (sheetId: number) => unknown[][];
+    getCellSerialized?: (address: { sheet: number; row: number; col: number }) => unknown;
+  };
+  const serializedSheet = engineWithSerializedSheet.getSheetSerialized?.(0);
+
+  return Array.from({ length: dimensions.height }, (_, row) =>
+    Array.from({ length: dimensions.width }, (_, col) => {
+      const fromSheet = serializedSheet?.[row]?.[col];
+      if (fromSheet !== undefined) {
+        return normalizeSerializedCellContent(fromSheet);
+      }
+
+      const fromCell = engineWithSerializedSheet.getCellSerialized?.({
+        sheet: 0,
+        row,
+        col,
+      });
+      if (fromCell !== undefined) {
+        return normalizeSerializedCellContent(fromCell);
+      }
+
+      return null;
+    }),
+  );
+};
 
 const resolveSheetName = (formulaEngine: FormulaEngine): string => {
   const engineWithSheetName = formulaEngine as FormulaEngine & {
@@ -203,7 +249,7 @@ const serializeCellValue = (
     }
   }
   if (sampleSummary) {
-    return `samples(mean=${sampleSummary.mean}, p10=${sampleSummary.p10}, p90=${sampleSummary.p90})`;
+    return `sampled μ=${sampleSummary.mean} σ=${sampleSummary.standardDeviation} p10=${sampleSummary.p10} p90=${sampleSummary.p90}`;
   }
 
   try {
@@ -229,6 +275,7 @@ export const buildWorkbookSnapshot = ({
   const cells: WorkbookCellSnapshot[] = [];
   let totalNonEmptyCellCount = 0;
   const cellLimit = Math.max(0, Math.floor(maxCells));
+  const serializedContent = buildSerializedContent(formulaEngine, dimensions);
 
   for (let row = 0; row < dimensions.height; row += 1) {
     for (let col = 0; col < dimensions.width; col += 1) {
@@ -282,6 +329,7 @@ export const buildWorkbookSnapshot = ({
       selectedCell && isSelectedCellInBounds(selectedCell, dimensions)
         ? cellAddressToA1(selectedCell.row, selectedCell.col)
         : null,
+    serializedContent,
     cells,
     includedCellCount: cells.length,
     totalNonEmptyCellCount,

@@ -12,7 +12,9 @@ describe("documentation content", () => {
       "U(2, 5)",
       "=A1*B1",
     ]);
-    expect(quickStartSteps.at(-1)?.result).toContain("S(μ=52.57, σ=15.88)");
+    expect(quickStartSteps.at(-1)?.result).toContain(
+      "sampled μ=52.57 σ=15.88",
+    );
   });
 
   it("explains that LN uses underlying normal parameters", () => {

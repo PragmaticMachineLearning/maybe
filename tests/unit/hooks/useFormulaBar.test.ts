@@ -52,9 +52,9 @@ describe("formatFormulaBarCellValue", () => {
     ).toBe("N.CI(0.009, 0.011)");
   });
 
-  it("formats variance-backed summaries as standard deviation", () => {
+  it("formats variance-backed sample summaries without input syntax", () => {
     expect(formatFormulaBarCellValue({ mean: 5, variance: 4 }))
-      .toBe("S(μ=5.00, σ=2.00)");
+      .toBe("sampled μ=5.00 σ=2.00");
     expect(formatFormulaBarCellValue({ mu: 3, sigma2: 9 }))
       .toBe("LN(μ=3.00, σ=3.00)");
   });

@@ -34,7 +34,7 @@ describe('formatCellValue', () => {
           variance: 4,
         },
       ),
-    ).toBe('N μ=10 σ²=4')
+    ).toBe('N(μ=10, σ²=4)')
 
     expect(
       formatCellValue(
@@ -47,6 +47,17 @@ describe('formatCellValue', () => {
         },
       ),
     ).toBe('N 95% CI [10, 20]')
+
+    expect(
+      formatCellValue(
+        {
+          kind: 'lognormal',
+          source: 'parameters',
+          mu: 1,
+          sigma: 0.2,
+        },
+      ),
+    ).toBe('LN(μ=1, σ=0.2)')
 
     expect(
       formatCellValue(
@@ -69,7 +80,7 @@ describe('formatCellValue', () => {
           max: 2,
         },
       ),
-    ).toBe('U [1, 2]')
+    ).toBe('U(min=1, max=2)')
   })
 
   it('formats explicit distributions as editable formulas', () => {
@@ -112,9 +123,13 @@ describe('formatCellValue', () => {
     ).toBe('N.CI(0.009, 0.011)')
   })
 
-  it('formats sampled distributions', () => {
+  it('formats sampled distributions as derived summaries, not input syntax', () => {
     expect(
       formatCellValue(sampledValue),
-    ).toBe('S(μ=2.00, σ=0.82)')
+    ).toBe('sampled μ=2.00 σ=0.82')
+
+    expect(
+      formatCellEditValue(sampledValue),
+    ).toBe('sampled μ=2.00 σ=0.82')
   })
 })

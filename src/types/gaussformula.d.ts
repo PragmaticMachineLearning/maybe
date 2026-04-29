@@ -76,11 +76,17 @@ declare module "gaussformula" {
       content: RawCellContent | RawCellContent[][]
     ): void;
     getCellValue(address: { sheet: number; row: number; col: number }): unknown;
+    getCellSerialized(address: {
+      sheet: number;
+      row: number;
+      col: number;
+    }): RawCellContent;
     getCellFormula(address: {
       sheet: number;
       row: number;
       col: number;
     }): string | null;
+    getSheetSerialized(sheetId: number): RawCellContent[][];
     getSheetDimensions(sheetId: number): { width: number; height: number };
     validateFormula(formula: string): { isValid: boolean; [key: string]: unknown };
     on(event: string, callback: () => void): void;

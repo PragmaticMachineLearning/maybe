@@ -12,6 +12,10 @@ const validAssistantRequestBody = {
     sheetName: "Sheet1",
     dimensions: { width: 2, height: 2 },
     selectedCell: null,
+    serializedContent: [
+      [null, null],
+      [null, null],
+    ],
     cells: [],
     includedCellCount: 0,
     totalNonEmptyCellCount: 0,
@@ -29,6 +33,10 @@ const requestBodyWithWorkbookContext = {
   ],
   workbookSnapshot: {
     ...validAssistantRequestBody.workbookSnapshot,
+    serializedContent: [
+      ["N.CI(10, 20)", null],
+      [null, null],
+    ],
     cells: [
       {
         address: "A1",
@@ -273,6 +281,7 @@ describe("assistant route", () => {
     });
     expect(options.system).toContain("Current workbook snapshot");
     expect(options.system).toContain("N.CI(10, 20)");
+    expect(options.system).toContain("S(...) is not valid formula syntax");
     expect(options.system).toContain("Do not use LaTeX");
     expect(options.system).not.toContain("P10(A1)");
     expect(options.system).not.toContain("P50(A1)");

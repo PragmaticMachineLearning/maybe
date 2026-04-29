@@ -100,11 +100,16 @@ describe('distributionChartOptions', () => {
     expect(model.option).toEqual(
       expect.objectContaining({
         title: expect.objectContaining({
-          text: 'Empirical Distribution',
+          text: 'Sampled Distribution',
         }),
         series: expect.any(Array),
       }),
     )
+    expect(model.option.series).toEqual([
+      expect.objectContaining({
+        name: 'Sampled Density',
+      }),
+    ])
   })
 
   it('uses engine-derived chart parameters when provided', () => {
