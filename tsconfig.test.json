@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "types": ["node", "bun"]
+  },
+  "include": ["tests/unit/**/*.test.ts", "tests/setup.ts"],
+  "exclude": ["tests/e2e"]
+}

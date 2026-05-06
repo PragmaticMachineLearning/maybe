@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import {
   createBlankSheetContent,
@@ -22,11 +22,7 @@ describe("workbook persistence helpers", () => {
     expect(
       getSerializedContentFromWorkbookResponse({
         workbook: {
-          id: "workspace-1:default",
-          title: "Untitled workbook",
-          workspaceId: "workspace-1",
           serializedContent,
-          updatedAt: "2026-04-29T10:00:00.000Z",
         },
       }),
     ).toEqual(serializedContent);

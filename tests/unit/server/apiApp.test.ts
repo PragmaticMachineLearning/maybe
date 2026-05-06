@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, mock } from "bun:test";
 
 import { createApiApp } from "../../../src/server/apiApp";
 import type {
@@ -63,7 +63,7 @@ describe("api app", () => {
   });
 
   it("delegates assistant requests through Hono-owned API routes", async () => {
-    const assistantHandler = vi.fn(
+    const assistantHandler: (request: Request) => Promise<Response> = mock(
       async () => new Response("assistant response", { status: 202 }),
     );
     const app = createApiApp({ assistantHandler });
@@ -72,8 +72,10 @@ describe("api app", () => {
 
     await expect(response.text()).resolves.toBe("assistant response");
     expect(response.status).toBe(202);
-    expect(assistantHandler).toHaveBeenCalledOnce();
-    expect(assistantHandler.mock.calls[0][0]).toBeInstanceOf(Request);
+    expect(assistantHandler).toHaveBeenCalledTimes(1);
+    expect(
+      (assistantHandler as ReturnType<typeof mock>).mock.calls[0]?.[0],
+    ).toBeInstanceOf(Request);
   });
 
   it("returns a JSON 404 for unknown API routes", async () => {

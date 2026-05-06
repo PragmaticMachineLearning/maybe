@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { createSqliteWorkbookRepository } from "../../../src/server/sqliteWorkbookRepository";
 
@@ -36,9 +36,9 @@ class FakeSqliteDatabase {
     this.executedSql.push(sql);
   }
 
-  query(sql: string) {
+  query<Row>(sql: string) {
     return {
-      all: (...params: unknown[]) => this.select(sql, params),
+      all: (...params: unknown[]) => this.select(sql, params) as Row[],
       run: (...params: unknown[]) => this.run(sql, params),
     };
   }
