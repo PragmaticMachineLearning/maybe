@@ -162,7 +162,7 @@ export const SpreadsheetProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!formulaEngine) return null;
       try {
         const formula = formulaEngine.getCellFormula({ sheet: 0, row, col });
-        return formula;
+        return formula ?? null;
       } catch (error) {
         console.error("Error getting cell formula:", error);
         return null;

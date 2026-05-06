@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import {
   getAssistantActivityLabel,
@@ -40,7 +40,9 @@ describe("assistant streaming state", () => {
         {
           type: "tool-validateFormula",
           state: "input-available",
-        } as UIMessage["parts"][number],
+          toolCallId: "tool-call-1",
+          input: {},
+        },
       ]),
     ];
 

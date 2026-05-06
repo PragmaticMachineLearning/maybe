@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import {
   documentationSections,
@@ -12,7 +12,7 @@ describe("documentation content", () => {
       "U(2, 5)",
       "=A1*B1",
     ]);
-    expect(quickStartSteps.at(-1)?.result).toContain(
+    expect(quickStartSteps[quickStartSteps.length - 1]?.result).toContain(
       "sampled μ=52.57 σ=15.88",
     );
   });

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { validateFormulaAgainstSnapshot } from "../../../src/assistant/formulaValidation";
 import type { WorkbookSnapshot } from "../../../src/assistant/workbookSnapshot";

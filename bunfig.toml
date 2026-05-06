@@ -1,0 +1,4 @@
+[test]
+root = "tests/unit"
+preload = ["./tests/setup.ts"]
+pathIgnorePatterns = ["../e2e/**"]

@@ -1,5 +1,5 @@
 import type { streamText } from "ai";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, mock } from "bun:test";
 
 import { DEFAULT_ASSISTANT_MODEL_ID } from "../../../src/assistant/modelOptions";
 import { createAssistantHandler } from "../../../src/server/assistantRoute";
@@ -61,7 +61,7 @@ const requestBodyWithWorkbookContext = {
 
 describe("assistant route", () => {
   it("returns a 500 error when OPENAI_API_KEY is missing", async () => {
-    const streamTextFn = vi.fn(() => ({
+    const streamTextFn = mock(() => ({
       toUIMessageStreamResponse: () => new Response(),
     }));
     const handler = createAssistantHandler({
@@ -84,7 +84,7 @@ describe("assistant route", () => {
   });
 
   it("returns a 400 error for malformed assistant requests", async () => {
-    const streamTextFn = vi.fn(() => ({
+    const streamTextFn = mock(() => ({
       toUIMessageStreamResponse: () => new Response(),
     }));
     const handler = createAssistantHandler({
@@ -107,7 +107,7 @@ describe("assistant route", () => {
   });
 
   it("returns a 400 error when messages is not an array", async () => {
-    const streamTextFn = vi.fn(() => ({
+    const streamTextFn = mock(() => ({
       toUIMessageStreamResponse: () => new Response(),
     }));
     const handler = createAssistantHandler({
@@ -133,7 +133,7 @@ describe("assistant route", () => {
   });
 
   it("returns a 400 error when the selected model is not allowed", async () => {
-    const streamTextFn = vi.fn(() => ({
+    const streamTextFn = mock(() => ({
       toUIMessageStreamResponse: () => new Response(),
     }));
     const handler = createAssistantHandler({
@@ -159,7 +159,7 @@ describe("assistant route", () => {
   });
 
   it("returns a 400 error when a UI message is missing parts", async () => {
-    const streamTextFn = vi.fn(() => ({
+    const streamTextFn = mock(() => ({
       toUIMessageStreamResponse: () => new Response(),
     }));
     const handler = createAssistantHandler({
@@ -185,7 +185,7 @@ describe("assistant route", () => {
   });
 
   it("returns a 400 error when a text part is missing text", async () => {
-    const streamTextFn = vi.fn(() => ({
+    const streamTextFn = mock(() => ({
       toUIMessageStreamResponse: () => new Response(),
     }));
     const handler = createAssistantHandler({
@@ -211,7 +211,7 @@ describe("assistant route", () => {
   });
 
   it("accepts valid text messages before checking OPENAI_API_KEY", async () => {
-    const streamTextFn = vi.fn(() => ({
+    const streamTextFn = mock(() => ({
       toUIMessageStreamResponse: () => new Response(),
     }));
     const handler = createAssistantHandler({
@@ -242,8 +242,8 @@ describe("assistant route", () => {
   });
 
   it("streams a response with converted messages and workbook context", async () => {
-    const toUIMessageStreamResponse = vi.fn(() => new Response("ok"));
-    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+    const toUIMessageStreamResponse = mock(() => new Response("ok"));
+    const streamTextFn = mock((options: StreamTextOptions) => ({
       options,
       toUIMessageStreamResponse,
     }));
@@ -261,8 +261,8 @@ describe("assistant route", () => {
 
     await expect(response.text()).resolves.toBe("ok");
     expect(response.status).toBe(200);
-    expect(streamTextFn).toHaveBeenCalledOnce();
-    expect(toUIMessageStreamResponse).toHaveBeenCalledOnce();
+    expect(streamTextFn).toHaveBeenCalledTimes(1);
+    expect(toUIMessageStreamResponse).toHaveBeenCalledTimes(1);
 
     const options = streamTextFn.mock.calls[0]?.[0];
     expect(options).toBeDefined();
@@ -312,7 +312,7 @@ describe("assistant route", () => {
   });
 
   it("provides workbook inspection, formula validation, and proposal tools", async () => {
-    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+    const streamTextFn = mock((options: StreamTextOptions) => ({
       options,
       toUIMessageStreamResponse: () => new Response("ok"),
     }));
@@ -381,7 +381,7 @@ describe("assistant route", () => {
   });
 
   it("uses the selected model and exposes the direct apply tool in Write mode", async () => {
-    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+    const streamTextFn = mock((options: StreamTextOptions) => ({
       options,
       toUIMessageStreamResponse: () => new Response("ok"),
     }));
@@ -461,8 +461,8 @@ describe("assistant route", () => {
   });
 
   it("accepts assistant history containing step-start parts", async () => {
-    const toUIMessageStreamResponse = vi.fn(() => new Response("ok"));
-    const streamTextFn = vi.fn((options: StreamTextOptions) => ({
+    const toUIMessageStreamResponse = mock(() => new Response("ok"));
+    const streamTextFn = mock((options: StreamTextOptions) => ({
       options,
       toUIMessageStreamResponse,
     }));
@@ -497,7 +497,7 @@ describe("assistant route", () => {
 
     await expect(response.text()).resolves.toBe("ok");
     expect(response.status).toBe(200);
-    expect(streamTextFn).toHaveBeenCalledOnce();
+    expect(streamTextFn).toHaveBeenCalledTimes(1);
 
     const options = streamTextFn.mock.calls[0]?.[0];
     expect(options).toBeDefined();

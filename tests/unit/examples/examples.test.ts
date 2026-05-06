@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 
 import { spreadsheetExamples } from "../../../src/examples/examples";
 import { formatFormulaBarCellValue } from "../../../src/hooks/useFormulaBar";

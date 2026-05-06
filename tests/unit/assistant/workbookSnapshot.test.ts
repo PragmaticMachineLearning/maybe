@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, mock } from "bun:test";
 
 import {
   cellAddressFromA1,
@@ -133,7 +133,7 @@ describe("assistant workbook snapshot", () => {
   });
 
   it("uses the configured Maybe sample size when summarizing explicit distributions", () => {
-    const toSamples = vi.fn(() => [1, 2, 3]);
+    const toSamples = mock(() => [1, 2, 3]);
     const engine = {
       getSheetName: () => "Sheet1",
       getSheetDimensions: () => ({ width: 1, height: 1 }),

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, spyOn } from "bun:test";
 
 import {
   createWorkbookHandler,
@@ -155,8 +155,7 @@ describe("workbook route", () => {
 
   it("returns a 500 when no workbook repository is configured", async () => {
     const handler = createWorkbookHandler();
-    const consoleError = vi
-      .spyOn(console, "error")
+    const consoleError = spyOn(console, "error")
       .mockImplementation(() => undefined);
 
     const response = await handler(
@@ -179,8 +178,7 @@ describe("workbook route", () => {
       createWorkspaceId: () => "workspace-1",
       repository,
     });
-    const consoleError = vi
-      .spyOn(console, "error")
+    const consoleError = spyOn(console, "error")
       .mockImplementation(() => undefined);
 
     const response = await handler(
