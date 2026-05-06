@@ -7,7 +7,7 @@ import {
   type WorkbookSnapshot,
 } from "./workbookSnapshot";
 
-export const assistantCellChangeSchema = z.object({
+const assistantCellChangeSchema = z.object({
   cell: z.string(),
   before: z.string(),
   after: z.string(),
@@ -40,7 +40,7 @@ interface AssistantToolProposalPart {
   input?: unknown;
 }
 
-export type AssistantProposalSource =
+type AssistantProposalSource =
   | "text"
   | "tool-proposeCellChanges"
   | "tool-applyCellChanges";

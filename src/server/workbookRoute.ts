@@ -32,7 +32,7 @@ export interface WorkbookRepository {
   saveDefaultWorkbook: (input: SavedWorkbook) => Promise<SavedWorkbook>;
 }
 
-interface CreateWorkbookHandlerOptions {
+export interface CreateWorkbookHandlerOptions {
   repository?: WorkbookRepository;
   createWorkspaceId?: () => string;
   now?: () => Date;

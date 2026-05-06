@@ -9,7 +9,7 @@ export default defineConfig({
     baseURL: testServerUrl,
   },
   webServer: {
-    command: 'pnpm exec vite --host localhost --port 5173 --strictPort',
+    command: 'bun run dev',
     url: testServerUrl,
     reuseExistingServer: true,
   },

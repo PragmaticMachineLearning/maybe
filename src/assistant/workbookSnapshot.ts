@@ -11,12 +11,10 @@ import { percentileFromSorted } from "../utils/distribution/distributionMath";
 import { cellAddressToA1 } from "./address";
 import type { SheetDimensions, ZeroBasedCellAddress } from "./address";
 
-export type { SheetDimensions, ZeroBasedCellAddress };
-
 export type SelectedCell = ZeroBasedCellAddress;
 export type SerializedCellContent = string | number | boolean | null;
 
-export type WorkbookCellKind =
+type WorkbookCellKind =
   | "scalar"
   | "text"
   | "boolean"
@@ -25,7 +23,7 @@ export type WorkbookCellKind =
   | "error"
   | "unknown_object";
 
-export interface WorkbookDistributionSummary {
+interface WorkbookDistributionSummary {
   kind: "normal" | "lognormal" | "uniform";
   source: "parameters" | "ci";
   mean?: number;
@@ -39,7 +37,7 @@ export interface WorkbookDistributionSummary {
   confidenceLevel?: number;
 }
 
-export interface WorkbookSampleSummary {
+interface WorkbookSampleSummary {
   sampleCount: number;
   mean: number;
   standardDeviation: number;
@@ -48,7 +46,7 @@ export interface WorkbookSampleSummary {
   p90: number;
 }
 
-export interface WorkbookCellSnapshot {
+interface WorkbookCellSnapshot {
   address: string;
   row: number;
   col: number;
