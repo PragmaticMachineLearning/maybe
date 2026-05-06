@@ -21,8 +21,7 @@ Maybe is a React-based spreadsheet application with built-in support for uncerta
 
 ### Prerequisites
 
-- Node.js 24
-- pnpm
+- Bun 1.3 or newer
 
 ### Installation
 
@@ -34,63 +33,28 @@ cd maybe
 
 2. Install dependencies
 ```bash
-pnpm install
+bun install
 ```
 
 3. Start the development server
 ```bash
-pnpm dev
+bun run dev
 ```
 
-### Cloudflare D1 persistence
+### Local persistence
 
-Workbook persistence uses Cloudflare D1 with Drizzle ORM. Create a D1 database
-before deploying:
+Workbook persistence uses SQLite through the Bun server. By default, Maybe
+stores workbook data in `data/maybe.sqlite`.
 
 ```bash
-pnpm exec wrangler d1 create maybe
+bun run build
+bun run start
 ```
 
-Create a local `wrangler.jsonc` file for your Cloudflare deployment. It is
-ignored by git because it contains deployment-specific resource ids. The D1
-binding must be named `DB`:
-
-```jsonc
-{
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "maybe",
-  "main": "src/worker.ts",
-  "compatibility_date": "2026-04-24",
-  "observability": {
-    "enabled": true
-  },
-  "assets": {
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "maybe",
-      "database_id": "replace-with-your-d1-database-id",
-      "migrations_dir": "drizzle/migrations"
-    }
-  ],
-  "compatibility_flags": ["nodejs_compat"]
-}
-```
-
-Copy the database id returned by Wrangler into `database_id`, then apply
-migrations:
+Set `MAYBE_DB_PATH` to choose a different SQLite file:
 
 ```bash
-pnpm db:migrate:remote
-```
-
-For local Wrangler preview, apply the migration locally:
-
-```bash
-pnpm db:migrate:local
+MAYBE_DB_PATH=/var/lib/maybe/maybe.sqlite bun run start
 ```
 
 ## Usage

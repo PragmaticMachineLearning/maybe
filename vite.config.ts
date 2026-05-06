@@ -1,12 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-import { getProjectEnvValue } from "./src/server/projectEnv";
-import { assistantApiPlugin } from "./src/server/viteAssistantPlugin";
-
-import { cloudflare } from "@cloudflare/vite-plugin";
-
-const openAiApiKey = getProjectEnvValue("OPENAI_API_KEY");
+const apiTarget = process.env.MAYBE_API_ORIGIN ?? "http://localhost:3000";
 
 function manualChunks(id: string): string | undefined {
   if (!id.includes("node_modules")) {
@@ -64,9 +59,15 @@ function manualChunks(id: string): string | undefined {
 }
 
 export default defineConfig({
-  plugins: [assistantApiPlugin({
-    getApiKey: () => openAiApiKey,
-  }), react(), cloudflare()],
+  plugins: [react()],
+  server: {
+    proxy: {
+      "/api": {
+        target: apiTarget,
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     sourcemap: true,
     rolldownOptions: {
