@@ -1,6 +1,5 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
-import { dirname, join, normalize, sep } from "node:path";
 
 import { Hono } from "hono";
 
@@ -29,22 +28,24 @@ const ensureDatabaseDirectory = (databasePath: string): void => {
     return;
   }
 
-  mkdirSync(dirname(databasePath), { recursive: true });
+  const directoryPath = databasePath.split("/").slice(0, -1).join("/");
+  if (directoryPath) {
+    mkdirSync(directoryPath, { recursive: true });
+  }
 };
-
-const isSafeAssetPath = (assetPath: string): boolean =>
-  assetPath !== ".." &&
-  !assetPath.startsWith(`..${sep}`) &&
-  !assetPath.includes(`${sep}..${sep}`);
 
 const getStaticAssetPath = (request: Request): string | null => {
   const { pathname } = new URL(request.url);
   const decodedPathname = decodeURIComponent(pathname);
+  const pathSegments = decodedPathname.split("/");
+
+  if (pathSegments.includes("..")) {
+    return null;
+  }
+
   const relativePath =
     decodedPathname === "/" ? "index.html" : decodedPathname.slice(1);
-  const normalizedPath = normalize(relativePath);
-
-  return isSafeAssetPath(normalizedPath) ? normalizedPath : null;
+  return relativePath || "index.html";
 };
 
 const serveStaticAsset = async (
@@ -56,12 +57,12 @@ const serveStaticAsset = async (
     return null;
   }
 
-  const assetFile = Bun.file(join(distRoot, assetPath));
+  const assetFile = Bun.file(`${distRoot}/${assetPath}`);
   if (await assetFile.exists()) {
     return new Response(assetFile);
   }
 
-  const fallbackFile = Bun.file(join(distRoot, "index.html"));
+  const fallbackFile = Bun.file(`${distRoot}/index.html`);
   if (await fallbackFile.exists()) {
     return new Response(fallbackFile);
   }
