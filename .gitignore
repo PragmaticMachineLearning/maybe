@@ -33,5 +33,6 @@ test-results
 
 # Local brainstorming scratch files
 .superpowers/
+AGENTS.md
 
 !.env.example
