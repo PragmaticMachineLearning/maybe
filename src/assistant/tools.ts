@@ -3,15 +3,17 @@ import { tool } from "ai";
 import { validateFormulaAgainstSnapshot } from "./formulaValidation";
 import {
   assistantProposalSchema,
-  normalizeAssistantProposal,
-  validateAssistantProposal,
   type AssistantProposal,
-} from "./proposals";
+} from "../schemas/assistant";
 import {
   validateFormulaInputSchema,
   workbookContextInputSchema,
-} from "./toolSchemas";
-import { type WorkbookSnapshot } from "./workbookSnapshot";
+} from "../schemas/tools";
+import type { WorkbookSnapshot } from "../schemas/workbook";
+import {
+  normalizeAssistantProposal,
+  validateAssistantProposal,
+} from "./proposals";
 
 interface CreateAssistantToolsOptions {
   allowDirectCellChanges?: boolean;

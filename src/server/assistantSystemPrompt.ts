@@ -1,4 +1,4 @@
-import type { WorkbookSnapshot } from "../assistant/workbookSnapshot";
+import type { WorkbookSnapshot } from "../schemas/workbook";
 
 interface BuildAssistantSystemPromptInput {
   workbookSnapshot: WorkbookSnapshot;

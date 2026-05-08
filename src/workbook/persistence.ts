@@ -1,6 +1,6 @@
-import type { SerializedCellContent } from "../assistant/workbookSnapshot";
+import type { SerializedWorkbookContent } from "../schemas/persistence";
 
-export type SerializedWorkbookContent = SerializedCellContent[][];
+export type { SerializedWorkbookContent };
 
 interface SheetDimensionsInput {
   rows: number;

@@ -7,10 +7,10 @@ import {
 import {
   buildWorkbookSnapshot,
   type SelectedCell,
-  type WorkbookSnapshot,
 } from "../assistant/workbookSnapshot";
 import { maybeFormulaEngineConfig } from "../config/simulation";
 import { GaussFormulaEngine, type FormulaEngine } from "../lib/formulaEngine";
+import type { WorkbookSnapshot } from "../schemas/workbook";
 import {
   createBlankSheetContent,
   getSerializedContentFromWorkbookResponse,

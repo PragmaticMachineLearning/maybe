@@ -1,28 +1,17 @@
-import { z } from "zod";
-
 import type { FormulaEngine } from "../lib/formulaEngine";
-import { cellAddressFromA1 } from "./address";
 import {
-  buildWorkbookSnapshot,
-  type WorkbookSnapshot,
-} from "./workbookSnapshot";
+  assistantProposalSchema,
+  type AssistantCellChange,
+  type AssistantProposal,
+} from "../schemas/assistant";
+import type { WorkbookSnapshot } from "../schemas/workbook";
+import { cellAddressFromA1 } from "./address";
+import { buildWorkbookSnapshot } from "./workbookSnapshot";
 
-const assistantCellChangeSchema = z.object({
-  cell: z.string(),
-  before: z.string(),
-  after: z.string(),
-  reason: z.string(),
-  kind: z.enum(["add", "update", "review"]),
-}).strict();
-
-export const assistantProposalSchema = z.object({
-  title: z.string(),
-  summary: z.string(),
-  changes: z.array(assistantCellChangeSchema),
-}).strict();
-
-export type AssistantCellChange = z.infer<typeof assistantCellChangeSchema>;
-export type AssistantProposal = z.infer<typeof assistantProposalSchema>;
+export type {
+  AssistantCellChange,
+  AssistantProposal,
+} from "../schemas/assistant";
 
 interface AssistantProposalValidationResult {
   valid: boolean;

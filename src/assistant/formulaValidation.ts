@@ -1,12 +1,12 @@
 import { GaussFormulaEngine } from "../lib/formulaEngine";
 import { maybeFormulaEngineConfig } from "../config/simulation";
 import { cellAddressFromA1 } from "./address";
-import { type ValidateFormulaInput } from "./toolSchemas";
-import {
-  buildWorkbookSnapshot,
-  type SerializedCellContent,
-  type WorkbookSnapshot,
-} from "./workbookSnapshot";
+import type { ValidateFormulaInput } from "../schemas/tools";
+import type {
+  SerializedCellContent,
+  WorkbookSnapshot,
+} from "../schemas/workbook";
+import { buildWorkbookSnapshot } from "./workbookSnapshot";
 
 const buildReplaySheetContent = (
   serializedContent: SerializedCellContent[][],

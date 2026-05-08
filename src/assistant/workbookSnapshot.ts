@@ -1,4 +1,11 @@
 import type { FormulaEngine } from "../lib/formulaEngine";
+import type {
+  SerializedCellContent,
+  WorkbookCellKind,
+  WorkbookCellSnapshot,
+  WorkbookSampleSummary,
+  WorkbookSnapshot,
+} from "../schemas/workbook";
 import { MAYBE_SAMPLE_SIZE } from "../config/simulation";
 import {
   formatConfidenceFormulaSuffix,
@@ -12,61 +19,6 @@ import { cellAddressToA1 } from "./address";
 import type { SheetDimensions, ZeroBasedCellAddress } from "./address";
 
 export type SelectedCell = ZeroBasedCellAddress;
-export type SerializedCellContent = string | number | boolean | null;
-
-type WorkbookCellKind =
-  | "scalar"
-  | "text"
-  | "boolean"
-  | "distribution"
-  | "sampled_distribution"
-  | "error"
-  | "unknown_object";
-
-interface WorkbookDistributionSummary {
-  kind: "normal" | "lognormal" | "uniform";
-  source: "parameters" | "ci";
-  mean?: number;
-  variance?: number;
-  mu?: number;
-  sigma?: number;
-  min?: number;
-  max?: number;
-  lower?: number;
-  upper?: number;
-  confidenceLevel?: number;
-}
-
-interface WorkbookSampleSummary {
-  sampleCount: number;
-  mean: number;
-  standardDeviation: number;
-  p10: number;
-  p50: number;
-  p90: number;
-}
-
-interface WorkbookCellSnapshot {
-  address: string;
-  row: number;
-  col: number;
-  formula: string | null;
-  displayValue: string;
-  kind: WorkbookCellKind;
-  distribution?: WorkbookDistributionSummary;
-  sampleSummary?: WorkbookSampleSummary;
-}
-
-export interface WorkbookSnapshot {
-  sheetName: string;
-  dimensions: SheetDimensions;
-  selectedCell: string | null;
-  serializedContent: SerializedCellContent[][];
-  cells: WorkbookCellSnapshot[];
-  includedCellCount: number;
-  totalNonEmptyCellCount: number;
-  truncated: boolean;
-}
 
 interface BuildWorkbookSnapshotInput {
   formulaEngine: FormulaEngine;
