@@ -2,18 +2,26 @@
   <img src="public/maybe-logo.png" alt="Maybe logo" width="420" />
 </p>
 
+<p align="center">
+  <img alt="Bun" src="https://img.shields.io/badge/runtime-Bun-black" />
+  <img alt="React" src="https://img.shields.io/badge/ui-React-149ECA" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/language-TypeScript-3178C6" />
+  <img alt="SQLite" src="https://img.shields.io/badge/storage-SQLite-003B57" />
+  <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--only-blue" />
+</p>
+
 # Maybe Spreadsheet
 
-Maybe is a local-first probabilistic spreadsheet. It works like a familiar
-spreadsheet, but it lets you put uncertainty directly into cells with explicit
-probability distributions and then propagate that uncertainty through formulas.
+Maybe is an opinionated spreadsheet for uncertain models.
 
-Maybe is intended for people who want spreadsheet modeling with ranges,
-confidence intervals, and sampled outcomes instead of a single point estimate.
+Most spreadsheets make you collapse uncertainty into a single scalar value.
+Maybe lets cells represent distributions, confidence intervals, and ranges, then
+propagates that uncertainty through formulas.
 
 ## Features
 
-- Spreadsheet editing powered by GaussFormula
+- Spreadsheet editing powered by
+  [GaussFormula](https://github.com/Tobiadefami/gaussformula)
 - Standard values, formulas, and formula-bar editing
 - Explicit uncertainty notation:
   - `N(mean, variance)`
@@ -155,6 +163,14 @@ Maybe is currently intended for local or single-user self-hosted use.
 - The Assistant uses the server-side `OPENAI_API_KEY`; the deployer controls and
   pays for that usage.
 
+## Formula Engine
+
+Maybe is powered by [GaussFormula](https://github.com/Tobiadefami/gaussformula),
+a spreadsheet formula engine adapted from HyperFormula to support uncertain
+cell values and sampled calculations. GaussFormula is maintained by the same
+author as Maybe and is also available on
+[npm](https://www.npmjs.com/package/gaussformula).
+
 ## Tech Stack
 
 - React + TypeScript
@@ -162,7 +178,7 @@ Maybe is currently intended for local or single-user self-hosted use.
 - Bun
 - Hono
 - SQLite
-- GaussFormula
+- [GaussFormula](https://github.com/Tobiadefami/gaussformula)
 - ECharts
 - Playwright
 
