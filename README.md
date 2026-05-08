@@ -122,13 +122,7 @@ when you are done.
 Workbook persistence uses SQLite through the Bun server. By default, Maybe
 stores workbook data in `data/maybe.sqlite`.
 
-For self-hosted use, set `MAYBE_DB_PATH` to a location on persistent storage:
-
-```bash
-MAYBE_DB_PATH=/var/lib/maybe/maybe.sqlite bun run start
-```
-
-Back up that SQLite file if the workbook matters.
+Set `MAYBE_DB_PATH` if you want to use a different SQLite file.
 
 ## Checks
 
@@ -151,17 +145,11 @@ bun run test:e2e
 bun run knip
 ```
 
-## Limitations
+## Project Status
 
-Maybe is currently intended for local or single-user self-hosted use.
-
-- Workspaces are anonymous and identified by a browser cookie.
-- There are no user accounts, authentication, authorization, quotas, or
-  multi-user isolation guarantees.
-- SQLite persistence is local to the server process.
-- Operators are responsible for persistent storage, backups, and migrations.
-- The Assistant uses the server-side `OPENAI_API_KEY`; the deployer controls and
-  pays for that usage.
+Maybe is still a work in progress. The core spreadsheet, uncertainty notation,
+sampling behavior, persistence, and Assistant workflows are usable, but APIs,
+file formats, and modeling conventions may change as the project evolves.
 
 ## Formula Engine
 
