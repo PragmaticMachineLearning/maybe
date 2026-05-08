@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { assistantProposalSchema } from "./assistant";
+
 export const workbookContextInputSchema = z
   .object({
     range: z.string().optional(),
@@ -23,3 +25,26 @@ export const validateFormulaInputSchema = z
   .strict();
 
 export type ValidateFormulaInput = z.infer<typeof validateFormulaInputSchema>;
+
+export const reviewAssistantToolNames = [
+  "getWorkbookContext",
+  "validateFormula",
+  "proposeCellChanges",
+] as const;
+
+export const writeAssistantToolNames = [
+  ...reviewAssistantToolNames,
+  "applyCellChanges",
+] as const;
+
+export const assistantToolInputSchemas = {
+  getWorkbookContext: workbookContextInputSchema,
+  validateFormula: validateFormulaInputSchema,
+  proposeCellChanges: assistantProposalSchema,
+  applyCellChanges: assistantProposalSchema,
+} as const;
+
+export type ReviewAssistantToolName =
+  (typeof reviewAssistantToolNames)[number];
+export type WriteAssistantToolName = (typeof writeAssistantToolNames)[number];
+export type AssistantToolName = keyof typeof assistantToolInputSchemas;

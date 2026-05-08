@@ -8,7 +8,10 @@ import {
   workbookSnapshotSchema,
 } from "../../../src/schemas";
 import {
+  assistantToolInputSchemas,
+  reviewAssistantToolNames,
   validateFormulaInputSchema,
+  writeAssistantToolNames,
   workbookContextInputSchema,
 } from "../../../src/schemas/tools";
 
@@ -83,5 +86,25 @@ describe("shared schemas", () => {
         serializedContent: workbookSnapshot.serializedContent,
       }).success,
     ).toBe(true);
+  });
+
+  it("documents the assistant tool surface by mode", () => {
+    expect(reviewAssistantToolNames).toEqual([
+      "getWorkbookContext",
+      "validateFormula",
+      "proposeCellChanges",
+    ]);
+    expect(writeAssistantToolNames).toEqual([
+      "getWorkbookContext",
+      "validateFormula",
+      "proposeCellChanges",
+      "applyCellChanges",
+    ]);
+    expect(Object.keys(assistantToolInputSchemas)).toEqual([
+      "getWorkbookContext",
+      "validateFormula",
+      "proposeCellChanges",
+      "applyCellChanges",
+    ]);
   });
 });
