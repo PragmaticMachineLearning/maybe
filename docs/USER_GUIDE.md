@@ -142,15 +142,5 @@ When using the Assistant:
 - Prefer specific prompts such as "Explain why C1 has a wide spread" or
   "Suggest a formula for D1 that calculates expected revenue from A1 and B1."
 
-## Current Limitations
-
-Maybe is currently designed for local or single-user self-hosted use.
-
-- Workspaces are anonymous and stored behind a browser cookie.
-- There are no user accounts or collaboration controls.
-- Persistence depends on the server-side SQLite database file.
-- Operators are responsible for backups.
-- The Assistant depends on the deployer's OpenAI API key.
-
 For setup, production commands, and contribution checks, see the
 [README](../README.md).
