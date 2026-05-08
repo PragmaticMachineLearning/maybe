@@ -7,7 +7,7 @@ export const serializedCellContentSchema = z.union([
   z.null(),
 ]);
 
-export const workbookCellKindSchema = z.enum([
+const workbookCellKindSchema = z.enum([
   "scalar",
   "text",
   "boolean",
@@ -17,7 +17,7 @@ export const workbookCellKindSchema = z.enum([
   "unknown_object",
 ]);
 
-export const workbookDistributionSchema = z.object({
+const workbookDistributionSchema = z.object({
   kind: z.enum(["normal", "lognormal", "uniform"]),
   source: z.enum(["parameters", "ci"]),
   mean: z.number().optional(),
@@ -31,7 +31,7 @@ export const workbookDistributionSchema = z.object({
   confidenceLevel: z.number().optional(),
 });
 
-export const workbookSampleSummarySchema = z.object({
+const workbookSampleSummarySchema = z.object({
   sampleCount: z.number(),
   mean: z.number(),
   standardDeviation: z.number(),
@@ -40,7 +40,7 @@ export const workbookSampleSummarySchema = z.object({
   p90: z.number(),
 });
 
-export const workbookCellSnapshotSchema = z.object({
+const workbookCellSnapshotSchema = z.object({
   address: z.string(),
   row: z.number(),
   col: z.number(),
@@ -67,9 +67,6 @@ export const workbookSnapshotSchema = z.object({
 
 export type SerializedCellContent = z.infer<typeof serializedCellContentSchema>;
 export type WorkbookCellKind = z.infer<typeof workbookCellKindSchema>;
-export type WorkbookDistributionSummary = z.infer<
-  typeof workbookDistributionSchema
->;
 export type WorkbookSampleSummary = z.infer<typeof workbookSampleSummarySchema>;
 export type WorkbookCellSnapshot = z.infer<typeof workbookCellSnapshotSchema>;
 export type WorkbookSnapshot = z.infer<typeof workbookSnapshotSchema>;

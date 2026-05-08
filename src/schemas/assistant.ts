@@ -6,7 +6,7 @@ import {
 } from "../assistant/modelOptions";
 import { workbookSnapshotSchema } from "./workbook";
 
-export const assistantCellChangeSchema = z
+const assistantCellChangeSchema = z
   .object({
     cell: z.string(),
     before: z.string(),
@@ -54,4 +54,3 @@ export const assistantRequestSchema = z.object({
 
 export type AssistantCellChange = z.infer<typeof assistantCellChangeSchema>;
 export type AssistantProposal = z.infer<typeof assistantProposalSchema>;
-export type AssistantRequestBody = z.output<typeof assistantRequestSchema>;
