@@ -7,8 +7,8 @@ import {
   stripAssistantProposalFromText,
   validateAssistantProposal,
 } from "../../../src/assistant/proposals";
-import type { WorkbookSnapshot } from "../../../src/assistant/workbookSnapshot";
 import { GaussFormulaEngine } from "../../../src/lib/formulaEngine";
+import type { WorkbookSnapshot } from "../../../src/schemas/workbook";
 
 const snapshot: WorkbookSnapshot = {
   sheetName: "Sheet1",

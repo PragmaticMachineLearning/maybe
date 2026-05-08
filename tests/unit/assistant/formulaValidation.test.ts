@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import { validateFormulaAgainstSnapshot } from "../../../src/assistant/formulaValidation";
-import type { WorkbookSnapshot } from "../../../src/assistant/workbookSnapshot";
+import type { WorkbookSnapshot } from "../../../src/schemas/workbook";
 
 const baseSnapshot: WorkbookSnapshot = {
   sheetName: "Sheet1",

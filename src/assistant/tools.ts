@@ -1,17 +1,17 @@
 import { tool } from "ai";
 
 import { validateFormulaAgainstSnapshot } from "./formulaValidation";
+import type { AssistantProposal } from "../schemas/assistant";
 import {
-  assistantProposalSchema,
+  assistantToolInputSchemas,
+  type ReviewAssistantToolName,
+  type WriteAssistantToolName,
+} from "../schemas/tools";
+import type { WorkbookSnapshot } from "../schemas/workbook";
+import {
   normalizeAssistantProposal,
   validateAssistantProposal,
-  type AssistantProposal,
 } from "./proposals";
-import {
-  validateFormulaInputSchema,
-  workbookContextInputSchema,
-} from "./toolSchemas";
-import { type WorkbookSnapshot } from "./workbookSnapshot";
 
 interface CreateAssistantToolsOptions {
   allowDirectCellChanges?: boolean;
@@ -49,36 +49,38 @@ export const createAssistantTools = (
     getWorkbookContext: tool({
       description:
         "Inspect the current Maybe workbook snapshot, including cells, formulas, selected cell, and distribution summaries.",
-      inputSchema: workbookContextInputSchema,
+      inputSchema: assistantToolInputSchemas.getWorkbookContext,
       execute: async () => workbookSnapshot,
     }),
     validateFormula: tool({
       description:
         "Validate a Maybe/GaussFormula cell formula or value against the current workbook before proposing it.",
-      inputSchema: validateFormulaInputSchema,
+      inputSchema: assistantToolInputSchemas.validateFormula,
       execute: async (input) =>
         validateFormulaAgainstSnapshot(workbookSnapshot, input),
     }),
     proposeCellChanges: tool({
       description:
         "Return typed spreadsheet cell changes for the user to review and apply. This tool does not mutate the workbook.",
-      inputSchema: assistantProposalSchema,
+      inputSchema: assistantToolInputSchemas.proposeCellChanges,
       execute: async (proposal) => normalizeAssistantProposal(proposal),
     }),
-  };
+  } satisfies Record<ReviewAssistantToolName, unknown>;
 
   if (!allowDirectCellChanges) {
     return reviewTools;
   }
 
-  return {
+  const writeTools = {
     ...reviewTools,
     applyCellChanges: tool({
       description:
         "Return validated spreadsheet cell changes for immediate client-side application. Only use this when Write mode is enabled.",
-      inputSchema: assistantProposalSchema,
+      inputSchema: assistantToolInputSchemas.applyCellChanges,
       execute: async (proposal) =>
         assertApplyableProposal(workbookSnapshot, proposal),
     }),
-  };
+  } satisfies Record<WriteAssistantToolName, unknown>;
+
+  return writeTools;
 };

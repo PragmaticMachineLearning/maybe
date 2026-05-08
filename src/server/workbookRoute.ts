@@ -1,22 +1,10 @@
-import { z } from "zod";
-
-import type { SerializedCellContent } from "../assistant/workbookSnapshot";
+import {
+  saveWorkbookRequestSchema,
+  type SerializedWorkbookContent,
+} from "../schemas/persistence";
 
 const workspaceCookieName = "maybe_workspace";
 const defaultWorkbookTitle = "Untitled workbook";
-
-const serializedCellContentSchema = z.union([
-  z.string(),
-  z.number(),
-  z.boolean(),
-  z.null(),
-]);
-
-const saveWorkbookRequestSchema = z.object({
-  serializedContent: z.array(z.array(serializedCellContentSchema)),
-});
-
-type SerializedWorkbookContent = SerializedCellContent[][];
 
 export interface SavedWorkbook {
   id: string;
