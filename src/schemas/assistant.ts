@@ -25,27 +25,22 @@ export const assistantProposalSchema = z
   .strict();
 
 const uiMessagePartSchema = z.union([
+  z.looseObject({
+    type: z.literal("text"),
+    text: z.string(),
+  }),
   z
-    .object({
-      type: z.literal("text"),
-      text: z.string(),
-    })
-    .passthrough(),
-  z
-    .object({
+    .looseObject({
       type: z.string().min(1),
     })
-    .passthrough()
     .refine((part) => part.type !== "text"),
 ]);
 
-const maybeAssistantMessageSchema = z
-  .object({
-    id: z.string().optional(),
-    role: z.enum(["system", "user", "assistant"]),
-    parts: z.array(uiMessagePartSchema),
-  })
-  .passthrough();
+const maybeAssistantMessageSchema = z.looseObject({
+  id: z.string().optional(),
+  role: z.enum(["system", "user", "assistant"]),
+  parts: z.array(uiMessagePartSchema),
+});
 
 export const assistantRequestSchema = z.object({
   messages: z.array(maybeAssistantMessageSchema),

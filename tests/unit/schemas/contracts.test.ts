@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "bun:test";
 
 import {
@@ -106,5 +109,14 @@ describe("shared schemas", () => {
       "proposeCellChanges",
       "applyCellChanges",
     ]);
+  });
+
+  it("does not use deprecated Zod passthrough object APIs", () => {
+    const assistantSchemaSource = readFileSync(
+      resolve(process.cwd(), "src/schemas/assistant.ts"),
+      "utf8",
+    );
+
+    expect(assistantSchemaSource).not.toContain(".passthrough(");
   });
 });
