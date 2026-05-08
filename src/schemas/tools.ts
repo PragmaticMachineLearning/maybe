@@ -47,4 +47,3 @@ export const assistantToolInputSchemas = {
 export type ReviewAssistantToolName =
   (typeof reviewAssistantToolNames)[number];
 export type WriteAssistantToolName = (typeof writeAssistantToolNames)[number];
-export type AssistantToolName = keyof typeof assistantToolInputSchemas;
