@@ -276,10 +276,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           onClick={onToggleAiPanel}
           aria-pressed={aiPanelOpen}
           aria-controls="ai-copilot-panel"
-          title="Toggle Ask Maybe"
+          title="Toggle Assistant"
         >
           <SageIcon />
-          <span>Ask Maybe</span>
+          <span>Assistant</span>
         </button>
 
         <div className={styles.separator} />

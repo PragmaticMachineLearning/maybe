@@ -594,7 +594,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
   return (
     <aside
       className={`${styles.panel} ${compact ? styles.panelCompact : ""}`}
-      aria-label="Ask Maybe"
+      aria-label="Assistant"
     >
       {/* ── Header ─────────────────────────────────────────────────── */}
       <header className={styles.header}>
@@ -602,15 +602,15 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
           <div className={styles.sageAvatar}>
             <SageIcon size={16} />
           </div>
-          <span className={styles.title}>Ask Maybe</span>
+          <span className={styles.title}>Assistant</span>
         </div>
         <div className={styles.headerActions}>
           <button
             type="button"
             onClick={onClose}
             className={styles.closeButton}
-            title="Close Ask Maybe"
-            aria-label="Close Ask Maybe"
+            title="Close Assistant"
+            aria-label="Close Assistant"
           >
             <svg
               width="14"
@@ -636,7 +636,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
             <div className={styles.emptyIcon}>
               <SageIcon size={20} />
             </div>
-            <p className={styles.emptyTitle}>Ask Maybe about this workbook</p>
+            <p className={styles.emptyTitle}>Ask about this workbook</p>
             <p className={styles.emptyHint}>
               Maybe can inspect workbook values, formulas, and uncertainty, then
               suggest spreadsheet updates for you to review.
@@ -698,7 +698,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         <textarea
           ref={inputRef}
           className={styles.input}
-          aria-label="Message Ask Maybe"
+          aria-label="Message Assistant"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -708,7 +708,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
         />
         <div className={styles.composerControls}>
           <select
-            aria-label="Ask Maybe mode"
+            aria-label="Assistant mode"
             className={styles.composerSelect}
             value={assistantMode}
             onChange={(event) =>
@@ -723,7 +723,7 @@ export const AICopilotPanel: React.FC<AICopilotPanelProps> = ({
             ))}
           </select>
           <select
-            aria-label="Ask Maybe model"
+            aria-label="Assistant model"
             className={styles.composerSelect}
             value={selectedModel}
             onChange={(event) =>
