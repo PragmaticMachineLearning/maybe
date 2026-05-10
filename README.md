@@ -87,14 +87,14 @@ cp .env.example .env
 | --- | --- | --- | --- |
 | `OPENAI_API_KEY` | No | unset | Enables the Assistant. Without it, assistant requests return a setup error. |
 | `MAYBE_DB_PATH` | No | `data/maybe.sqlite` | SQLite database file used for workbook persistence. |
-| `PORT` | No | `3000` | Port used by the production Bun server and default development API server. |
-| `MAYBE_DIST_DIR` | No | `dist` | Directory served by the production server after `bun run build`. |
+| `PORT` | No | `3000` | Port used by the Bun server and default development API server. |
+| `MAYBE_DIST_DIR` | No | `dist` | Directory served by the Bun server after `bun run build`. |
 
 The Assistant is optional. The spreadsheet works without an OpenAI API key.
 
-## Production Build
+## Build and Run
 
-Build and run the production server:
+Build the client and run the Bun server:
 
 ```bash
 bun run build
@@ -103,19 +103,7 @@ bun run start
 
 Open `http://localhost:3000`.
 
-The production server serves the built client from `dist` and owns `/api/*`.
-
-### Production Smoke Test
-
-```bash
-bun install
-bun run build
-MAYBE_DB_PATH=/tmp/maybe-smoke.sqlite bun run start
-```
-
-Open `http://localhost:3000`, edit a workbook cell, refresh the page, and
-confirm the edit persists. Stop the server and remove the smoke-test database
-when you are done.
+The Bun server serves the built client from `dist` and owns `/api/*`.
 
 ## Persistence
 
@@ -123,27 +111,6 @@ Workbook persistence uses SQLite through the Bun server. By default, Maybe
 stores workbook data in `data/maybe.sqlite`.
 
 Set `MAYBE_DB_PATH` if you want to use a different SQLite file.
-
-## Checks
-
-Run the full project check before opening a pull request:
-
-```bash
-bun run check
-```
-
-This runs linting, unit tests, TypeScript checks, production build, Playwright
-end-to-end tests, and unused-file checks.
-
-Useful narrower commands:
-
-```bash
-bun run lint
-bun run test
-bun run build
-bun run test:e2e
-bun run knip
-```
 
 ## Project Status
 
@@ -172,7 +139,7 @@ author as Maybe and is also available on
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup, checks, and contribution
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and contribution
 guidelines.
 
 ## License
