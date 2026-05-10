@@ -4,6 +4,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { SpreadsheetContext } from "../../context/SpreadsheetContext";
 import { ThemeToggle } from "../theme/ThemeToggle";
 import { spreadsheetExamples } from "../../examples/examples";
+import { createBlankSheetContent } from "../../workbook/persistence";
 import styles from "./Toolbar.module.css";
 
 interface ToolbarProps {
@@ -93,6 +94,9 @@ const ChevronIcon: React.FC = () => (
   </svg>
 );
 
+const MINIMUM_SHEET_COLUMNS = 26;
+const MINIMUM_SHEET_ROWS = 50;
+
 const getCellReference = (
   cell: { row: number; col: number } | null | undefined,
 ): string => {
@@ -171,6 +175,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     setShowExamplesDropdown(false);
   };
 
+  const handleBlankSpreadsheetSelect = () => {
+    if (!formulaEngine) return;
+
+    const { width, height } = formulaEngine.getSheetDimensions(0);
+    formulaEngine.setSheetContent(
+      0,
+      createBlankSheetContent({
+        rows: Math.max(height, MINIMUM_SHEET_ROWS),
+        columns: Math.max(width, MINIMUM_SHEET_COLUMNS),
+      }),
+    );
+    setShowExamplesDropdown(false);
+  };
+
   const handleFormulaKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       onFormulaCommit();
@@ -216,7 +234,20 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
           {showExamplesDropdown && (
             <div ref={examplesDropdownRef} className={styles.dropdown}>
-              <div className={styles.dropdownHeader}>Load an example</div>
+              <div className={styles.dropdownHeader}>Start from</div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleBlankSpreadsheetSelect();
+                }}
+                className={styles.dropdownItem}
+              >
+                <div className={styles.dropdownItemName}>Blank spreadsheet</div>
+                <div className={styles.dropdownItemDesc}>
+                  Clear the sheet and start with ordinary empty cells.
+                </div>
+              </button>
               {spreadsheetExamples.map((example) => (
                 <button
                   key={example.id}
