@@ -36,31 +36,43 @@ describe("spreadsheet examples", () => {
   );
 
   it.skipIf(!supportsExplicitDistributions)(
-    "keeps the prompt-cost example mean aligned with the deterministic workbook total",
+    "keeps each example workbook parseable and sampled",
     () => {
-      const promptCostExample = spreadsheetExamples.find(
-        (example) => example.id === "prompt-cost-uncertainty",
-      );
-      expect(promptCostExample).toBeDefined();
+      const outputCellsByExampleId = new Map([
+        ["event-budget", "E4"],
+        ["project-timeline", "E3"],
+        ["sales-forecast", "E4"],
+      ]);
 
-      const engine = GaussFormulaEngine.buildEmpty({
-        licenseKey: "gpl-v3",
-        language: "enGB",
-        useColumnIndex: true,
-        sampleSize: 10000,
-      });
+      expect(spreadsheetExamples.map((example) => example.id)).toEqual([
+        "event-budget",
+        "project-timeline",
+        "sales-forecast",
+      ]);
 
-      engine.addSheet("Sheet1");
-      engine.setSheetContent(0, promptCostExample!.data);
+      for (const example of spreadsheetExamples) {
+        const outputCell = outputCellsByExampleId.get(example.id);
+        expect(outputCell).toBeDefined();
 
-      try {
-        expect(meanOfSampledValue(engine.getCellValue(a1ToAddress("E6"))))
-          .toBeCloseTo(10, 0);
-        expect(engine.getCellValue(a1ToAddress("E7"))).toBe(2);
-        expect(meanOfSampledValue(engine.getCellValue(a1ToAddress("E15"))))
-          .toBeCloseTo(146, 0);
-      } finally {
-        engine.destroy();
+        const engine = GaussFormulaEngine.buildEmpty({
+          licenseKey: "gpl-v3",
+          language: "enGB",
+          useColumnIndex: true,
+          sampleSize: 1000,
+        });
+
+        engine.addSheet("Sheet1");
+        engine.setSheetContent(0, example.data);
+
+        try {
+          const sampledMean = meanOfSampledValue(
+            engine.getCellValue(a1ToAddress(outputCell!)),
+          );
+
+          expect(Number.isFinite(sampledMean)).toBe(true);
+        } finally {
+          engine.destroy();
+        }
       }
     },
   );
@@ -92,36 +104,40 @@ describe("spreadsheet examples", () => {
   );
 
   it.skipIf(!supportsExplicitDistributions)(
-    "keeps prompt-cost pricing inputs parseable after formula bar formatting",
+    "keeps example uncertainty inputs parseable after formula bar formatting",
     () => {
-      const promptCostExample = spreadsheetExamples.find(
-        (example) => example.id === "prompt-cost-uncertainty",
-      );
-      expect(promptCostExample).toBeDefined();
+      for (const example of spreadsheetExamples) {
+        const engine = GaussFormulaEngine.buildEmpty({
+          licenseKey: "gpl-v3",
+          language: "enGB",
+          useColumnIndex: true,
+          sampleSize: 1000,
+        });
 
-      const engine = GaussFormulaEngine.buildEmpty({
-        licenseKey: "gpl-v3",
-        language: "enGB",
-        useColumnIndex: true,
-        sampleSize: 1000,
-      });
+        engine.addSheet("Sheet1");
+        engine.setSheetContent(0, example.data);
 
-      engine.addSheet("Sheet1");
-      engine.setSheetContent(0, promptCostExample!.data);
+        try {
+          for (const cell of ["B2", "B3", "B4", "B5"]) {
+            const address = a1ToAddress(cell);
+            const cellValue = engine.getCellValue(address);
 
-      try {
-        for (const cell of ["B11", "B12"]) {
-          const address = a1ToAddress(cell);
-          engine.setCellContents(
-            address,
-            formatFormulaBarCellValue(engine.getCellValue(address)),
-          );
+            if (parseSampledDistributionValue(cellValue)) {
+              engine.setCellContents(
+                address,
+                formatFormulaBarCellValue(cellValue),
+              );
+            }
+          }
+
+          const sampledValues = ["E2", "E3", "E4"]
+            .map((cell) => engine.getCellValue(a1ToAddress(cell)))
+            .filter((cellValue) => parseSampledDistributionValue(cellValue));
+
+          expect(sampledValues.length).toBeGreaterThan(0);
+        } finally {
+          engine.destroy();
         }
-
-        expect(meanOfSampledValue(engine.getCellValue(a1ToAddress("E13"))))
-          .toBeGreaterThan(0);
-      } finally {
-        engine.destroy();
       }
     },
   );

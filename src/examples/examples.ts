@@ -7,88 +7,49 @@ export interface ExampleDefinition {
   data: ExampleCell[][];
 }
 
-const llmPricingExample: ExampleDefinition = {
-  id: "prompt-cost-uncertainty",
-  name: "Prompt Cost Forecast",
-  description:
-    "Mean-aligned prompt-cost forecast with explicit uncertainty inputs.",
+const eventBudgetExample: ExampleDefinition = {
+  id: "event-budget",
+  name: "Event Budget",
+  description: "Estimate whether ticket revenue covers uncertain event costs.",
   data: [
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [null, null, null, null, null],
-    [
-      "Inputs",
-      null,
-      null,
-      "Calculated",
-      "Outputs update automatically as you adjust uncertainty inputs.",
-    ],
-    [
-      "Average Document Length (Pages)",
-      "N.CI(18, 22)",
-      null,
-      "Input Tokens Per Doc",
-      "=B5*B20",
-    ],
-    [
-      "Number of Prompt Revisions",
-      0,
-      null,
-      "Chunks Per Doc",
-      "=CEILING(E5/B13,1)",
-    ],
-    [
-      "Number of Documents To Label",
-      "N.CI(160, 240)",
-      null,
-      "Field Batches Per Doc",
-      "=CEILING(B8/B21,1)",
-    ],
-    ["Number of Fields", 20, null, "Document Input Tokens", "=E5*E7"],
-    [null, null, null, "Text-prompt Input Tokens", "=B14*E6*E7"],
-    ["Constants", null, null, "Per-Field Input Tokens", "=E6*B8*B15"],
-    [
-      "LLM Cost Per 1000 Tokens (Prompt)",
-      "N.CI(0.009, 0.011)",
-      null,
-      "Total Input Tokens",
-      "=E8+E9+E10",
-    ],
-    [
-      "LLM Cost per 1000 Tokens (Completion)",
-      "N.CI(0.028, 0.032)",
-      null,
-      "Response Tokens Per Doc",
-      "=E6*B8*B19",
-    ],
-    [
-      "Chunk Length (tokens)",
-      "N.CI(1948, 2148)",
-      null,
-      "Total Cost Per Doc",
-      "=(E11*B11+E12*B12)/1000",
-    ],
-    ["Prompt Length", "N.CI(90, 110)", null, null, null],
-    [
-      "Per Field Prompt Length",
-      "N.CI(22, 38)",
-      null,
-      "Total Cost",
-      "=B6*B16*E13 + B7*E13",
-    ],
-    ["Num Docs Shown in Prompt-studio", "N.CI(4, 6)", null, null, null],
-    [null, null, null, null, null],
-    ["Assumptions", null, null, null, null],
-    [
-      "Average Completion Length Per Field per chunk",
-      "N.CI(35, 45)",
-      null,
-      null,
-      null,
-    ],
-    ["Num Tokens per Page", "N.CI(950, 1050)", null, null, null],
-    ["Field Batch Size", 10, null, null, null],
+    ["Event Budget", null, null, "Outputs", null],
+    ["Expected Guests", "U(80, 120)", null, "Ticket Revenue", "=B2*B3"],
+    ["Ticket Price", 125, null, "Total Cost", "=B5+B6*B2+B7"],
+    [null, null, null, "Profit / Loss", "=E2-E3"],
+    ["Venue Cost", "N.CI(4500, 6500)", null, null, null],
+    ["Catering Per Guest", "N.CI(35, 55)", null, null, null],
+    ["Marketing Cost", "N.CI(1200, 2400)", null, null, null],
   ],
 };
 
-export const spreadsheetExamples: ExampleDefinition[] = [llmPricingExample];
+const projectTimelineExample: ExampleDefinition = {
+  id: "project-timeline",
+  name: "Project Timeline",
+  description: "Forecast delivery time when scope and team capacity are fuzzy.",
+  data: [
+    ["Project Timeline", null, null, "Outputs", null],
+    ["Remaining Tasks", "U(18, 26)", null, "Total Work Hours", "=B2*B3+B5"],
+    ["Hours Per Task", "N.CI(3, 5)", null, "Weeks To Finish", "=E2/B4"],
+    ["Team Hours Per Week", "N.CI(60, 80)", null, null, null],
+    ["Interruption Hours", "U(0, 12)", null, null, null],
+  ],
+};
+
+const salesForecastExample: ExampleDefinition = {
+  id: "sales-forecast",
+  name: "Sales Forecast",
+  description: "Turn uncertain traffic, conversion, and order value into revenue.",
+  data: [
+    ["Sales Forecast", null, null, "Outputs", null],
+    ["Monthly Visitors", "U(8000, 12000)", null, "Orders", "=B2*B3"],
+    ["Conversion Rate", "N.CI(0.025, 0.045)", null, "Gross Revenue", "=E2*B4"],
+    ["Average Order Value", "N.CI(65, 85)", null, "Net Revenue", "=E3*(1-B5)"],
+    ["Refund Rate", "U(0.04, 0.08)", null, null, null],
+  ],
+};
+
+export const spreadsheetExamples: ExampleDefinition[] = [
+  eventBudgetExample,
+  projectTimelineExample,
+  salesForecastExample,
+];
