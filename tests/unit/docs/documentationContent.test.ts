@@ -27,6 +27,19 @@ describe("documentation content", () => {
     expect(joinedContent).toContain("LN.CI(lower, upper)");
   });
 
+  it("explains when to use uniform ranges and confidence intervals", () => {
+    const joinedContent = documentationSections
+      .flatMap((section) => section.blocks)
+      .join("\n");
+
+    expect(joinedContent).toContain(
+      "Use U(a, b) for a bounded range with no preferred midpoint.",
+    );
+    expect(joinedContent).toContain(
+      "Use N.CI(lower, upper) for an estimate with a likely center",
+    );
+  });
+
   it("documents the dependency graph view", () => {
     const section = documentationSections.find(
       (candidate) => candidate.id === "dependency-graph",

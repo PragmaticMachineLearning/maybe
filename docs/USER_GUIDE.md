@@ -52,6 +52,10 @@ into a cell.
 For user-facing estimates, `N.CI(...)`, `LN.CI(...)`, and `U(...)` are usually
 easier to reason about than raw distribution parameters.
 
+Use `U(min, max)` when the value is bounded and you do not want to imply a
+most-likely point inside the range. Use `N.CI(lower, upper)` when the value is
+an estimate with a likely center and uncertainty around it.
+
 ## First Walkthrough
 
 Start with three cells:
