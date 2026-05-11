@@ -48,6 +48,7 @@ export const documentationSections: DocumentationSection[] = [
     title: "Uncertain Values",
     blocks: [
       "Uncertain cells are explicit. The notation tells Maybe which distribution to create and how to sample from it.",
+      "Use U(a, b) for a bounded range with no preferred midpoint. Use N.CI(lower, upper) for an estimate with a likely center and uncertainty around it.",
       "For lognormal values, LN(mu, sigma) uses the parameters of the underlying normal distribution, so ln(X) is normally distributed with mean mu and standard deviation sigma. For original-scale inputs, LN.CI(lower, upper) is usually easier.",
     ],
     formulas: [
