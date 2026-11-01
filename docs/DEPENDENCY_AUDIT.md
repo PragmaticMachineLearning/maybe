@@ -31,7 +31,7 @@ This report only. Nothing was removed or upgraded, and bun.lock is unchanged.
 | 7 | ai | 7 | None practical | Large | 0 (shared with @ai-sdk/react and @ai-sdk/openai) | Keep |
 | 8 | @ai-sdk/openai | 1 | None practical | Large | 0 (shared with ai) | Keep |
 | 9 | zod | 4 | None practical | Large | 0 | Keep |
-| 10 | echarts | 3 files (5 statements) | None practical | Large | 0 (zrender is shared with nothing else, but it is core) | Keep |
+| 10 | echarts | 3 files (5 statements) | None practical | Large | 0 by the script, because echarts-for-react lists it as a peer; its own dependencies (2) would leave only if both were removed | Keep |
 | 11 | react-dom | 1 | None | n/a | 0 | Keep |
 | 12 | react | 15 | None | n/a | 0 | Keep |
 
@@ -88,7 +88,7 @@ static file serving, and error handling in about 139 lines plus tests.
 
 gaussformula (rank 5). It is the sole formula engine (src/lib/formulaEngine.ts).
 It depends on chevrotain 6.5.0 (2020 era, long behind the current major) and
-tiny-emitter 2.1.0, and gaussformula 0.1.10 is a young, low-version package.
+tiny-emitter 2.1.0.
 Treat these as the likeliest source of unmaintained-dependency advisories, but
 replacing a formula engine is a large project. Keep, and watch it.
 
