@@ -99,6 +99,12 @@ const CellRendererComponent: React.FC<CellRendererProps> = ({
     () => parseDistributionValue(value),
     [value],
   );
+  // Only read samples while the viewer is open, and only once per value so the
+  // plot's memoized chart data stays stable across re-renders.
+  const plotSamples = useMemo(
+    () => (showPlot ? getSamplesFromDistribution(value) : null),
+    [showPlot, value],
+  );
   const cellRef = useRef<HTMLDivElement>(null);
 
   const getDistributionColors = useCallback(() => {
@@ -322,7 +328,7 @@ const CellRendererComponent: React.FC<CellRendererProps> = ({
       {showPlot &&
         isDistribution &&
         (() => {
-          const samples = getSamplesFromDistribution(value);
+          const samples = plotSamples;
           if (!samples) return null;
 
           let distributionType: "normal" | "lognormal" | "uniform" | "sampled" =

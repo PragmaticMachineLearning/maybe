@@ -61,6 +61,7 @@ export interface DistributionChartDataInput {
 
 export interface DistributionChartData {
   sortedSamples: number[];
+  mean: number;
   distributionKind: DistributionKind;
   confidenceInterval?: ChartConfidenceInterval;
   distributionParams: DistributionParams | null;
@@ -109,6 +110,15 @@ const getDistributionTitle = (distributionKind: DistributionKind): string => {
   }
 };
 
+const sortAscending = (values: number[]): number[] => {
+  const sorted = Float64Array.from(values).sort();
+  const result = new Array<number>(sorted.length);
+  for (let i = 0; i < sorted.length; i += 1) {
+    result[i] = sorted[i];
+  }
+  return result;
+};
+
 export const createDistributionChartData = (
   input: DistributionChartDataInput,
 ): DistributionChartData => {
@@ -119,7 +129,10 @@ export const createDistributionChartData = (
     distributionParams: providedDistributionParams,
   } = input;
 
-  const sortedSamples = [...samples].sort((a, b) => a - b);
+  // Float64Array sorts numerically without a comparator callback, which is far
+  // faster than Array#sort; this is the only sort on the compute path.
+  const sortedSamples = sortAscending(samples);
+  const { mean, std } = toMeanAndStd(sortedSamples);
 
   const distributionParams = providedDistributionParams ?? (() => {
     switch (distributionKind) {
@@ -132,15 +145,14 @@ export const createDistributionChartData = (
           };
         }
 
-        const params = createUniformParams(samples);
+        const params = createUniformParams(sortedSamples);
         return params ? { type: "uniform" as const, ...params } : null;
       }
       case "lognormal": {
-        const params = toLogNormalParams(samples);
+        const params = toLogNormalParams(sortedSamples);
         return params ? { type: "lognormal" as const, ...params } : null;
       }
       case "normal": {
-        const { mean, std } = toMeanAndStd(samples);
         return std > 0 ? { type: "normal" as const, mean, std } : null;
       }
       default:
@@ -154,7 +166,7 @@ export const createDistributionChartData = (
         if (distributionParams?.type === "uniform") {
           return createUniformData(distributionParams.a, distributionParams.b);
         }
-        return kernelDensityEstimate(samples);
+        return kernelDensityEstimate(sortedSamples);
       case "lognormal": {
         if (distributionParams?.type === "lognormal") {
           return createLogNormalData(
@@ -163,10 +175,10 @@ export const createDistributionChartData = (
           );
         }
 
-        const positive = samples.filter((value) => value > 0);
+        const positive = sortedSamples.filter((value) => value > 0);
         return positive.length
           ? kernelDensityEstimate(positive)
-          : kernelDensityEstimate(samples);
+          : kernelDensityEstimate(sortedSamples);
       }
       case "normal":
         if (distributionParams?.type === "normal") {
@@ -175,10 +187,10 @@ export const createDistributionChartData = (
             distributionParams.std,
           );
         }
-        return kernelDensityEstimate(samples);
+        return kernelDensityEstimate(sortedSamples);
       case "sampled":
       default:
-        return kernelDensityEstimate(samples);
+        return kernelDensityEstimate(sortedSamples);
     }
   })();
 
@@ -190,6 +202,7 @@ export const createDistributionChartData = (
 
   return {
     sortedSamples,
+    mean,
     distributionKind,
     confidenceInterval,
     distributionParams,

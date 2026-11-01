@@ -8,6 +8,7 @@ import {
   type DistributionKind,
   type DistributionQueryState,
 } from "./distributionChartOptions";
+import { percentileFromSorted } from "../../utils/distribution/distributionMath";
 import styles from "./DistributionPlot.module.css";
 
 interface DistributionPlotProps {
@@ -23,16 +24,6 @@ interface DistributionPlotProps {
     confidenceLevel: number;
   };
 }
-
-const computePercentile = (sorted: number[], p: number): number => {
-  if (!sorted.length) return NaN;
-  const index = (p / 100) * (sorted.length - 1);
-  const lower = Math.floor(index);
-  const upper = Math.ceil(index);
-  if (lower === upper) return sorted[lower];
-  const weight = index - lower;
-  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
-};
 
 const SettingsIcon: React.FC<{ size?: number; color?: string }> = ({
   size = 16,
@@ -191,18 +182,6 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
   const hasSeenConfidenceIntervalRef = useRef(
     Boolean(normalizedConfidenceInterval),
   );
-  const stats = useMemo(() => {
-    if (!samples || samples.length === 0) return null;
-    const sorted = [...samples].sort((a, b) => a - b);
-    const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
-    return {
-      p10: computePercentile(sorted, 10),
-      median: computePercentile(sorted, 50),
-      p90: computePercentile(sorted, 90),
-      mean,
-    };
-  }, [samples]);
-
   const [queryState, setQueryState] = useState<DistributionQueryState>(() => ({
     ...DEFAULT_QUERY_STATE,
     confidenceLevel:
@@ -228,6 +207,17 @@ export const DistributionPlot: React.FC<DistributionPlotProps> = ({
       }),
     [samples, distributionKind, distributionParams, normalizedConfidenceInterval],
   );
+
+  const stats = useMemo(() => {
+    const sorted = chartData.sortedSamples;
+    if (sorted.length === 0) return null;
+    return {
+      p10: percentileFromSorted(sorted, 10),
+      median: percentileFromSorted(sorted, 50),
+      p90: percentileFromSorted(sorted, 90),
+      mean: chartData.mean,
+    };
+  }, [chartData]);
 
   const chartModel = useMemo(
     () =>
